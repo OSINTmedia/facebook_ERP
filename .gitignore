@@ -1,0 +1,63 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Python cache and bytecode
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Test and coverage output
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Django/local runtime output
+*.sqlite3
+db.sqlite3
+staticfiles/
+media/
+media
+!media/.gitkeep
+logs/
+*.log
+
+# Database dumps and backups
+*.dump
+*.sql
+*.psql
+*.backup
+*.bak
+backups/
+backups
+
+# IDE and OS files
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+
+# Private local workflow/prompt notes
+.local/
+.codex-local/
+local_prompts/
+private_prompts/
+workflow-notes/
+CODEX_LOCAL_NOTES.md
+WORKFLOW_LOCAL.md
+codex_prompt.txt
+*.local.md
+*.private.md
