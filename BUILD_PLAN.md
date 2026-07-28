@@ -2,12 +2,12 @@
 
 ## Document Metadata
 
-- Status: DRAFT_FOR_OWNER_REVIEW
-- Version: 1.0-draft
+- Status: SEMI_FROZEN
+- Version: 1.0
 - Owner: osMit
 - Source documents: `APP_EXPERIENCE_PLAN.md`, `DEVELOPMENT_NOTES.md`, `docs/Portfolio_MVP_V1.md`, `docs/Technical_Planning_v1.md`, `docs/domain/CLOTHING_DATA_SPEC_V1.md`, `docs/User_Journey_Freeze_v1.md`, `docs/discovery/backend.md`, `docs/discovery/frontend.md`, `docs/discovery/DISCOVERY_REPORT.md`
 - Update rule: update only after an approved planning, implementation, verification, or checkpoint task
-- Roadmap authority: this file controls implementation order after owner review; frozen product documents control scope
+- Roadmap authority: this file controls implementation order; frozen product documents control scope
 - Codex may reorder phases automatically: no
 
 ## 1. Implementation Objective
@@ -54,6 +54,8 @@ Use this exact context-transfer order:
    - Read only after the current micro-slice is approved or when implementation exists.
 10. `README.md` only for public presentation context
    - Public-facing summary only. It is not implementation authority and not a work log.
+
+Private local workflow prompts, including `codex_prompt_ERP.txt`, may be used by the owner to run the micro-slice workflow, but they are not public repository authority and must not be staged or committed.
 
 ## 4. Status Vocabulary
 
@@ -148,7 +150,7 @@ Use only these status values:
 
 | Phase | Name | Goal | Status | Stop Gate | Portfolio Evidence |
 |---|---|---|---|---|---|
-| Phase 0 | Documentation Approval and Repository Foundation | Freeze planning docs and establish honest repository baseline | NEEDS_OWNER_REVIEW | Gate 0 | Draft docs, owner review, baseline commit after approval |
+| Phase 0 | Documentation Approval and Repository Foundation | Freeze planning docs and establish honest repository baseline | NEEDS_OWNER_REVIEW | Gate 0 | Frozen docs, honest history, corrective checkpoint before Phase 1 |
 | Phase 1 | Django/PostgreSQL Foundation and CI | Create minimal clean Django project, settings, test harness, and CI | NOT_STARTED | Gate 1 | Scaffold commits, CI workflow, reproducible setup |
 | Phase 2 | User and Business Ownership | Implement authentication and business ownership boundary | NOT_STARTED | Gate 2 | User/business tests, access-control tests |
 | Phase 3 | Catalog Core | Implement product core facts and lifecycle | NOT_STARTED | Gate 3 | Product model/forms/views/tests |
@@ -168,19 +170,20 @@ Use only these status values:
 
 - Objective: review and approve or revise `docs/Portfolio_MVP_V1.md`, `docs/Technical_Planning_v1.md`, `docs/domain/CLOTHING_DATA_SPEC_V1.md`, `docs/User_Journey_Freeze_v1.md`, `APP_EXPERIENCE_PLAN.md`, `DEVELOPMENT_NOTES.md`, this plan, README, and checkpoint.
 - Dependency: Phase 1A to 1E documents exist.
-- Exact scope: owner reads draft documents, resolves blocking scope decisions, and explicitly marks approved documents frozen where appropriate.
+- Exact scope: owner reads draft documents, freezes the owner-controlled scope/technical/domain/journey documents, keeps operational documents live or semi-frozen, and leaves future `OWNER_DECISION_REQUIRED` items explicit instead of silently approving them.
 - Explicit exclusions: no Django initialization, no Git initialization, no code, no package install, no source prototype modification.
 - Likely files: planning Markdown files only.
 - Backend acceptance criteria: backend invariants are approved or marked deferred.
 - Frontend/UX acceptance criteria: page responsibilities, first viewport priorities, return-path rules, and V1 surfaces are approved or marked deferred.
 - Automated verification: document existence and cross-document consistency check.
 - Manual user verification: owner confirms scope decisions and freeze status.
-- Failure cases: unresolved scope decisions; document contradiction; owner rejects proposed V1.
+- Failure cases: unresolved decision blocks the next technical slice; document contradiction; owner rejects proposed V1.
 - Documentation updates: update status lines and `changelog_checkpoint.md`.
 - Proposed commit message: `docs: freeze portfolio planning baseline`.
 - Rollback/recovery note: if owner rejects scope, keep drafts and update blocker list rather than implementing.
 - Stop gate: Gate 0.
-- Status: NEEDS_OWNER_REVIEW.
+- Current verified state: owner approved freezing the docs/ scope, technical, clothing-domain, and journey documents; operational status and phase state remain controlled by `changelog_checkpoint.md` and `DEVELOPMENT_NOTES.md`.
+- Status: PASSED.
 
 ### P0.2 GitHub Authentication and Safe Local/Remote Repository Reconciliation
 
@@ -291,7 +294,25 @@ Use only these status values:
 - Proposed commit message: `docs: add issue workflow templates` only if local templates are created.
 - Rollback/recovery note: close or rename issues if scope changes before implementation.
 - Stop gate: issue workflow accepted or explicitly deferred.
-- Status: NOT_STARTED.
+- Status: DEFERRED.
+
+### P0.8 Documentation Governance Corrective Sync Before Phase 1
+
+- Objective: align document authority, checkpoint reality, private workflow prompt handling, and measurement scope before technical implementation begins.
+- Dependency: P0.1 through P0.6 `PASSED`; P0.7 explicitly `DEFERRED`.
+- Exact scope: mark owner-controlled docs frozen, mark this plan and the app experience plan semi-frozen, keep `changelog_checkpoint.md` and `DEVELOPMENT_NOTES.md` live, ignore private local workflow prompts, update Git reality, and keep detailed garment measurement implementation deferred.
+- Explicit exclusions: no Django initialization, no dependency install, no app code, no CI, no migrations, no source prototype changes, no commit or push during the sync itself.
+- Likely files: `.gitignore`, `README.md`, `BUILD_PLAN.md`, `APP_EXPERIENCE_PLAN.md`, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md`, selected owner-controlled docs for status and approved measurement-boundary correction.
+- Backend acceptance criteria: no backend code exists or changes.
+- Frontend/UX acceptance criteria: the assistant-first, two-primary-surface UX contract remains intact.
+- Automated verification: `git status --short --branch`, `git diff --stat`, `git diff --check`, link/path scan, and stale-state grep.
+- Manual user verification: owner confirms this corrective sync before Git checkpoint.
+- Failure cases: private prompt staged; checkpoint remains stale; measurement implementation appears as V1 scope; frozen docs gain unapproved scope.
+- Documentation updates: record this sync and next Git checkpoint in `changelog_checkpoint.md`.
+- Proposed commit message: `docs: sync governance before phase 1`.
+- Rollback/recovery note: revert only this corrective documentation sync if owner rejects it.
+- Stop gate: corrective sync reviewed, committed, pushed, and checkpoint updated before P1.1 starts.
+- Status: NEEDS_OWNER_REVIEW.
 
 ## 11. Phase 1 Micro-Slices
 
@@ -613,7 +634,7 @@ Do not choose a provider or claim a demo URL before owner approval and verificat
 
 ## 20. Owner Decisions Required
 
-- Freeze or revise the four draft product/planning documents.
+- Confirm P0.8 corrective sync and Git checkpoint before P1.1 starts.
 - Final public project/repository name.
 - License choice.
 - Exact V1 behavior for recognizing observed text, candidate meaning, and confirmed facts.

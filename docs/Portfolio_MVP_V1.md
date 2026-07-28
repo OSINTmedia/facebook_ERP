@@ -2,13 +2,14 @@
 
 ## Document Metadata
 
-- Status: DRAFT_FOR_OWNER_REVIEW
-- Version: 1.0-draft
+- Status: FROZEN
+- Version: 1.0
 - Owner: osMit
 - Source prototype: `/home/giga/Desktop/OSINT/facebook_MVP/`
 - Rebuild workspace: `/home/giga/Desktop/OSINT/GITHUB_MVP_ERP/`
 - Freeze authority: owner only
 - Codex automatic scope changes: forbidden
+- Frozen boundary: unresolved `OWNER_DECISION_REQUIRED` items remain deferred unless separately approved
 
 ## 1. Portfolio Objective
 
@@ -114,7 +115,7 @@ OWNER_DECISION_REQUIRED: Clone, archive/restore, type/tag management pages, and 
 - OWNER_PROVIDED_DIRECTION: Optional confirmed material facts as a small typed extension.
 - RECOMMENDED_FROM_EVIDENCE: Clothing-first choice data: size, color, quantity.
 - OWNER_PROVIDED_DIRECTION: Description-recognized size/color suggests adding choices instead of becoming generic tags.
-- DEFERRED_HYPOTHESIS: Detailed garment measurements with type, value, unit, method, and product/choice boundary.
+- RECOMMENDED_FROM_EVIDENCE: Future-ready boundary for detailed garment measurements, with implementation deferred to a later approved micro-slice.
 - RECOMMENDED_FROM_EVIDENCE: Variant-level stock updates through a single inventory service.
 - RECOMMENDED_FROM_EVIDENCE: Stored lifecycle separated from computed availability.
 - RECOMMENDED_FROM_EVIDENCE: Product workspace with search/filter only to the level needed for daily operations.

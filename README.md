@@ -35,7 +35,7 @@ This rebuild is intended to demonstrate:
 Status: Planning and documented rebuild.
 
 - Product discovery completed from an earlier private prototype.
-- Rebuild documentation drafted for owner review.
+- Owner-controlled planning documents are frozen for the Phase 1 starting baseline.
 - Implementation has not started.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
 - The GitHub repository is public, uses default branch `main`, and preserves the initial README commit `dce852b`.
@@ -51,7 +51,7 @@ Status: Planning and documented rebuild.
 
 ## Planned Portfolio V1
 
-Draft scope pending owner freeze:
+Frozen baseline scope:
 
 - seller login and private workspace;
 - business-owned product data;
@@ -68,7 +68,7 @@ Draft scope pending owner freeze:
 - tests for critical ownership, state, inventory, and reply behavior;
 - safe synthetic demo data and reset/reseed path before deployment.
 
-Some prototype behaviors, including Product Detail, product relations, clone modes, archive/restore, direct stock set, and separate type/tag management pages, still require owner approval before they become frozen V1 scope.
+Some prototype behaviors, including Product Detail, product relations, clone modes, archive/restore, direct stock set, and separate type/tag management pages, remain owner-decision-required and are not included automatically in the frozen baseline scope.
 
 ## Explicit Non-Goals
 
@@ -146,7 +146,7 @@ No setup commands are listed yet because implementation has not started.
 
 ## Roadmap Summary
 
-1. Owner review and document freeze.
+1. Documentation governance and baseline freeze.
 2. Repository foundation and hygiene.
 3. Django/PostgreSQL foundation and CI.
 4. User and Business ownership.

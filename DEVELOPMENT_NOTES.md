@@ -137,3 +137,27 @@ Work proceeds through context load, next-step report, owner approval, implementa
 
 Reason:
 The workflow prevents context loss, scope creep, stale documentation, and unreviewable AI-generated diffs.
+
+### 2026-07-28 - Private workflow prompt stays local
+
+Decision:
+Keep `codex_prompt_ERP.txt` as a private local workflow prompt file and exclude it from Git.
+
+Reason:
+The file contains the owner's recurring prompt sequence for running Codex micro-slices. The public repository should expose the project documentation and implementation history, while private local prompt mechanics should not become repository authority.
+
+### 2026-07-28 - Owner-controlled documents frozen for Phase 1 baseline
+
+Decision:
+Treat `docs/Portfolio_MVP_V1.md`, `docs/Technical_Planning_v1.md`, `docs/domain/CLOTHING_DATA_SPEC_V1.md`, and `docs/User_Journey_Freeze_v1.md` as frozen owner-controlled baseline documents for the start of Phase 1.
+
+Reason:
+The rebuild needs stable product, technical, domain, and journey boundaries before implementation. Future `OWNER_DECISION_REQUIRED` items remain explicit and deferred instead of being silently approved.
+
+### 2026-07-28 - Assistant-first synthesis confirms product boundary
+
+Decision:
+Use `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md` as discovery support for the assistant-first product thesis, not as direct implementation authority.
+
+Reason:
+The synthesis clearly explains the product's core boundary: assistant-first seller operations, not another ecommerce administration system. That reasoning supports active plans, but active frozen and semi-frozen documents remain the controlling sources.

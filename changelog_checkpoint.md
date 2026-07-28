@@ -13,7 +13,7 @@
 ## 1. Current Project State
 
 - Discovery audits completed.
-- Rebuild documents drafted for owner review.
+- Owner-controlled planning documents are frozen for the Phase 1 starting baseline.
 - Execution roadmap, public README, and live checkpoint drafted.
 - Documentation structure normalized for context transfer.
 - Clothing domain owner review completed for `docs/domain/CLOTHING_DATA_SPEC_V1.md`.
@@ -25,6 +25,7 @@
 - GitHub default branch: `main`.
 - Remote contains the preserved initial README commit `dce852b`.
 - Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed to `origin/main`.
+- Clothing recognition scope commit `9f5a5e2 docs: align planning with clothing recognition scope` has been pushed to `origin/main`.
 - Implementation not started.
 - Local Git repository is initialized.
 - Local branch `main` tracks `origin/main`.
@@ -32,13 +33,14 @@
 - GitHub SSH authentication works through `ssh.github.com` on port `443`.
 - CI not configured.
 - Online demo not available.
-- Owner review and freeze pending.
+- Private workflow prompt `codex_prompt_ERP.txt` exists locally and is intentionally ignored by Git.
+- Documentation governance corrective sync before Phase 1 is completed locally and approved for Git checkpoint review. It has not yet been committed or pushed.
 
 ## 2. Current Phase
 
 - Phase: Phase 0 - Documentation Approval and Repository Foundation
 - Status: NEEDS_OWNER_REVIEW
-- Current micro-slice: Git checkpoint and owner review for clothing-domain documentation consistency sync
+- Current micro-slice: Git checkpoint for documentation governance corrective sync before Phase 1
 - Started: 2026-07-27
 - Last updated: 2026-07-28
 
@@ -80,6 +82,15 @@
   - size/color as choice truth
   - buyer-question coverage readiness
   - detailed measurements deferred
+- Clothing recognition scope documentation committed and pushed:
+  - `9f5a5e2 docs: align planning with clothing recognition scope`
+  - preserved `dce852b Initial commit`
+  - preserved `549db75 docs: add portfolio rebuild planning baseline`
+- Owner-controlled documents frozen for Phase 1 baseline:
+  - `docs/Portfolio_MVP_V1.md`
+  - `docs/Technical_Planning_v1.md`
+  - `docs/domain/CLOTHING_DATA_SPEC_V1.md`
+  - `docs/User_Journey_Freeze_v1.md`
 
 ## 4. Files Currently Available
 
@@ -88,6 +99,7 @@
 - `docs/discovery/DISCOVERY_REPORT.md`
 - `docs/discovery/backend.md`
 - `docs/discovery/frontend.md`
+- `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md` is included in the corrective-sync Git checkpoint as discovery synthesis
 - `docs/domain/CLOTHING_DATA_SPEC_V1.md`
 
 ### Rebuild documents
@@ -101,6 +113,11 @@
 - `docs/Technical_Planning_v1.md`
 - `docs/User_Journey_Freeze_v1.md`
 
+### Private local workflow
+
+- `codex_prompt_ERP.txt` exists locally for owner-run Codex workflow prompts.
+- It is intentionally ignored and must not be staged or committed.
+
 ### Historical references
 
 - `docs/archive/old_docs/`
@@ -108,14 +125,15 @@
 ## 5. Current Verification
 
 - Required planning and evidence documents: present in the normalized structure.
-- Clothing domain spec: owner-reviewed and revised as `1.1-draft`; still owner-controlled and not marked frozen.
+- Clothing domain spec: owner-reviewed, revised as version `1.1`, and frozen as an owner-controlled domain boundary.
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
 - Cross-document consistency: active planning docs synchronized to the revised clothing recognition direction; owner-decision items remain.
 - Source project unchanged: yes.
 - Source code copied: no.
 - Code implementation status: not started.
-- Git status: initialized on `main`, tracking `origin/main`; current worktree has documentation-only changes for this sync and nothing staged.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b` and pushed baseline commit `549db75`.
+- Git status: initialized on `main`, tracking `origin/main`; `HEAD` and `origin/main` are aligned at `9f5a5e2` before this corrective sync; current corrective-sync paths must be verified by Git checkpoint commands before commit.
+- Assistant-first synthesis: present at `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md`, used as discovery support, not implementation authority.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, and pushed clothing scope commit `9f5a5e2`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
 - CI status: not configured.
@@ -124,11 +142,10 @@
 
 ## 6. Current Blockers
 
-- Owner review of draft rebuild documents.
-- Owner freeze approval for product scope, technical direction, journeys, UX contracts, build plan, README, and checkpoint.
-- Existing remote initial README commit must be preserved.
-- Clothing-domain documentation consistency sync needs Git checkpoint and owner review before commit.
-- Files must remain unstaged until owner approves the next documentation commit.
+- Documentation governance corrective sync needs Git checkpoint and owner review before commit.
+- `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md` is included as discovery evidence in the corrective-sync Git checkpoint.
+- Existing remote initial README commit must remain preserved.
+- Stage only the explicitly approved corrective-sync documentation paths during Git checkpoint.
 - No force push is allowed.
 - OWNER_DECISION_REQUIRED items:
   - final project/repository name;
@@ -152,9 +169,9 @@
 
 ## 7. Next Concrete Micro-Slice
 
-Git checkpoint and owner review for clothing-domain documentation consistency sync.
+Git checkpoint for documentation governance corrective sync before Phase 1.
 
-Do not jump directly to application implementation.
+Do not jump directly to application implementation until this corrective sync is reviewed, committed, pushed, and the checkpoint is updated for `P1.1 — Python and Django Dependency Baseline`.
 
 ## 8. Scope Guardrails
 
@@ -167,8 +184,7 @@ Do not jump directly to application implementation.
 
 ## 9. Known Risks
 
-- Owner decisions are still open, so execution is not ready.
-- Clothing-domain consistency sync needs review before commit.
+- Corrective documentation sync needs review before commit.
 - Existing remote initial commit must remain preserved.
 - README must remain honest until code, CI, and demo actually exist.
 - Prototype behavior may tempt scope creep if copied wholesale.
@@ -189,21 +205,30 @@ Do not jump directly to application implementation.
 9. relevant source files
 10. `README.md` for public context only
 
+Private local prompt:
+
+- `codex_prompt_ERP.txt` may be used by the owner to drive Codex workflow prompts.
+- It is not repository authority and must not be staged or committed.
+
 ## 11. Last Operation
 
-- Operation: Phase 0 clothing-domain documentation consistency sync.
+- Operation: Phase 0 documentation governance corrective sync before Phase 1.
 - Files created/updated:
-  - `docs/domain/CLOTHING_DATA_SPEC_V1.md`
+  - `.gitignore`
   - `docs/Portfolio_MVP_V1.md`
   - `docs/Technical_Planning_v1.md`
+  - `docs/domain/CLOTHING_DATA_SPEC_V1.md`
   - `docs/User_Journey_Freeze_v1.md`
   - `APP_EXPERIENCE_PLAN.md`
   - `BUILD_PLAN.md`
   - `DEVELOPMENT_NOTES.md`
+  - `README.md`
   - `changelog_checkpoint.md`
+- Discovery support read:
+  - `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md`
 - Source project modified: no.
-- Verification: documentation consistency sync performed; no staging, commit, push, code, packages, migrations, database, CI, authentication changes, or deployment work was performed in this micro-slice.
-- Result: active planning docs reflect description-first recognition, material as typed confirmed fact, size/color as choice truth, buyer-question coverage readiness, and deferred measurement implementation; next micro-slice is Git checkpoint and owner review for this documentation sync.
+- Verification: read-only checks run before staging: `git status --short --branch`, `git diff --stat`, `git diff --check`, `git check-ignore -v codex_prompt_ERP.txt`, link/path scan, stale-state grep, and implementation-file scan. Git checkpoint staging uses explicit approved paths only. No commit, push, code, packages, migrations, database, CI, authentication changes, or deployment work was performed in this micro-slice.
+- Result: active planning docs now align so frozen docs control scope, semi-frozen docs control roadmap/UX, live docs control operational state, `codex_prompt_ERP.txt` stays private, and measurement implementation remains deferred.
 
 Previous restructuring files:
   - `DEVELOPMENT_NOTES.md`
@@ -223,14 +248,14 @@ Previous restructuring files:
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Last commit: `549db75 docs: add portfolio rebuild planning baseline`
+- Last commit: `9f5a5e2 docs: align planning with clothing recognition scope`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75` pushed on top
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75` and clothing scope commit `9f5a5e2` pushed on top
 - GitHub SSH authentication: works through `ssh.github.com` on port `443`
-- Push status: baseline pushed to `origin/main`; this documentation sync is not staged, committed, or pushed
+- Push status: `HEAD` and `origin/main` aligned at `9f5a5e2` before this corrective sync; this corrective sync is not yet committed or pushed
 
 ## 13. Handoff Instruction
 

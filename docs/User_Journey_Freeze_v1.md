@@ -2,13 +2,14 @@
 
 ## Document Metadata
 
-- Status: DRAFT_FOR_OWNER_REVIEW
-- Version: 1.0-draft
+- Status: FROZEN
+- Version: 1.0
 - Freeze authority: owner only
+- Frozen boundary: `OWNER_DECISION_REQUIRED` journeys remain deferred unless separately approved
 
 ## 1. Journey Purpose
 
-RECOMMENDED_FROM_EVIDENCE: These journeys protect the rebuild from route and UI chaos by defining what the seller is trying to accomplish, what context must be preserved, what feedback is required, and which paths are explicitly deferred. They are not frozen until the owner approves them.
+RECOMMENDED_FROM_EVIDENCE: These journeys protect the rebuild from route and UI chaos by defining what the seller is trying to accomplish, what context must be preserved, what feedback is required, and which paths are explicitly deferred. They are now the owner-controlled journey baseline for Phase 1, while `OWNER_DECISION_REQUIRED` journeys remain deferred until separately approved.
 
 VALIDATED_PROTOTYPE_LESSON: The source prototype became useful but dense because product creation, stock updates, readiness, replies, taxonomy, clone, archive, and relations were repeatedly added to the same surfaces. The rebuild should make each journey explicit before screens are built.
 

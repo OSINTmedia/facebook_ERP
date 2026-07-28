@@ -2,13 +2,14 @@
 
 ## Document Metadata
 
-- Status: DRAFT_FOR_OWNER_REVIEW
-- Version: 1.1-draft
+- Status: FROZEN
+- Version: 1.1
 - Owner: osMit
 - Project: Social Commerce Seller Operations Assistant
 - Scope: clothing-specific truth, semantic recognition, and optional measurement support
 - Freeze authority: owner only
 - Code generation: forbidden by this document alone
+- Frozen boundary: measurement implementation still requires a separate approved micro-slice
 
 ## 1. Purpose
 

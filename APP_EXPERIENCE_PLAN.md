@@ -2,9 +2,10 @@
 
 ## Document Metadata
 
-- Status: DRAFT_FOR_OWNER_REVIEW
-- Version: 1.0-draft
+- Status: SEMI_FROZEN
+- Version: 1.0
 - Freeze authority: owner only
+- Update rule: update only when the UX contract, navigation model, page responsibility, or interaction boundary changes
 
 ## 1. Experience Objective
 

@@ -2,9 +2,10 @@
 
 ## Document Metadata
 
-- Status: DRAFT_FOR_OWNER_REVIEW
-- Version: 1.0-draft
+- Status: FROZEN
+- Version: 1.0
 - Freeze authority: owner only
+- Frozen boundary: unresolved `OWNER_DECISION_REQUIRED` items remain deferred unless separately approved
 
 ## 1. Technical Objective
 
