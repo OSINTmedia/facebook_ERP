@@ -1,0 +1,9 @@
+# Core Django/PostgreSQL application baseline.
+Django==5.2.16
+psycopg[binary]==3.3.4
+django-environ==0.14.0
+django-htmx==1.28.0
+
+# Test harness baseline. CI wiring is a later P1 micro-slice.
+pytest==9.1.1
+pytest-django==4.12.0

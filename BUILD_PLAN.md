@@ -151,7 +151,7 @@ Use only these status values:
 | Phase | Name | Goal | Status | Stop Gate | Portfolio Evidence |
 |---|---|---|---|---|---|
 | Phase 0 | Documentation Approval and Repository Foundation | Freeze planning docs and establish honest repository baseline | PASSED | Gate 0 | Frozen docs, honest history, corrective checkpoint before Phase 1 |
-| Phase 1 | Django/PostgreSQL Foundation and CI | Create minimal clean Django project, settings, test harness, and CI | NOT_STARTED | Gate 1 | Scaffold commits, CI workflow, reproducible setup |
+| Phase 1 | Django/PostgreSQL Foundation and CI | Create minimal clean Django project, settings, test harness, and CI | IN_PROGRESS | Gate 1 | Scaffold commits, CI workflow, reproducible setup |
 | Phase 2 | User and Business Ownership | Implement authentication and business ownership boundary | NOT_STARTED | Gate 2 | User/business tests, access-control tests |
 | Phase 3 | Catalog Core | Implement product core facts and lifecycle | NOT_STARTED | Gate 3 | Product model/forms/views/tests |
 | Phase 4 | Semantic Recognition and Choice Model | Implement description-first recognition for type/tag/material candidates plus stock-bearing choices | NOT_STARTED | Gate 3 | Recognition contract, alias tests, choice validation |
@@ -333,7 +333,7 @@ Use only these status values:
 - Proposed commit message: `chore: define python and django dependency baseline`.
 - Rollback/recovery note: revise dependency file before scaffold if compatibility fails.
 - Stop gate: dependency baseline verified.
-- Status: NOT_STARTED.
+- Status: PASSED.
 
 #### Deployment Compatibility Guardrail
 

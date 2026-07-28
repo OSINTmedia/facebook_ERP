@@ -71,6 +71,14 @@ Use Django and PostgreSQL in a modular monolith.
 Reason:
 The project benefits from integrated auth, forms, migrations, transactions, testing, admin, and server-rendered workflows without premature microservices or API-first complexity.
 
+### 2026-07-28 - Django 5.2 dependency baseline
+
+Decision:
+Use Django 5.2 LTS on Python 3.13 with Psycopg 3, django-environ, django-htmx, pytest, and pytest-django as the initial dependency baseline.
+
+Reason:
+This gives the rebuild a stable Django/PostgreSQL foundation compatible with the planned backend-capable demo, server-rendered HTMX workflows, environment-based settings, and automated tests without introducing app code, frontend build tooling, or deployment-specific services before their approved slices.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

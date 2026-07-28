@@ -32,11 +32,12 @@ This rebuild is intended to demonstrate:
 
 ## Current Status
 
-Status: Planning and documented rebuild.
+Status: Dependency baseline created; Django scaffold not started.
 
 - Product discovery completed from an earlier private prototype.
 - Owner-controlled planning documents are frozen for the Phase 1 starting baseline.
-- Implementation has not started.
+- Python/Django dependency baseline exists in `requirements.txt`.
+- Clean Django project scaffold has not started.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
 - The GitHub repository is public, uses default branch `main`, and preserves the initial README commit `dce852b`.
 - Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed.
@@ -140,9 +141,20 @@ The future demo must use synthetic data, no real seller/customer data, no source
 
 ## Local Setup
 
-Application setup instructions will be added after the foundation phase creates and verifies the clean Django project.
+Application scaffolding has not started yet. The current verified setup is limited to the Python dependency baseline.
 
-No setup commands are listed yet because implementation has not started.
+Expected local Python version: Python 3.13.x.
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+python -m pip check
+python -c "import importlib.metadata as md; import django, psycopg, environ, django_htmx, pytest; print('django', django.get_version()); print('psycopg', psycopg.__version__); print('django-environ', environ.__version__); print('django-htmx', md.version('django-htmx')); print('pytest', pytest.__version__)"
+```
+
+Create a local `.env` from `.env.example` only after the Django settings package exists. Do not commit real secrets.
 
 ## Roadmap Summary
 
