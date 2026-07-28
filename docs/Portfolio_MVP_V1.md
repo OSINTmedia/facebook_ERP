@@ -31,7 +31,7 @@ OBSOLETE_OR_REJECTED: The current source prototype has no Git repository at `/ho
 
 ## 2. Product Definition
 
-RECOMMENDED_FROM_EVIDENCE: Portfolio MVP V1 is a private, seller-first catalog and inventory operations cockpit for small social-commerce sellers, focused on maintaining reliable product, clothing-specific attributes, choice, price, stock, classification, readiness, and deterministic buyer-reply data before any public catalog, chatbot, order, payment, or delivery layer exists.
+RECOMMENDED_FROM_EVIDENCE: Portfolio MVP V1 is a private, seller-first catalog and inventory operations assistant for small social-commerce sellers, focused on turning seller descriptions into confirmed product, choice, price, stock, classification, material, buyer-question coverage, and deterministic buyer-reply truth before any public catalog, chatbot, order, payment, or delivery layer exists.
 
 ## 3. Target User
 
@@ -94,9 +94,11 @@ RECOMMENDED_FROM_EVIDENCE: Inventory should be part of the seller's daily work, 
 
 RECOMMENDED_FROM_EVIDENCE: The smallest complete end-to-end slice should be:
 
-Seller -> login -> business workspace -> create product -> add size/color choices -> maintain variant-level stock -> compute availability -> view operational workspace -> see attention/readiness signal -> prepare deterministic buyer reply from stored facts.
+Seller -> login -> business workspace -> enter product description -> recognize type/tag/material candidates -> confirm structured facts where needed -> add size/color choices -> maintain variant-level stock -> compute availability -> view operational workspace -> see buyer-question coverage -> prepare deterministic buyer reply from confirmed facts.
 
-RECOMMENDED_FROM_EVIDENCE: Clothing domain data should follow `docs/domain/CLOTHING_DATA_SPEC_V1.md`. The V1 minimum remains owner-approved clothing facts plus size/color/quantity choices; material, fit, measurements, and fit guidance must be frozen deliberately instead of appearing accidentally in forms or models.
+OWNER_PROVIDED_DIRECTION: Clothing domain data follows `docs/domain/CLOTHING_DATA_SPEC_V1.md`. Product description is the primary seller input; recognized text is separated into observed text, candidate meaning, and confirmed structured fact. Material is a small typed semantic fact when confirmed. Size and color remain choice/variant truth, and description-recognized size/color may only suggest adding a choice.
+
+OWNER_PROVIDED_DIRECTION: Detailed garment measurements remain a separate approved micro-slice and must not be added as a mandatory first-form requirement.
 
 OWNER_DECISION_REQUIRED: Clone, archive/restore, type/tag management pages, and Product Detail are valuable prototype behaviors but should be owner-approved before entering the frozen V1 slice.
 
@@ -106,14 +108,19 @@ OWNER_DECISION_REQUIRED: Clone, archive/restore, type/tag management pages, and 
 - RECOMMENDED_FROM_EVIDENCE: Custom authenticated seller account.
 - RECOMMENDED_FROM_EVIDENCE: One active business workspace per seller for V1.
 - RECOMMENDED_FROM_EVIDENCE: Product creation and editing for core seller truth.
+- OWNER_PROVIDED_DIRECTION: Description-first product capture with semantic recognition.
 - RECOMMENDED_FROM_EVIDENCE: Clothing-first domain boundary documented in `docs/domain/CLOTHING_DATA_SPEC_V1.md`.
+- OWNER_PROVIDED_DIRECTION: Product Type and Tag recognition using business vocabulary and aliases.
+- OWNER_PROVIDED_DIRECTION: Optional confirmed material facts as a small typed extension.
 - RECOMMENDED_FROM_EVIDENCE: Clothing-first choice data: size, color, quantity.
-- OWNER_DECISION_REQUIRED: Which product-level clothing attributes, category measurement templates, and fit guidance fields enter V1.
+- OWNER_PROVIDED_DIRECTION: Description-recognized size/color suggests adding choices instead of becoming generic tags.
+- DEFERRED_HYPOTHESIS: Detailed garment measurements with type, value, unit, method, and product/choice boundary.
 - RECOMMENDED_FROM_EVIDENCE: Variant-level stock updates through a single inventory service.
 - RECOMMENDED_FROM_EVIDENCE: Stored lifecycle separated from computed availability.
 - RECOMMENDED_FROM_EVIDENCE: Product workspace with search/filter only to the level needed for daily operations.
 - RECOMMENDED_FROM_EVIDENCE: Dashboard or attention surface that answers what needs work today.
 - RECOMMENDED_FROM_EVIDENCE: Product readiness computed from stored facts.
+- OWNER_PROVIDED_DIRECTION: Readiness is expressed as buyer-question coverage, not a completion percentage.
 - RECOMMENDED_FROM_EVIDENCE: Deterministic seller-side buyer reply.
 - RECOMMENDED_FROM_EVIDENCE: Explicit return paths for all drilldowns.
 - RECOMMENDED_FROM_EVIDENCE: Automated tests and CI for critical flows.
@@ -137,6 +144,7 @@ OWNER_DECISION_REQUIRED: Clone, archive/restore, type/tag management pages, and 
 - OWNER_PROVIDED_DIRECTION: Broad ERP functionality.
 - RECOMMENDED_FROM_EVIDENCE: Full REST/DRF API unless needed by a later approved public/buyer layer.
 - RECOMMENDED_FROM_EVIDENCE: AI form filling, morphology-aware search, and automatic taxonomy generation.
+- OWNER_PROVIDED_DIRECTION: Universal fashion ontology, mandatory full specification forms, and AI sizing.
 
 ## 10. Future-Ready Boundaries
 
@@ -144,6 +152,8 @@ OWNER_DECISION_REQUIRED: Clone, archive/restore, type/tag management pages, and 
 - RECOMMENDED_FROM_EVIDENCE: Deterministic answer generation should remain a reusable domain/application service.
 - RECOMMENDED_FROM_EVIDENCE: Product availability should be computed centrally and exposed consistently to dashboard, workspace, and future APIs.
 - RECOMMENDED_FROM_EVIDENCE: Stock mutations should produce an auditable adjustment record that future order workflows can reuse.
+- OWNER_PROVIDED_DIRECTION: Recognition should preserve observed text, candidate meaning, and confirmed structured fact so future interpretation can assist without owning truth.
+- DEFERRED_HYPOTHESIS: Measurement support can be added later after method, unit, and applies-to boundaries are frozen.
 - DEFERRED_HYPOTHESIS: Product relations can become future recommendation/assistant input, but not a V1 requirement unless owner-approved.
 - DEFERRED_HYPOTHESIS: Public visibility/publication can remain a future boundary if not used in V1 UI.
 
@@ -151,13 +161,17 @@ OWNER_DECISION_REQUIRED: Clone, archive/restore, type/tag management pages, and 
 
 - RECOMMENDED_FROM_EVIDENCE: Product ownership truth belongs to `Business`.
 - RECOMMENDED_FROM_EVIDENCE: Product lifecycle truth is a stored product field.
+- OWNER_PROVIDED_DIRECTION: Product description is the primary seller input, but not the automatic source of structured buyer-facing truth.
+- OWNER_PROVIDED_DIRECTION: Observed text and candidate meaning are not the same as confirmed structured facts.
 - RECOMMENDED_FROM_EVIDENCE: Stock truth belongs to active product choices/variants.
 - RECOMMENDED_FROM_EVIDENCE: Product availability is computed from lifecycle and active variant stock.
-- RECOMMENDED_FROM_EVIDENCE: Readiness is computed from stored product, choice, photo, type/tag, lifecycle, and stock facts.
+- OWNER_PROVIDED_DIRECTION: Readiness is computed and expressed as buyer-question coverage.
 - RECOMMENDED_FROM_EVIDENCE: Buyer replies are deterministic text generated from stored facts and computed state.
 - RECOMMENDED_FROM_EVIDENCE: LLMs must not decide or invent price, stock, size, color, lifecycle, availability, or readiness.
-- RECOMMENDED_FROM_EVIDENCE: Material, fit, measurements, and fit guidance are seller-maintained clothing facts when present.
-- RECOMMENDED_FROM_EVIDENCE: Not every clothing category requires every measurement.
+- OWNER_PROVIDED_DIRECTION: Buyer replies use confirmed facts only.
+- OWNER_PROVIDED_DIRECTION: Material is a typed semantic fact when confirmed, not a required large form section.
+- OWNER_PROVIDED_DIRECTION: Size and color truth belongs to choices/variants, not generic tags.
+- OWNER_PROVIDED_DIRECTION: Measurements require type, value, unit, method, and product/choice boundary before they can become buyer-answer facts.
 - RECOMMENDED_FROM_EVIDENCE: Weight alone must not determine size or availability.
 - RECOMMENDED_FROM_EVIDENCE: Deterministic replies must not invent material, measurements, or fit guidance.
 - OWNER_DECISION_REQUIRED: Whether `0.00` is allowed as a real price, treated as missing, or rejected.
@@ -168,7 +182,8 @@ OWNER_DECISION_REQUIRED: Clone, archive/restore, type/tag management pages, and 
 Portfolio V1 is functionally complete when:
 
 - RECOMMENDED_FROM_EVIDENCE: A seller can sign in and operate one business workspace.
-- RECOMMENDED_FROM_EVIDENCE: A seller can create a product with at least one size/color/quantity choice.
+- RECOMMENDED_FROM_EVIDENCE: A seller can create a product from a description and at least one size/color/quantity choice.
+- OWNER_PROVIDED_DIRECTION: Recognized type/tag/material candidates can become confirmed facts without making the form large.
 - RECOMMENDED_FROM_EVIDENCE: A seller can edit core product truth and validation failures are clear.
 - RECOMMENDED_FROM_EVIDENCE: A seller can update stock safely through the inventory service.
 - RECOMMENDED_FROM_EVIDENCE: A product moves between available, low stock, partially sold out, sold out, draft, and archived states according to explicit rules.
@@ -210,6 +225,7 @@ Portfolio V1 is functionally complete when:
 | Public buyer catalog | Seller truth must be reliable first | Product publication boundary, media policy, availability service | Public Catalog |
 | Buyer chatbot | Must not invent truth | Deterministic answer service, public-safe API, missing-data handling | Buyer Assistant |
 | LLM interpretation | Optional interpretation cannot own business facts | Clean product data, audit trail, human confirmation | AI Assist |
+| Detailed garment measurements | Requires method/unit/applies-to boundaries and compact UX | Description-first product flow, semantic recognition, owner-approved measurement convention | Measurement Micro-Slice |
 | Orders/reservations | Stock mutation must be reliable first | Inventory ledger, transaction safety, reservation model | Orders |
 | Payments | Premature without orders | Order/payment status boundaries | Payments |
 | Delivery | Premature without orders | Address/order data and privacy rules | Delivery |
@@ -222,9 +238,9 @@ Portfolio V1 is functionally complete when:
 ## 16. Owner Decisions Required
 
 - Whether Portfolio V1 includes Product Detail.
-- Which fields from `docs/domain/CLOTHING_DATA_SPEC_V1.md` are included in Portfolio V1.
-- Which category-specific measurement templates are required, optional, or deferred.
-- Whether fit guidance appears in V1, and how strongly it is worded.
+- Exact material confirmation UI and alias policy.
+- Measurement micro-slice timing, convention, and product/choice boundary.
+- Whether fit guidance appears in a later approved micro-slice, and how strongly it is worded.
 - Whether Portfolio V1 includes product clone, and whether clone copies or resets stock.
 - Whether Portfolio V1 includes archive/restore.
 - Whether Portfolio V1 includes product relations or defers them.

@@ -38,7 +38,8 @@ Status: Planning and documented rebuild.
 - Rebuild documentation drafted for owner review.
 - Implementation has not started.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
-- The GitHub repository is public, uses default branch `main`, and contains the preserved initial README commit `dce852b`.
+- The GitHub repository is public, uses default branch `main`, and preserves the initial README commit `dce852b`.
+- Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed.
 - Local Git repository is initialized.
 - Local branch `main` tracks `origin/main`.
 - Local remote is `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
@@ -46,7 +47,7 @@ Status: Planning and documented rebuild.
 - CI is not configured yet.
 - Online demo is not deployed yet.
 - Existing remote history must be preserved; no force push is allowed.
-- The next commit will be the first substantive rebuild-planning commit after owner approval.
+- Future commits should continue the documented micro-slice workflow without rewriting history.
 
 ## Planned Portfolio V1
 
@@ -55,8 +56,10 @@ Draft scope pending owner freeze:
 - seller login and private workspace;
 - business-owned product data;
 - product creation and editing;
-- clothing-first size/color choices;
-- structured clothing data specification for owner-approved attributes, measurements, and fit guidance;
+- description-first product input with lightweight semantic recognition;
+- Product Type, Tag, and material confirmation from recognized seller wording;
+- clothing-first size/color choices, with size/color truth stored on choices rather than generic tags;
+- detailed garment measurements kept as a later approved micro-slice;
 - variant-level stock as the stock source of truth;
 - computed availability;
 - operational product workspace;
@@ -147,7 +150,7 @@ No setup commands are listed yet because implementation has not started.
 2. Repository foundation and hygiene.
 3. Django/PostgreSQL foundation and CI.
 4. User and Business ownership.
-5. Product and clothing choice model.
+5. Product semantic recognition and clothing choice model.
 6. Inventory and computed availability.
 7. Product workspace and dashboard.
 8. Deterministic seller replies.
@@ -164,4 +167,4 @@ This repository is intended as a portfolio rebuild. Licensing and reuse terms mu
 
 An earlier private discovery prototype was used to investigate seller workflows, backend state boundaries, UI risks, and product scope. This repository is a clean portfolio-grade rebuild from that evidence.
 
-The GitHub repository already has the preserved initial README commit `dce852b`. Historical commits are not being fabricated or backdated. The next commit should be the first substantive rebuild-planning commit and must preserve the existing remote history.
+The GitHub repository preserves the initial README commit `dce852b`, followed by the first substantive rebuild-planning commit `549db75`. Historical commits are not being fabricated or backdated, and future work must preserve the existing remote history.

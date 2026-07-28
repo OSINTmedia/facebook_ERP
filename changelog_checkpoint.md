@@ -16,11 +16,15 @@
 - Rebuild documents drafted for owner review.
 - Execution roadmap, public README, and live checkpoint drafted.
 - Documentation structure normalized for context transfer.
-- Clothing domain data spec drafted for owner review.
+- Clothing domain owner review completed for `docs/domain/CLOTHING_DATA_SPEC_V1.md`.
+- Clothing direction revised to description-first semantic recognition with observed text, candidate meaning, and confirmed structured fact layers.
+- Material is a small typed semantic fact when confirmed.
+- Detailed garment measurements are deferred to a separate approved micro-slice.
 - GitHub repository already exists: `https://github.com/OSINTmedia/facebook_ERP`.
 - GitHub repository visibility: public.
 - GitHub default branch: `main`.
 - Remote contains the preserved initial README commit `dce852b`.
+- Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed to `origin/main`.
 - Implementation not started.
 - Local Git repository is initialized.
 - Local branch `main` tracks `origin/main`.
@@ -34,9 +38,9 @@
 
 - Phase: Phase 0 - Documentation Approval and Repository Foundation
 - Status: NEEDS_OWNER_REVIEW
-- Current micro-slice: Documentation baseline Git checkpoint and owner review before commit
+- Current micro-slice: Git checkpoint and owner review for clothing-domain documentation consistency sync
 - Started: 2026-07-27
-- Last updated: 2026-07-27
+- Last updated: 2026-07-28
 
 ## 3. Completed Work
 
@@ -64,6 +68,18 @@
 - Repository hygiene sync completed:
   - `.gitignore`
   - verified local branch/remote reality
+- Documentation baseline committed and pushed:
+  - `549db75 docs: add portfolio rebuild planning baseline`
+  - preserved `dce852b Initial commit`
+  - normal push to `origin/main`
+- Clothing-domain owner review completed:
+  - description-first product input
+  - observed text / candidate meaning / confirmed fact boundary
+  - existing Product Type and Tag recognition retained
+  - material as a small typed semantic fact
+  - size/color as choice truth
+  - buyer-question coverage readiness
+  - detailed measurements deferred
 
 ## 4. Files Currently Available
 
@@ -92,18 +108,18 @@
 ## 5. Current Verification
 
 - Required planning and evidence documents: present in the normalized structure.
-- Clothing domain spec: present as draft for owner review.
+- Clothing domain spec: owner-reviewed and revised as `1.1-draft`; still owner-controlled and not marked frozen.
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
-- Cross-document consistency: draft scope is consistent at a high level; owner-decision items remain.
+- Cross-document consistency: active planning docs synchronized to the revised clothing recognition direction; owner-decision items remain.
 - Source project unchanged: yes.
 - Source code copied: no.
 - Code implementation status: not started.
-- Git status: initialized on `main`, tracking `origin/main`.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`.
+- Git status: initialized on `main`, tracking `origin/main`; current worktree has documentation-only changes for this sync and nothing staged.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b` and pushed baseline commit `549db75`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
 - CI status: not configured.
-- Test status: no tests executed during Phase 1E.
+- Test status: no tests executed during this documentation-only sync.
 - Online demo status: not deployed.
 
 ## 6. Current Blockers
@@ -111,8 +127,8 @@
 - Owner review of draft rebuild documents.
 - Owner freeze approval for product scope, technical direction, journeys, UX contracts, build plan, README, and checkpoint.
 - Existing remote initial README commit must be preserved.
-- Documentation baseline Git checkpoint needs owner review before commit.
-- Files must remain unstaged until owner approves the baseline commit.
+- Clothing-domain documentation consistency sync needs Git checkpoint and owner review before commit.
+- Files must remain unstaged until owner approves the next documentation commit.
 - No force push is allowed.
 - OWNER_DECISION_REQUIRED items:
   - final project/repository name;
@@ -125,8 +141,9 @@
   - tag readiness policy;
   - price zero/null/missing/free policy;
   - duplicate size/color choice policy;
-  - clothing attributes and category measurement templates for V1;
-  - fit guidance inclusion and wording;
+  - exact material confirmation UI and alias policy;
+  - measurement micro-slice timing, convention, and product/choice boundary;
+  - fit guidance inclusion and wording if approved later;
   - direct stock set placement;
   - dashboard first-viewport priority;
   - ready reply placement;
@@ -135,7 +152,7 @@
 
 ## 7. Next Concrete Micro-Slice
 
-Documentation baseline Git checkpoint and owner review before commit.
+Git checkpoint and owner review for clothing-domain documentation consistency sync.
 
 Do not jump directly to application implementation.
 
@@ -151,12 +168,13 @@ Do not jump directly to application implementation.
 ## 9. Known Risks
 
 - Owner decisions are still open, so execution is not ready.
-- Documentation baseline commit still needs owner review.
+- Clothing-domain consistency sync needs review before commit.
 - Existing remote initial commit must remain preserved.
 - README must remain honest until code, CI, and demo actually exist.
 - Prototype behavior may tempt scope creep if copied wholesale.
 - Source project contains media/backups and `.env`; these must not be copied or published.
 - Future demo must use synthetic data only.
+- Measurement implementation can easily bloat the first product form unless kept as a separate approved micro-slice.
 
 ## 10. Documentation Priority for New Chats
 
@@ -173,21 +191,19 @@ Do not jump directly to application implementation.
 
 ## 11. Last Operation
 
-- Operation: Phase 0 documentation reality sync and repository hygiene.
+- Operation: Phase 0 clothing-domain documentation consistency sync.
 - Files created/updated:
-  - `.gitignore`
   - `docs/domain/CLOTHING_DATA_SPEC_V1.md`
   - `docs/Portfolio_MVP_V1.md`
   - `docs/Technical_Planning_v1.md`
   - `docs/User_Journey_Freeze_v1.md`
   - `APP_EXPERIENCE_PLAN.md`
   - `BUILD_PLAN.md`
-  - `README.md`
   - `DEVELOPMENT_NOTES.md`
   - `changelog_checkpoint.md`
 - Source project modified: no.
-- Verification: Markdown links, sensitive-file patterns, active-document references, Git status, and documentation consistency checked; no staging, commit, push, code, packages, migrations, database, CI, authentication changes, or deployment work was performed.
-- Result: documentation reflects clothing-domain scope, repository hygiene, and real local/remote Git state; next micro-slice is documentation baseline Git checkpoint and owner review before commit.
+- Verification: documentation consistency sync performed; no staging, commit, push, code, packages, migrations, database, CI, authentication changes, or deployment work was performed in this micro-slice.
+- Result: active planning docs reflect description-first recognition, material as typed confirmed fact, size/color as choice truth, buyer-question coverage readiness, and deferred measurement implementation; next micro-slice is Git checkpoint and owner review for this documentation sync.
 
 Previous restructuring files:
   - `DEVELOPMENT_NOTES.md`
@@ -207,14 +223,14 @@ Previous restructuring files:
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Last commit: `dce852b Initial commit`
+- Last commit: `549db75 docs: add portfolio rebuild planning baseline`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75` pushed on top
 - GitHub SSH authentication: works through `ssh.github.com` on port `443`
-- Push status: none
+- Push status: baseline pushed to `origin/main`; this documentation sync is not staged, committed, or pushed
 
 ## 13. Handoff Instruction
 

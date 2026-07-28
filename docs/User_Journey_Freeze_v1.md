@@ -28,6 +28,9 @@ RECOMMENDED_FROM_EVIDENCE: V1 should assume a single authenticated seller operat
 - OWNER_PROVIDED_DIRECTION: Mobile is the primary interaction environment.
 - RECOMMENDED_FROM_EVIDENCE: The system reduces memory burden by surfacing missing data, stock state, and answer readiness.
 - RECOMMENDED_FROM_EVIDENCE: The system never invents product truth.
+- OWNER_PROVIDED_DIRECTION: Product description is the primary seller input.
+- OWNER_PROVIDED_DIRECTION: Recognized text is separated into observed text, candidate meaning, and confirmed structured fact.
+- OWNER_PROVIDED_DIRECTION: Readiness appears as buyer-question coverage, not completion percentage.
 
 ## 4. Global Navigation Journey
 
@@ -51,20 +54,20 @@ Acceptance criteria:
 - User intent: add a product that can later be found, stocked, and answered about.
 - Entry route: Add Product from global nav, dashboard, or empty product workspace.
 - Steps:
-  1. Enter product description/name.
+  1. Enter product description/name as the primary seller input.
   2. Enter price according to owner-approved price rule.
-  3. Choose lifecycle status if exposed.
-  4. Choose target audience if clothing-first V1 remains approved.
-  5. Choose or create product type if type is in scope.
-  6. Optionally add tags if tags are in scope.
-  7. Enter owner-approved product-level clothing facts from `docs/domain/CLOTHING_DATA_SPEC_V1.md` if required for the chosen category.
-  8. Enter category-specific garment measurements only where the owner-approved template requires or recommends them.
-  9. Add at least one size/color/quantity choice.
-  10. Optionally add photo.
+  3. System shows recognized candidates from the description: existing Product Type, Tags, material, and size/color suggestions.
+  4. Seller confirms or corrects high-impact candidates.
+  5. Choose lifecycle status if exposed.
+  6. Confirm or create product type if type is in scope.
+  7. Confirm optional tags if tags are in scope.
+  8. Confirm material if recognized or manually added.
+  9. Add at least one size/color/quantity choice, including any size/color suggestion the seller accepts.
+  10. Optionally add product media.
   11. Save.
-- System response: product, profile, choices, photo reference, and optional tags are saved as one product bundle.
+- System response: product, confirmed facts, choices, media reference, and optional tags are saved as one product bundle.
 - Validation/failure path: missing required fields show field-level errors; missing choice shows formset-level error; file/media failure must not leave an unexplained partial product.
-- Success state: product appears in the operational workspace with computed availability and readiness.
+- Success state: product appears in the operational workspace with computed availability and buyer-question coverage.
 - Return path: seller returns to originating dashboard/workspace context or sees a clear next action.
 - Acceptance criteria:
   - RECOMMENDED_FROM_EVIDENCE: no product can be saved without at least one valid choice unless owner explicitly approves drafts without choices.
@@ -72,6 +75,8 @@ Acceptance criteria:
   - RECOMMENDED_FROM_EVIDENCE: validation returns seller to the exact problem.
 - RECOMMENDED_FROM_EVIDENCE: category-specific clothing measurements do not require every measurement for every product.
 - RECOMMENDED_FROM_EVIDENCE: weight alone is never accepted as reliable sizing truth.
+- OWNER_PROVIDED_DIRECTION: detailed garment measurements are not required in the first product-creation journey and remain a separate approved micro-slice.
+- OWNER_PROVIDED_DIRECTION: buyer replies may use confirmed material facts but not unconfirmed recognition candidates.
 - Explicit exclusions: buyer catalog page, order creation, payment, delivery, chatbot, LLM field generation.
 
 ## 6. Add Multiple Size/Color Choices
@@ -157,7 +162,7 @@ Acceptance criteria:
 ## 10. Find a Product
 
 - Start state: seller is in product workspace.
-- User intent: locate a product by description, type, tag, size, color, or status.
+- User intent: locate a product by description, alias-normalized observed text, confirmed type, tag, size, color, material, or status.
 - Entry route: product workspace search/filter controls.
 - Steps:
   1. Enter search term or select approved filter.
@@ -182,7 +187,7 @@ Acceptance criteria:
   2. Land on focused correction or full edit surface.
   3. Update missing facts.
   4. Save.
-- System response: readiness recomputes and missing-data signal disappears or changes.
+- System response: buyer-question coverage recomputes and missing-data signal disappears or changes.
 - Validation/failure path: invalid field remains visible with specific message.
 - Success state: product is closer to answer-ready or fully ready.
 - Return path: return to originating dashboard/workspace/filter.
@@ -202,14 +207,15 @@ Acceptance criteria:
   3. Review generated text.
   4. Copy reply.
   5. If missing data exists, follow correction link.
-- System response: text is generated only from stored product facts and computed state.
-- Validation/failure path: missing facts produce seller notes, not invented buyer facts; copy failure shows recovery.
+- System response: text is generated only from confirmed structured facts and computed state.
+- Validation/failure path: unconfirmed recognition candidates and missing facts produce seller notes, not invented buyer facts; copy failure shows recovery.
 - Success state: seller can paste a truthful answer externally.
 - Return path: no route change unless correction is needed; correction returns to origin.
 - Acceptance criteria:
   - RECOMMENDED_FROM_EVIDENCE: LLM is not used as source of truth.
   - RECOMMENDED_FROM_EVIDENCE: sold-out wording is truthful.
   - RECOMMENDED_FROM_EVIDENCE: internal warnings do not leak as buyer-facing claims.
+- OWNER_PROVIDED_DIRECTION: recognized material can be used only after confirmation.
 - Explicit exclusions: sending messages, chatbot, Meta integration, buyer-facing API.
 
 ## 13. Clone or Add Similar Product
@@ -266,7 +272,7 @@ Acceptance criteria:
 
 | Journey | Start | Destination | Context to Preserve | Explicit Return | Failure Recovery |
 |---|---|---|---|---|---|
-| First product creation | Dashboard/workspace | Create form | Origin route | Return/cancel link | Same form with errors |
+| First product creation | Dashboard/workspace | Description-first create form | Origin route | Return/cancel link | Same form with errors |
 | Add choices | Product form | Same form | Current product/form data | Save/cancel | Row errors and add-choice action |
 | Update stock | Product workspace | Same product card | Current filters/tab/search | Stay in place | Visible HTMX error/retry |
 | Sold-out transition | Product workspace | Sold-out state | Current filters plus transition | Stay or sold-out link | Refresh/retry |
@@ -309,6 +315,7 @@ Acceptance criteria:
 - Decide whether type/tag management pages are V1 journeys.
 - Decide whether tags affect readiness or only organization/search.
 - Decide whether correction journeys use full edit form or focused correction surfaces.
-- Decide which clothing product attributes and category-specific measurement templates are V1.
-- Decide whether fit guidance is required, optional, or deferred.
+- Decide exact material confirmation UI and alias behavior.
+- Decide measurement micro-slice timing, convention, and product/choice boundary.
+- Decide whether fit guidance is required, optional, or deferred in a later micro-slice.
 - Decide whether variant-level price override is included in V1.

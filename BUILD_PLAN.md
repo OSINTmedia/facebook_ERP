@@ -47,7 +47,7 @@ Use this exact context-transfer order:
 6. `docs/Technical_Planning_v1.md`
    - Controls architecture direction, data boundaries, service boundaries, integrity rules, testing strategy, security, and deployment constraints.
 7. `docs/domain/CLOTHING_DATA_SPEC_V1.md`
-   - Controls structured clothing product attributes, category-specific measurements, variant-level clothing data, and fit guidance boundaries.
+   - Controls description-first semantic recognition, observed/candidate/confirmed fact boundaries, type/tag recognition, material facts, size/color choice truth, and deferred measurement boundaries.
 8. `docs/User_Journey_Freeze_v1.md`
    - Controls required seller journeys, return paths, acceptance criteria, and journey exclusions.
 9. Relevant source files
@@ -74,6 +74,13 @@ Use only these status values:
 - Keep V1 seller-side and source-of-truth focused.
 - Do not add public catalog, chatbot, LLM truth, orders, reservations, payments, delivery, accounting, supplier management, broad ERP, DRF/API-first architecture, or microservices unless owner-approved in a later phase.
 - Treat stock, price, lifecycle, size, color, readiness, and availability as deterministic database-backed truth.
+- Treat product description as the primary seller input, not as automatically trusted structured truth.
+- Separate recognized text into observed text, candidate meaning, and confirmed structured fact.
+- Keep Product Type and Tag recognition in scope, with business-scoped vocabulary aliases.
+- Treat material as a small typed semantic fact when confirmed, not as a large mandatory form section.
+- Keep size and color as choice/variant truth; description-recognized size/color may only suggest adding a choice.
+- Express readiness as buyer-question coverage, not as a completion percentage.
+- Keep detailed garment measurements as a separate approved micro-slice; do not add a universal fashion ontology or one giant product form.
 - Do not use an LLM as the source of price, stock, availability, size, color, lifecycle, or ownership truth.
 - Do not start a new phase while the current phase is `IN_PROGRESS`, `BLOCKED`, `NEEDS_OWNER_REVIEW`, or `FAILED`.
 - No commit is allowed while `changelog_checkpoint.md` is stale.
@@ -91,7 +98,7 @@ Use only these status values:
 - Local branch `main` tracks `origin/main`.
 - Local remote is `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub SSH authentication works through `ssh.github.com` on port `443`.
-- The next commit will be the first substantive rebuild-planning commit.
+- The first substantive rebuild-planning commit is `549db75 docs: add portfolio rebuild planning baseline`.
 - Existing remote history must be preserved.
 - Force push is prohibited.
 - Do not inflate history with empty or meaningless commits.
@@ -145,7 +152,7 @@ Use only these status values:
 | Phase 1 | Django/PostgreSQL Foundation and CI | Create minimal clean Django project, settings, test harness, and CI | NOT_STARTED | Gate 1 | Scaffold commits, CI workflow, reproducible setup |
 | Phase 2 | User and Business Ownership | Implement authentication and business ownership boundary | NOT_STARTED | Gate 2 | User/business tests, access-control tests |
 | Phase 3 | Catalog Core | Implement product core facts and lifecycle | NOT_STARTED | Gate 3 | Product model/forms/views/tests |
-| Phase 4 | Clothing Domain and Choice Model | Implement owner-approved clothing attributes, category measurements, fit guidance boundaries, and stock-bearing choices | NOT_STARTED | Gate 3 | Clothing domain spec, choice validation, measurement tests |
+| Phase 4 | Semantic Recognition and Choice Model | Implement description-first recognition for type/tag/material candidates plus stock-bearing choices | NOT_STARTED | Gate 3 | Recognition contract, alias tests, choice validation |
 | Phase 5 | Inventory and Computed Availability | Centralize stock mutations and computed availability | NOT_STARTED | Gate 3 | Inventory service tests and ledger tests |
 | Phase 6 | Operational Product Workspace | Build seller product workspace with compact product cards | NOT_STARTED | Gate 4 | Workspace UI, HTMX stock checks, UX audit notes |
 | Phase 7 | Dashboard and Attention Signals | Build daily attention surface from shared domain truth | NOT_STARTED | Gate 4 | Dashboard signal tests and manual workflow proof |
@@ -225,10 +232,11 @@ Use only these status values:
 - Manual user verification: owner approves the first commit contents.
 - Failure cases: stale checkpoint; README overclaims; unapproved draft marked frozen.
 - Documentation updates: record commit hash after commit.
+- Current verified state: baseline committed as `549db75 docs: add portfolio rebuild planning baseline`.
 - Proposed commit message: `docs: add portfolio rebuild planning baseline`.
 - Rollback/recovery note: unstage unsafe files and fix docs before commit.
 - Stop gate: first substantive rebuild documentation commit exists without rewriting remote history.
-- Status: NOT_STARTED.
+- Status: PASSED.
 
 ### P0.5 Minimal Public README Publication
 
@@ -246,7 +254,7 @@ Use only these status values:
 - Proposed commit message: `docs: refine public portfolio readme`.
 - Rollback/recovery note: revert only the README wording from this slice if owner rejects it.
 - Stop gate: README factuality check passed.
-- Status: NOT_STARTED.
+- Status: PASSED.
 
 ### P0.6 First Approved Push
 
@@ -264,7 +272,8 @@ Use only these status values:
 - Proposed commit message: none.
 - Rollback/recovery note: stop before push if remote mismatch is found.
 - Stop gate: remote configured and approved.
-- Status: NOT_STARTED.
+- Current verified state: baseline commit `549db75` was pushed normally to `origin/main`; preserved `dce852b Initial commit`; no force push was used.
+- Status: PASSED.
 
 ### P0.7 Issue and Milestone Setup
 
@@ -425,13 +434,14 @@ Avoid libraries that depend on:
 - Expected micro-slices: product model, product form, product list, product create/edit, lifecycle tests.
 - Stop gate: seller can create and edit a business-owned product and cannot access another business's product.
 
-### Phase 4: Clothing Domain and Choice Model
+### Phase 4: Semantic Recognition and Choice Model
 
-- Objective: add owner-approved structured clothing attributes, category-specific garment measurements, fit guidance boundaries, and choices with size, color, active/inactive state, stock, and optional approved price override.
+- Objective: add the description-first assistant layer that recognizes existing Product Types, Tags, material aliases, and size/color candidates while preserving choice-level stock truth.
 - Dependency: Phase 3.
-- Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, product-level attributes, measurement templates, fit guidance, choice rows, minimum valid choice rule, duplicate policy after owner decision, form/formset tests.
-- Expected micro-slices: clothing data spec approval, product-level clothing profile, category measurement template policy, fit guidance fields if approved, choice model, formset/service validation, create/edit integration, mobile form audit.
-- Stop gate: product bundle save cannot persist partial invalid choice state.
+- Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, candidate meaning, confirmed structured facts, type/tag recognition, business-scoped aliases, material facts, choice rows, minimum valid choice rule, duplicate policy after owner decision, form/formset tests.
+- Expected micro-slices: semantic-recognition service contract, Product Type recognition, Tag recognition, alias normalization, material fact confirmation, size/color-to-choice suggestions, choice model, formset/service validation, create/edit integration, mobile form audit.
+- Separate deferred micro-slice: detailed garment measurements, only after type, value, unit, method, applicable product/choice boundary, category prompts, and buyer-reply wording are owner-approved.
+- Stop gate: product bundle save cannot persist partial invalid choice state, and buyer replies consume confirmed facts only.
 
 ### Phase 5: Inventory and Computed Availability
 
@@ -513,7 +523,7 @@ Each review must check first viewport usefulness, primary action clarity, explic
 
 - Gate 1 requires Django system check and test harness in CI.
 - Gate 2 requires auth and cross-business isolation tests.
-- Gate 3 requires product creation/editing, clothing domain validation, choice validation, lifecycle, inventory, and availability tests.
+- Gate 3 requires product creation/editing, semantic-recognition validation, confirmed-fact handling, choice validation, lifecycle, inventory, and availability tests.
 - Gate 4 requires route-return, HTMX response, stale-state, mobile/manual UX, and accessibility smoke checks.
 - Gate 5 requires setup, seed/reset, security hygiene, and README factuality checks.
 - Gate 6 requires deployment smoke test and demo reset/reseed verification.
@@ -606,9 +616,10 @@ Do not choose a provider or claim a demo URL before owner approval and verificat
 - Freeze or revise the four draft product/planning documents.
 - Final public project/repository name.
 - License choice.
-- Which fields from `docs/domain/CLOTHING_DATA_SPEC_V1.md` enter V1.
-- Which category measurement templates are required, optional, or deferred.
-- Whether fit guidance appears in V1.
+- Exact V1 behavior for recognizing observed text, candidate meaning, and confirmed facts.
+- Material confirmation UI and alias policy.
+- Detailed measurement micro-slice timing, including measurement type, value, unit, method, and product/choice boundary.
+- Whether fit guidance appears in a later approved measurement/fit micro-slice.
 - Whether Product Detail remains in Portfolio V1.
 - Whether product relations are V1 or deferred.
 - Whether clone and archive/restore are V1.

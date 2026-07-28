@@ -42,7 +42,7 @@ Public catalogs, assistants, and later automation cannot be trusted when seller-
 ### 2026-07-27 - Honest Git history
 
 Decision:
-Git history continues honestly from the existing remote initial README commit, and the next commit will be the first substantive rebuild-planning commit.
+Git history continues honestly from the existing remote initial README commit. The first substantive rebuild-planning commit is `549db75 docs: add portfolio rebuild planning baseline`.
 
 Reason:
 Do not fabricate, backdate, reconstruct fake implementation history from the earlier prototype, force push, or delete the existing public remote history.
@@ -79,13 +79,32 @@ Stock truth belongs to product choices/variants.
 Reason:
 A clothing product may be available in one size/color and sold out in another.
 
-### 2026-07-27 - Structured clothing data boundary
+### 2026-07-27 - Initial structured clothing data boundary
 
 Decision:
 Document clothing product attributes, category-specific measurements, variant data, and fit guidance in `docs/domain/CLOTHING_DATA_SPEC_V1.md` before freezing product scope.
 
 Reason:
 The active planning docs previously covered size, color, and quantity but did not define material, fit, garment measurements, category templates, or fit guidance. These need owner-approved boundaries before models or forms are built.
+
+Status:
+Superseded by the 2026-07-28 description-first semantic recognition decision below. The current direction keeps material as a small typed semantic fact and defers detailed measurements to a separate approved micro-slice.
+
+### 2026-07-28 - Description-first semantic recognition
+
+Decision:
+Keep the product assistant-first. Product description is the primary seller input, while recognition separates observed text, candidate meaning, and confirmed structured fact.
+
+Reason:
+The seller should not manage a large ecommerce form. Existing Product Type and Tag recognition should continue, material becomes a small typed semantic fact when confirmed, and buyer replies must use confirmed facts only.
+
+### 2026-07-28 - Measurements deferred from the first product form
+
+Decision:
+Detailed garment measurements remain a separate approved micro-slice.
+
+Reason:
+Measurements need type, value, unit, method, and a clear product-or-choice boundary before they can safely support search, readiness, or buyer replies. Adding them too early would turn the product form into the kind of large fashion specification the rebuild is avoiding.
 
 ### 2026-07-27 - Computed availability
 

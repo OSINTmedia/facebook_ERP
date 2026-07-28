@@ -21,6 +21,7 @@ VALIDATED_PROTOTYPE_LESSON: The source prototype became useful because it placed
 - VALIDATED_PROTOTYPE_LESSON: Repeated information can help scanning, but after partial updates it can become stale.
 - VALIDATED_PROTOTYPE_LESSON: Late UI refactoring introduced regression risk around return paths, hidden behavior, and duplicated answer/card logic.
 - VALIDATED_PROTOTYPE_LESSON: Mobile density is the main UX risk, especially filters before cards and long edit forms.
+- OWNER_PROVIDED_DIRECTION: The revised clothing direction keeps the product as an assistant: product description is the primary seller input, recognition produces candidates, and only confirmed facts become reply/search/readiness truth.
 
 ## 3. Experience Principles
 
@@ -34,6 +35,8 @@ VALIDATED_PROTOTYPE_LESSON: The source prototype became useful because it placed
 - RECOMMENDED_FROM_EVIDENCE: No critical information hidden behind optional disclosure.
 - RECOMMENDED_FROM_EVIDENCE: Low cognitive load and stable Georgian terminology.
 - RECOMMENDED_FROM_EVIDENCE: Destructive or lifecycle-changing actions are visually subordinate and confirmed.
+- OWNER_PROVIDED_DIRECTION: Recognition is useful only when it lowers seller work; it must not become a giant ecommerce specification form.
+- OWNER_PROVIDED_DIRECTION: Readiness should be buyer-question coverage, not a completion percentage.
 
 ## 4. Proposed Information Architecture
 
@@ -48,6 +51,8 @@ VALIDATED_PROTOTYPE_LESSON: The source prototype became useful because it placed
 | Product detail | Focused inspection or remove from V1 | OWNER_DECISION_REQUIRED |
 
 DEFERRED_HYPOTHESIS: Public catalog, buyer inquiry, chatbot, orders, payment, delivery, and BI analytics are not V1 experience surfaces.
+
+OWNER_PROVIDED_DIRECTION: Dashboard and Product workspace are the two primary operating surfaces. Create/edit and correction flows support those surfaces and must not become places where sellers get stuck.
 
 ## 5. Global Navigation Anchors
 
@@ -109,9 +114,10 @@ Rule: the card must not become the entire application.
 
 - Create form responsibility: add enough truth to make a product usable.
 - Edit form responsibility: correct existing truth without losing origin context.
-- Required structure: core facts, type if approved, approved clothing-domain facts from `docs/domain/CLOTHING_DATA_SPEC_V1.md`, choices/stock, optional photo, optional tags.
-- Progressive disclosure: secondary explanations, advanced clothing attributes, category-specific measurements, fit guidance, advanced taxonomy, and future relations.
-- Constraint: do not turn the product form into one huge fashion specification; only owner-approved clothing fields belong in the first visible path.
+- Required structure: description-first input, price/lifecycle if approved, recognition feedback for known type/tag/material terms, size/color-to-choice suggestions, choices/stock, optional product media, optional tags.
+- Recognition feedback: separate observed text, candidate meaning, and confirmed structured fact.
+- Progressive disclosure: secondary explanations, material confirmation details, advanced taxonomy, future relations, and detailed measurement capture.
+- Constraint: do not turn the product form into one huge fashion specification; material is a small typed semantic fact when confirmed, while detailed garment measurements remain a separate approved micro-slice.
 - Validation: errors must appear at the exact section and preserve data.
 - Actions: save, cancel/return, and no ambiguous destructive action in primary path.
 
@@ -123,6 +129,7 @@ OWNER_DECISION_REQUIRED: whether relations are excluded from V1 edit form.
 - RECOMMENDED_FROM_EVIDENCE: Each choice has size, color, and quantity.
 - RECOMMENDED_FROM_EVIDENCE: Variant/choice rows do not carry all product-level clothing attributes or every garment measurement.
 - RECOMMENDED_FROM_EVIDENCE: Optional approved price override is variant-level only if owner approves it.
+- OWNER_PROVIDED_DIRECTION: Size/color recognized from description may suggest adding a choice, but confirmed choice rows remain the only size/color truth.
 - RECOMMENDED_FROM_EVIDENCE: Add/remove behavior must be robust and testable.
 - RECOMMENDED_FROM_EVIDENCE: Removing the last valid choice is blocked or clearly changes product into a draft-only state if owner approves.
 - RECOMMENDED_FROM_EVIDENCE: Quantity cannot be negative.
@@ -130,7 +137,7 @@ OWNER_DECISION_REQUIRED: whether relations are excluded from V1 edit form.
 
 ## 11. Search and Filter Experience Contract
 
-- RECOMMENDED_FROM_EVIDENCE: Search should support product description/name, size, color, approved type, and approved tags.
+- RECOMMENDED_FROM_EVIDENCE: Search should support product description/name, size, color, approved type, approved tags, aliases, and normalized observed text where this does not create false buyer-facing facts.
 - RECOMMENDED_FROM_EVIDENCE: Active query/filter state must be visible.
 - RECOMMENDED_FROM_EVIDENCE: Clear action must be obvious.
 - RECOMMENDED_FROM_EVIDENCE: No-result state should suggest simpler terms.
@@ -140,10 +147,11 @@ OWNER_DECISION_REQUIRED: whether relations are excluded from V1 edit form.
 ## 12. Ready Reply Experience Contract
 
 - RECOMMENDED_FROM_EVIDENCE: Replies are seller-side tools for copying truthful buyer answers.
-- RECOMMENDED_FROM_EVIDENCE: Reply text uses stored facts and computed state only.
+- RECOMMENDED_FROM_EVIDENCE: Reply text uses confirmed structured facts and computed state only.
 - RECOMMENDED_FROM_EVIDENCE: Missing data creates seller notes and correction links, not invented buyer statements.
 - RECOMMENDED_FROM_EVIDENCE: Sold-out products must produce truthful sold-out wording.
 - RECOMMENDED_FROM_EVIDENCE: Copy success and copy failure must both be visible.
+- OWNER_PROVIDED_DIRECTION: Recognition candidates may prompt the seller, but buyer replies must not use unconfirmed candidate meaning.
 - OWNER_DECISION_REQUIRED: whether ready reply lives inline on cards, on detail, or in a focused panel.
 
 ## 13. Loading, Success, Error, and Recovery Feedback
@@ -227,7 +235,7 @@ No full WCAG compliance claim is made by this draft.
 | Dashboard | First viewport has useful work/action, drilldowns preserve return, counts align with shared state |
 | Product workspace | Search/filter visible but not dominant, cards expose stock/readiness clearly, state updates are server-backed |
 | Product card | One clear primary action hierarchy, compact stock controls, no stale critical facts after update |
-| Product create | Required fields clear, first valid product can be created without route confusion |
+| Product create | Description-first input, recognition feedback remains lightweight, first valid product can be created without route confusion |
 | Product edit | Missing data can be corrected, validation preserves input, return path explicit |
 | Taxonomy management | If in scope, used items cannot be deleted silently, recovery links return to management |
 | Product detail | If in scope, has a distinct job not duplicated by card |
@@ -250,6 +258,7 @@ No full WCAG compliance claim is made by this draft.
 - OWNER_PROVIDED_DIRECTION: Order/payment/delivery experiences.
 - DEFERRED_HYPOTHESIS: Guided task queue.
 - DEFERRED_HYPOTHESIS: Advanced analytics dashboard.
+- DEFERRED_HYPOTHESIS: Detailed measurement capture and fit-guidance UI.
 - DEFERRED_HYPOTHESIS: AI-assisted product parsing.
 - DEFERRED_HYPOTHESIS: Morphology-aware search.
 - DEFERRED_HYPOTHESIS: Multi-staff navigation.
@@ -262,8 +271,9 @@ No full WCAG compliance claim is made by this draft.
 - Ready reply placement.
 - Product Detail existence and purpose.
 - Product Relations inclusion or deferral.
-- Clothing product attributes and category measurement templates for V1.
-- Fit guidance placement and wording.
+- Material confirmation placement and wording.
+- Measurement capture timing, method wording, and product/choice boundary for a later approved micro-slice.
+- Fit guidance placement and wording if included later.
 - Type/tag management page inclusion.
 - Card tag toggle inclusion.
 - Direct stock set placement.
