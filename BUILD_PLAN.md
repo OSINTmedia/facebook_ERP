@@ -150,7 +150,7 @@ Use only these status values:
 
 | Phase | Name | Goal | Status | Stop Gate | Portfolio Evidence |
 |---|---|---|---|---|---|
-| Phase 0 | Documentation Approval and Repository Foundation | Freeze planning docs and establish honest repository baseline | NEEDS_OWNER_REVIEW | Gate 0 | Frozen docs, honest history, corrective checkpoint before Phase 1 |
+| Phase 0 | Documentation Approval and Repository Foundation | Freeze planning docs and establish honest repository baseline | PASSED | Gate 0 | Frozen docs, honest history, corrective checkpoint before Phase 1 |
 | Phase 1 | Django/PostgreSQL Foundation and CI | Create minimal clean Django project, settings, test harness, and CI | NOT_STARTED | Gate 1 | Scaffold commits, CI workflow, reproducible setup |
 | Phase 2 | User and Business Ownership | Implement authentication and business ownership boundary | NOT_STARTED | Gate 2 | User/business tests, access-control tests |
 | Phase 3 | Catalog Core | Implement product core facts and lifecycle | NOT_STARTED | Gate 3 | Product model/forms/views/tests |
@@ -311,8 +311,9 @@ Use only these status values:
 - Documentation updates: record this sync and next Git checkpoint in `changelog_checkpoint.md`.
 - Proposed commit message: `docs: sync governance before phase 1`.
 - Rollback/recovery note: revert only this corrective documentation sync if owner rejects it.
+- Current verified state: corrective sync committed and pushed as `accc24b docs: sync governance before phase 1`; checkpoint is being updated so Phase 1 can start cleanly.
 - Stop gate: corrective sync reviewed, committed, pushed, and checkpoint updated before P1.1 starts.
-- Status: NEEDS_OWNER_REVIEW.
+- Status: PASSED.
 
 ## 11. Phase 1 Micro-Slices
 
@@ -634,7 +635,7 @@ Do not choose a provider or claim a demo URL before owner approval and verificat
 
 ## 20. Owner Decisions Required
 
-- Confirm P0.8 corrective sync and Git checkpoint before P1.1 starts.
+- Owner approval before implementing P1.1.
 - Final public project/repository name.
 - License choice.
 - Exact V1 behavior for recognizing observed text, candidate meaning, and confirmed facts.

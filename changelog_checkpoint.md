@@ -26,6 +26,7 @@
 - Remote contains the preserved initial README commit `dce852b`.
 - Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed to `origin/main`.
 - Clothing recognition scope commit `9f5a5e2 docs: align planning with clothing recognition scope` has been pushed to `origin/main`.
+- Documentation governance commit `accc24b docs: sync governance before phase 1` has been pushed to `origin/main`.
 - Implementation not started.
 - Local Git repository is initialized.
 - Local branch `main` tracks `origin/main`.
@@ -34,13 +35,13 @@
 - CI not configured.
 - Online demo not available.
 - Private workflow prompt `codex_prompt_ERP.txt` exists locally and is intentionally ignored by Git.
-- Documentation governance corrective sync before Phase 1 is completed locally and approved for Git checkpoint review. It has not yet been committed or pushed.
+- Phase 0 documentation governance is complete.
 
 ## 2. Current Phase
 
-- Phase: Phase 0 - Documentation Approval and Repository Foundation
-- Status: NEEDS_OWNER_REVIEW
-- Current micro-slice: Git checkpoint for documentation governance corrective sync before Phase 1
+- Phase: Phase 1 - Django/PostgreSQL Foundation and CI
+- Status: NOT_STARTED
+- Current micro-slice: P1.1 - Python and Django Dependency Baseline
 - Started: 2026-07-27
 - Last updated: 2026-07-28
 
@@ -86,6 +87,11 @@
   - `9f5a5e2 docs: align planning with clothing recognition scope`
   - preserved `dce852b Initial commit`
   - preserved `549db75 docs: add portfolio rebuild planning baseline`
+- Documentation governance corrective sync committed and pushed:
+  - `accc24b docs: sync governance before phase 1`
+  - frozen owner-controlled docs for Phase 1 baseline
+  - preserved private `codex_prompt_ERP.txt` as ignored local workflow file
+  - included assistant-first synthesis as discovery evidence
 - Owner-controlled documents frozen for Phase 1 baseline:
   - `docs/Portfolio_MVP_V1.md`
   - `docs/Technical_Planning_v1.md`
@@ -99,7 +105,7 @@
 - `docs/discovery/DISCOVERY_REPORT.md`
 - `docs/discovery/backend.md`
 - `docs/discovery/frontend.md`
-- `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md` is included in the corrective-sync Git checkpoint as discovery synthesis
+- `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md`
 - `docs/domain/CLOTHING_DATA_SPEC_V1.md`
 
 ### Rebuild documents
@@ -131,9 +137,9 @@
 - Source project unchanged: yes.
 - Source code copied: no.
 - Code implementation status: not started.
-- Git status: initialized on `main`, tracking `origin/main`; `HEAD` and `origin/main` are aligned at `9f5a5e2` before this corrective sync; current corrective-sync paths must be verified by Git checkpoint commands before commit.
+- Git status: initialized on `main`, tracking `origin/main`; `HEAD` and `origin/main` were aligned at `accc24b` before this checkpoint-state update.
 - Assistant-first synthesis: present at `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md`, used as discovery support, not implementation authority.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, and pushed clothing scope commit `9f5a5e2`.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, pushed clothing scope commit `9f5a5e2`, and pushed governance commit `accc24b`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
 - CI status: not configured.
@@ -142,10 +148,8 @@
 
 ## 6. Current Blockers
 
-- Documentation governance corrective sync needs Git checkpoint and owner review before commit.
-- `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md` is included as discovery evidence in the corrective-sync Git checkpoint.
 - Existing remote initial README commit must remain preserved.
-- Stage only the explicitly approved corrective-sync documentation paths during Git checkpoint.
+- Owner approval is required before implementing `P1.1`.
 - No force push is allowed.
 - OWNER_DECISION_REQUIRED items:
   - final project/repository name;
@@ -169,9 +173,9 @@
 
 ## 7. Next Concrete Micro-Slice
 
-Git checkpoint for documentation governance corrective sync before Phase 1.
+P1.1 - Python and Django Dependency Baseline.
 
-Do not jump directly to application implementation until this corrective sync is reviewed, committed, pushed, and the checkpoint is updated for `P1.1 — Python and Django Dependency Baseline`.
+Use `codex_prompt_ERP.txt` to run the next-step report first. Do not implement P1.1 until the owner approves the exact micro-slice.
 
 ## 8. Scope Guardrails
 
@@ -184,7 +188,6 @@ Do not jump directly to application implementation until this corrective sync is
 
 ## 9. Known Risks
 
-- Corrective documentation sync needs review before commit.
 - Existing remote initial commit must remain preserved.
 - README must remain honest until code, CI, and demo actually exist.
 - Prototype behavior may tempt scope creep if copied wholesale.
@@ -212,23 +215,13 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: Phase 0 documentation governance corrective sync before Phase 1.
+- Operation: Post-governance checkpoint sync after `accc24b`.
 - Files created/updated:
-  - `.gitignore`
-  - `docs/Portfolio_MVP_V1.md`
-  - `docs/Technical_Planning_v1.md`
-  - `docs/domain/CLOTHING_DATA_SPEC_V1.md`
-  - `docs/User_Journey_Freeze_v1.md`
-  - `APP_EXPERIENCE_PLAN.md`
   - `BUILD_PLAN.md`
-  - `DEVELOPMENT_NOTES.md`
-  - `README.md`
   - `changelog_checkpoint.md`
-- Discovery support read:
-  - `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md`
 - Source project modified: no.
-- Verification: read-only checks run before staging: `git status --short --branch`, `git diff --stat`, `git diff --check`, `git check-ignore -v codex_prompt_ERP.txt`, link/path scan, stale-state grep, and implementation-file scan. Git checkpoint staging uses explicit approved paths only. No commit, push, code, packages, migrations, database, CI, authentication changes, or deployment work was performed in this micro-slice.
-- Result: active planning docs now align so frozen docs control scope, semi-frozen docs control roadmap/UX, live docs control operational state, `codex_prompt_ERP.txt` stays private, and measurement implementation remains deferred.
+- Verification: read-only checks run: `git status --short --branch`, `git diff --stat`, `git diff --check`, and stale-state grep.
+- Result: Phase 0 is marked passed locally and the next micro-slice is set to `P1.1 - Python and Django Dependency Baseline`.
 
 Previous restructuring files:
   - `DEVELOPMENT_NOTES.md`
@@ -248,14 +241,14 @@ Previous restructuring files:
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Last commit: `9f5a5e2 docs: align planning with clothing recognition scope`
+- Last pushed milestone commit: `accc24b docs: sync governance before phase 1`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75` and clothing scope commit `9f5a5e2` pushed on top
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, and governance commit `accc24b` pushed on top
 - GitHub SSH authentication: works through `ssh.github.com` on port `443`
-- Push status: `HEAD` and `origin/main` aligned at `9f5a5e2` before this corrective sync; this corrective sync is not yet committed or pushed
+- Push status: `HEAD` and `origin/main` aligned at `accc24b` before this local checkpoint-state update. Push for the checkpoint-state update is pending separate owner approval.
 
 ## 13. Handoff Instruction
 
