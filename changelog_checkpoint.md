@@ -27,6 +27,7 @@
 - Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed to `origin/main`.
 - Clothing recognition scope commit `9f5a5e2 docs: align planning with clothing recognition scope` has been pushed to `origin/main`.
 - Documentation governance commit `accc24b docs: sync governance before phase 1` has been pushed to `origin/main`.
+- Phase 1 readiness checkpoint commit `0c04cbd docs: mark phase 1 ready` has been pushed to `origin/main`.
 - Implementation not started.
 - Local Git repository is initialized.
 - Local branch `main` tracks `origin/main`.
@@ -92,6 +93,11 @@
   - frozen owner-controlled docs for Phase 1 baseline
   - preserved private `codex_prompt_ERP.txt` as ignored local workflow file
   - included assistant-first synthesis as discovery evidence
+- Phase 1 readiness checkpoint committed and pushed:
+  - `0c04cbd docs: mark phase 1 ready`
+  - Phase 0 remains `PASSED`
+  - Phase 1 remains `NOT_STARTED`
+  - next technical micro-slice remains `P1.1 - Python and Django Dependency Baseline`
 - Owner-controlled documents frozen for Phase 1 baseline:
   - `docs/Portfolio_MVP_V1.md`
   - `docs/Technical_Planning_v1.md`
@@ -137,9 +143,9 @@
 - Source project unchanged: yes.
 - Source code copied: no.
 - Code implementation status: not started.
-- Git status: initialized on `main`, tracking `origin/main`; `HEAD` and `origin/main` were aligned at `accc24b` before this checkpoint-state update.
+- Git status: initialized on `main`, tracking `origin/main`; Phase 1 readiness milestone is `0c04cbd docs: mark phase 1 ready`.
 - Assistant-first synthesis: present at `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md`, used as discovery support, not implementation authority.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, pushed clothing scope commit `9f5a5e2`, and pushed governance commit `accc24b`.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, pushed clothing scope commit `9f5a5e2`, pushed governance commit `accc24b`, and pushed Phase 1 readiness checkpoint commit `0c04cbd`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
 - CI status: not configured.
@@ -215,13 +221,13 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: Post-governance checkpoint sync after `accc24b`.
+- Operation: Documentation coherence correction for Phase 1 readiness state.
 - Files created/updated:
   - `BUILD_PLAN.md`
   - `changelog_checkpoint.md`
 - Source project modified: no.
-- Verification: read-only checks run: `git status --short --branch`, `git diff --stat`, `git diff --check`, and stale-state grep.
-- Result: Phase 0 is marked passed locally and the next micro-slice is set to `P1.1 - Python and Django Dependency Baseline`.
+- Verification: read-only checks run: `git status --short --branch`, `git diff --stat`, `git diff --check`, stale-state grep, and Git alignment check.
+- Result: Phase 0 is marked `PASSED`, Phase 1 is marked `NOT_STARTED`, and the next micro-slice is set to `P1.1 - Python and Django Dependency Baseline`.
 
 Previous restructuring files:
   - `DEVELOPMENT_NOTES.md`
@@ -241,14 +247,14 @@ Previous restructuring files:
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Last pushed milestone commit: `accc24b docs: sync governance before phase 1`
+- Last pushed Phase 1 readiness milestone: `0c04cbd docs: mark phase 1 ready`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, and governance commit `accc24b` pushed on top
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, and Phase 1 readiness checkpoint commit `0c04cbd` pushed on top
 - GitHub SSH authentication: works through `ssh.github.com` on port `443`
-- Push status: `HEAD` and `origin/main` aligned at `accc24b` before this local checkpoint-state update. Push for the checkpoint-state update is pending separate owner approval.
+- Push status: Phase 1 readiness milestone `0c04cbd` is pushed to `origin/main`. Current `HEAD`/`origin/main` alignment and working tree cleanliness must be rechecked before P1.1 starts.
 
 ## 13. Handoff Instruction
 

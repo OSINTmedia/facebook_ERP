@@ -311,8 +311,8 @@ Use only these status values:
 - Documentation updates: record this sync and next Git checkpoint in `changelog_checkpoint.md`.
 - Proposed commit message: `docs: sync governance before phase 1`.
 - Rollback/recovery note: revert only this corrective documentation sync if owner rejects it.
-- Current verified state: corrective sync committed and pushed as `accc24b docs: sync governance before phase 1`; checkpoint is being updated so Phase 1 can start cleanly.
-- Stop gate: corrective sync reviewed, committed, pushed, and checkpoint updated before P1.1 starts.
+- Current verified state: corrective sync committed and pushed as `accc24b docs: sync governance before phase 1`; Phase 1 readiness checkpoint committed and pushed as `0c04cbd docs: mark phase 1 ready`.
+- Stop gate: corrective sync reviewed, committed, pushed, and checkpoint aligned before P1.1 starts.
 - Status: PASSED.
 
 ## 11. Phase 1 Micro-Slices
