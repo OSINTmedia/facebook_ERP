@@ -87,6 +87,14 @@ Use `config` as the internal Django project package for the clean scaffold.
 Reason:
 This keeps the scaffold conventional and avoids treating the unresolved final public project/repository name as an implementation blocker. Product-facing naming remains owner-controlled and can evolve independently from the internal settings package.
 
+### 2026-07-29 - Production settings fail fast without provider lock-in
+
+Decision:
+Keep local settings placeholder-friendly, keep test settings explicit, and make production settings fail during Django startup unless `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL` are provided. Production settings also reject `DJANGO_DEBUG=True`.
+
+Reason:
+The rebuild needs production-safe runtime boundaries before deployment work, but provider-specific configuration, real secrets, and hosting decisions remain deferred. Failing fast prevents accidental insecure startup while preserving the planned hosted Django/PostgreSQL demo path.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

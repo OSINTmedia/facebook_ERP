@@ -31,12 +31,17 @@
 - Python and Django dependency baseline implemented.
 - Dependency file created at `requirements.txt`.
 - Local placeholder environment example created at `.env.example`.
-- README now documents only the verified dependency-baseline setup path.
+- README now documents only the verified dependency, scaffold, and environment-aware settings setup path.
 - P1.1 dependency baseline commit `69e968e chore: define python and django dependency baseline` has been pushed to `origin/main`.
 - Clean Django project scaffold implemented.
 - Minimal Django project files created: `manage.py` and `config/`.
-- Django system check passes locally.
-- Settings and environment structure hardening not started.
+- Django system check passes locally with the default local settings module.
+- Environment-aware settings structure implemented.
+- Settings package created at `config/settings/` with shared, local, test, and production-safe modules.
+- Django entry points default to `config.settings.local`.
+- Production settings require explicit `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL`.
+- Production settings reject `DJANGO_DEBUG=True`.
+- Missing required production secrets fail safely during Django startup.
 - Local Git repository is initialized.
 - Local branch `main` tracks `origin/main`.
 - Local remote is `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
@@ -50,7 +55,7 @@
 
 - Phase: Phase 1 - Django/PostgreSQL Foundation and CI
 - Status: IN_PROGRESS
-- Current micro-slice: P1.3 - Settings and Environment Structure
+- Current micro-slice: P1.4 - PostgreSQL and Test Database Baseline
 - Started: 2026-07-27
 - Last updated: 2026-07-29
 
@@ -118,6 +123,15 @@
   - README setup section updated with verified `python manage.py check`
   - `.venv/bin/python manage.py check` passes
   - apps, feature routes, templates, migrations, CI, database commands, and frontend build setup remain not started
+- P1.3 Settings and Environment Structure implemented:
+  - single `config/settings.py` replaced by `config/settings/` package
+  - `config/settings/base.py`, `local.py`, `test.py`, and `production.py` created
+  - `manage.py`, `config/asgi.py`, and `config/wsgi.py` default to `config.settings.local`
+  - `.env.example` updated with placeholder-only settings module and CSRF origins values
+  - README setup/status updated to describe verified environment-aware settings
+  - production settings fail safely without required secret, host, and database URL values
+  - production settings reject `DJANGO_DEBUG=True`
+  - apps, feature routes, templates, migrations, CI, database commands, and deployment provider setup remain not started
 - Owner-controlled documents frozen for Phase 1 baseline:
   - `docs/Portfolio_MVP_V1.md`
   - `docs/Technical_Planning_v1.md`
@@ -143,6 +157,7 @@
 - `README.md`
 - `changelog_checkpoint.md`
 - `config/`
+- `config/settings/`
 - `manage.py`
 - `requirements.txt`
 - `docs/Portfolio_MVP_V1.md`
@@ -166,20 +181,20 @@
 - Cross-document consistency: active planning docs synchronized to the revised clothing recognition direction; owner-decision items remain.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Code implementation status: dependency baseline and clean Django scaffold complete; settings/environment structure not started.
-- Git status: initialized on `main`, tracking `origin/main`; latest known committed `HEAD` before the P1.2 Git checkpoint is `69e968e chore: define python and django dependency baseline`.
+- Code implementation status: dependency baseline, clean Django scaffold, and environment-aware settings structure complete; PostgreSQL/test database baseline not started.
+- Git status: initialized on `main`, tracking `origin/main`; latest known committed `HEAD` before the P1.3 Git checkpoint is `4914f2b chore: scaffold clean django project`. Git commands are the source of truth for exact current `HEAD` after any future checkpoint commit.
 - Assistant-first synthesis: present at `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md`, used as discovery support, not implementation authority.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, pushed clothing scope commit `9f5a5e2`, pushed governance commit `accc24b`, pushed Phase 1 readiness checkpoint commit `0c04cbd`, pushed checkpoint sync commit `1048175`, and pushed dependency baseline commit `69e968e`.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, pushed clothing scope commit `9f5a5e2`, pushed governance commit `accc24b`, pushed Phase 1 readiness checkpoint commit `0c04cbd`, pushed checkpoint sync commit `1048175`, pushed dependency baseline commit `69e968e`, and pushed scaffold commit `4914f2b`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
 - CI status: not configured.
-- Test status: no Django tests exist yet; dependency verification commands passed for P1.1 and Django system check passed for P1.2.
+- Test status: no Django tests exist yet; dependency verification commands passed for P1.1, Django system check passed for P1.2, and environment-aware settings startup checks passed for P1.3.
 - Online demo status: not deployed.
 
 ## 6. Current Blockers
 
 - Existing remote initial README commit must remain preserved.
-- Owner approval is required before implementing `P1.3`.
+- Owner approval is required before implementing `P1.4`.
 - No force push is allowed.
 - OWNER_DECISION_REQUIRED items:
   - final project/repository name;
@@ -203,9 +218,9 @@
 
 ## 7. Next Concrete Micro-Slice
 
-P1.3 - Settings and Environment Structure.
+P1.4 - PostgreSQL and Test Database Baseline.
 
-Use `codex_prompt_ERP.txt` to run the next-step report first. Do not implement P1.3 until the owner approves the exact micro-slice.
+Use `codex_prompt_ERP.txt` to run the next-step report first. Do not implement P1.4 until the owner approves the exact micro-slice.
 
 ## 8. Scope Guardrails
 
@@ -245,30 +260,39 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P1.2 clean Django project scaffold implementation and integrity documentation sync.
+- Operation: P1.3 settings and environment structure implementation and integrity documentation sync.
 - Files created/updated:
-  - `manage.py`
-  - `config/__init__.py`
-  - `config/settings.py`
-  - `config/urls.py`
-  - `config/asgi.py`
-  - `config/wsgi.py`
+  - `.env.example`
   - `README.md`
   - `BUILD_PLAN.md`
   - `DEVELOPMENT_NOTES.md`
   - `changelog_checkpoint.md`
+  - `manage.py`
+  - `config/asgi.py`
+  - `config/wsgi.py`
+  - `config/settings.py` removed
+  - `config/settings/__init__.py`
+  - `config/settings/base.py`
+  - `config/settings/local.py`
+  - `config/settings/test.py`
+  - `config/settings/production.py`
 - Source project modified: no.
 - Verification:
   - `.venv/bin/python -m pip check` returned `No broken requirements found.`
   - `.venv/bin/python manage.py check` returned `System check identified no issues (0 silenced).`
+  - `.venv/bin/python manage.py check --settings=config.settings.test` returned `System check identified no issues (0 silenced).`
+  - production settings check with placeholder environment values returned `System check identified no issues (0 silenced).`
+  - production settings check without `DJANGO_SECRET_KEY` exited `1` with `ImproperlyConfigured: DJANGO_SECRET_KEY is required in production settings.`
+  - production settings check without `DATABASE_URL` exited `1` with `ImproperlyConfigured: DATABASE_URL is required in production settings.`
+  - production settings check with `DJANGO_DEBUG=True` exited `1` with `ImproperlyConfigured: DJANGO_DEBUG must be false in production settings.`
   - `git diff --check` passed
-  - `git status --short --branch` showed `main...origin/main` with uncommitted P1.2 changes only
-  - `git diff --name-status` showed tracked changes in `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, `README.md`, and `changelog_checkpoint.md`
-  - `git diff --stat` showed tracked documentation changes only; untracked `manage.py` and `config/` are visible in Git status
-  - `git rev-parse HEAD` and `git rev-parse origin/main` both returned `69e968e84511873ca5dde89610f9dbedc8e89f52`
-  - `git log --oneline --decorate -5` showed `69e968e` at `HEAD`, `origin/main`, and `origin/HEAD`
-- Known issues from implementation: none blocking P1.2.
-- Result: P1.2 acceptance criteria and required verification passed. Phase 1 remains `IN_PROGRESS`, and the next micro-slice is `P1.3 - Settings and Environment Structure`.
+  - `git status --short --branch` showed `main...origin/main` with uncommitted P1.3 changes only
+  - `git diff --name-status` showed tracked changes in `.env.example`, `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, `README.md`, `changelog_checkpoint.md`, `config/asgi.py`, `config/settings.py`, `config/wsgi.py`, and `manage.py`; untracked `config/settings/` is visible in Git status
+  - `git diff --stat` showed tracked P1.3 source and documentation changes
+  - `git rev-parse HEAD` and `git rev-parse origin/main` both returned `4914f2b29f09979e79ae116619a5d14010cb58d4`
+  - `git log --oneline --decorate -5` showed `4914f2b` at `HEAD`, `origin/main`, and `origin/HEAD`
+- Known issues from implementation: none blocking P1.3.
+- Result: P1.3 acceptance criteria and required verification passed. Phase 1 remains `IN_PROGRESS`, and the next micro-slice is `P1.4 - PostgreSQL and Test Database Baseline`.
 
 Previous restructuring files:
   - `DEVELOPMENT_NOTES.md`
@@ -288,16 +312,16 @@ Previous restructuring files:
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Latest known committed HEAD before the P1.2 Git checkpoint: `69e968e chore: define python and django dependency baseline`
+- Latest known committed HEAD before the P1.3 Git checkpoint: `4914f2b chore: scaffold clean django project`
 - Last pushed Phase 1 readiness milestone: `0c04cbd docs: mark phase 1 ready`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, and dependency baseline commit `69e968e` pushed on top
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, and scaffold commit `4914f2b` pushed on top
 - GitHub SSH authentication: works through `ssh.github.com` on port `443`
-- Push status: `HEAD` and `origin/main` were aligned at `69e968e` before this uncommitted P1.2 work. P1.2 is not committed or pushed yet. Exact current HEAD after any future checkpoint commit must be read from Git.
-- Working tree state during this checkpoint sync: uncommitted P1.2 changes are expected in `manage.py`, `config/`, `README.md`, `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, and `changelog_checkpoint.md`; `.venv/`, `config/__pycache__/`, and `codex_prompt_ERP.txt` remain ignored local files.
+- Push status: `HEAD` and `origin/main` were aligned at `4914f2b` before this uncommitted P1.3 work. P1.3 is not committed or pushed yet. Exact current HEAD after any future checkpoint commit must be read from Git.
+- Working tree state during this checkpoint sync: uncommitted P1.3 changes are expected in `.env.example`, `README.md`, `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md`, `manage.py`, `config/asgi.py`, `config/wsgi.py`, deleted `config/settings.py`, and new `config/settings/`; `.venv/`, `config/__pycache__/`, `config/settings/__pycache__/`, and `codex_prompt_ERP.txt` remain ignored local files.
 
 ## 13. Handoff Instruction
 

@@ -382,7 +382,7 @@ Avoid libraries that depend on:
 - Proposed commit message: `chore: configure environment-aware django settings`.
 - Rollback/recovery note: stop before committing if any secret is found.
 - Stop gate: repository hygiene and settings check passed.
-- Status: NOT_STARTED.
+- Status: PASSED.
 
 ### P1.4 PostgreSQL and Test Database Baseline
 
