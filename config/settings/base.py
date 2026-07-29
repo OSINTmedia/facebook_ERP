@@ -1,11 +1,26 @@
 """Shared Django settings for all environments."""
 from pathlib import Path
+from urllib.parse import urlparse
 
+from django.core.exceptions import ImproperlyConfigured
 import environ
 
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 env = environ.Env()
+
+DEFAULT_DATABASE_URL = (
+    "postgres://social_commerce:social_commerce@localhost:5432/social_commerce"
+)
+POSTGRES_DATABASE_SCHEMES = {"postgres", "postgresql"}
+
+
+def postgres_database_config(database_url: str, setting_name: str) -> dict:
+    """Parse a PostgreSQL database URL and reject non-PostgreSQL fallbacks."""
+    scheme = urlparse(database_url).scheme
+    if scheme not in POSTGRES_DATABASE_SCHEMES:
+        raise ImproperlyConfigured(f"{setting_name} must use a PostgreSQL URL.")
+    return environ.Env.db_url_config(database_url)
 
 env_file = BASE_DIR / ".env"
 if env_file.exists():
@@ -50,9 +65,9 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
-    "default": env.db(
+    "default": postgres_database_config(
+        env("DATABASE_URL", default=DEFAULT_DATABASE_URL),
         "DATABASE_URL",
-        default="postgres://social_commerce:social_commerce@localhost:5432/social_commerce",
     )
 }
 

@@ -400,7 +400,7 @@ Avoid libraries that depend on:
 - Proposed commit message: `chore: document postgresql database baseline`.
 - Rollback/recovery note: revise settings before adding models.
 - Stop gate: database configuration approved.
-- Status: NOT_STARTED.
+- Status: PASSED.
 
 ### P1.5 Base Application Shell
 

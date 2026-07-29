@@ -4,7 +4,6 @@ These settings validate required environment variables without selecting a
 hosting provider or embedding real secrets.
 """
 from django.core.exceptions import ImproperlyConfigured
-from environ import Env
 
 from .base import *  # noqa: F403
 
@@ -28,4 +27,9 @@ if not ALLOWED_HOSTS:
         "DJANGO_ALLOWED_HOSTS is required in production settings."
     )
 
-DATABASES = {"default": Env.db_url_config(require_env("DATABASE_URL"))}
+DATABASES = {
+    "default": postgres_database_config(  # noqa: F405
+        require_env("DATABASE_URL"),
+        "DATABASE_URL",
+    )
+}

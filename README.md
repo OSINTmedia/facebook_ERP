@@ -32,13 +32,14 @@ This rebuild is intended to demonstrate:
 
 ## Current Status
 
-Status: Dependency baseline, clean Django scaffold, and environment-aware settings structure created.
+Status: Dependency baseline, clean Django scaffold, environment-aware settings structure, and PostgreSQL-oriented database settings baseline created.
 
 - Product discovery completed from an earlier private prototype.
 - Owner-controlled planning documents are frozen for the Phase 1 starting baseline.
 - Python/Django dependency baseline exists in `requirements.txt`.
 - Minimal Django project scaffold exists with `manage.py` and the `config` project package.
 - Environment-specific Django settings exist for local, test, and production-safe startup paths.
+- Local and test database settings are PostgreSQL-oriented and do not include a SQLite fallback.
 - Django system check passes locally.
 - Seller app features have not started.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
@@ -144,7 +145,7 @@ The future demo must use synthetic data, no real seller/customer data, no source
 
 ## Local Setup
 
-Application feature work has not started yet. The current verified setup is limited to dependency installation, the minimal Django scaffold check, and environment-aware settings startup checks.
+Application feature work has not started yet. The current verified setup is limited to dependency installation, the minimal Django scaffold check, environment-aware settings startup checks, and non-connecting PostgreSQL settings inspection.
 
 Expected local Python version: Python 3.13.x.
 
@@ -156,9 +157,12 @@ python -m pip install -r requirements.txt
 python -m pip check
 python -c "import importlib.metadata as md; import django, psycopg, environ, django_htmx, pytest; print('django', django.get_version()); print('psycopg', psycopg.__version__); print('django-environ', environ.__version__); print('django-htmx', md.version('django-htmx')); print('pytest', pytest.__version__)"
 python manage.py check
+python manage.py check --settings=config.settings.test
 ```
 
-Create a local `.env` from `.env.example` when local settings values need to differ from scaffold defaults. Local settings default to placeholders; production settings require explicit `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL` values. Do not commit real secrets.
+Create a local `.env` from `.env.example` when local settings values need to differ from scaffold defaults. Local settings default to placeholder PostgreSQL values; test settings use `TEST_DATABASE_NAME` to keep the test database separate from the development database. Production settings require explicit `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL` values. Do not commit real secrets.
+
+Database creation, migrations, and database-dependent tests are deferred until the local PostgreSQL setup is explicitly approved and available.
 
 ## Roadmap Summary
 

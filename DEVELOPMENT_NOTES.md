@@ -95,6 +95,14 @@ Keep local settings placeholder-friendly, keep test settings explicit, and make 
 Reason:
 The rebuild needs production-safe runtime boundaries before deployment work, but provider-specific configuration, real secrets, and hosting decisions remain deferred. Failing fast prevents accidental insecure startup while preserving the planned hosted Django/PostgreSQL demo path.
 
+### 2026-07-29 - PostgreSQL-only configuration baseline
+
+Decision:
+Reject non-PostgreSQL `DATABASE_URL` values during settings import and keep the Django test database name explicit and separate from the development database.
+
+Reason:
+The portfolio app needs database behavior that matches the planned PostgreSQL demo before models and constraints are introduced. Keeping this as configuration-only avoids silently creating local database state while preventing SQLite drift.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:
