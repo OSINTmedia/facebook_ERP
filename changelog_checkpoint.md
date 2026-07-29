@@ -32,7 +32,11 @@
 - Dependency file created at `requirements.txt`.
 - Local placeholder environment example created at `.env.example`.
 - README now documents only the verified dependency-baseline setup path.
-- Clean Django project scaffold not started.
+- P1.1 dependency baseline commit `69e968e chore: define python and django dependency baseline` has been pushed to `origin/main`.
+- Clean Django project scaffold implemented.
+- Minimal Django project files created: `manage.py` and `config/`.
+- Django system check passes locally.
+- Settings and environment structure hardening not started.
 - Local Git repository is initialized.
 - Local branch `main` tracks `origin/main`.
 - Local remote is `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
@@ -46,9 +50,9 @@
 
 - Phase: Phase 1 - Django/PostgreSQL Foundation and CI
 - Status: IN_PROGRESS
-- Current micro-slice: P1.2 - Clean Django Project Scaffold
+- Current micro-slice: P1.3 - Settings and Environment Structure
 - Started: 2026-07-27
-- Last updated: 2026-07-28
+- Last updated: 2026-07-29
 
 ## 3. Completed Work
 
@@ -107,7 +111,13 @@
   - `.env.example` created with placeholder-only local development values
   - README setup section updated with verified dependency-baseline commands
   - dependency install verified in local `.venv` on Python `3.13.12`
-  - Django scaffold, apps, settings, migrations, CI, database commands, and frontend build setup remain not started
+  - committed and pushed as `69e968e chore: define python and django dependency baseline`
+- P1.2 Clean Django Project Scaffold implemented:
+  - `manage.py` created
+  - `config/` project package created with minimal settings, URLs, WSGI, and ASGI entry points
+  - README setup section updated with verified `python manage.py check`
+  - `.venv/bin/python manage.py check` passes
+  - apps, feature routes, templates, migrations, CI, database commands, and frontend build setup remain not started
 - Owner-controlled documents frozen for Phase 1 baseline:
   - `docs/Portfolio_MVP_V1.md`
   - `docs/Technical_Planning_v1.md`
@@ -132,6 +142,8 @@
 - `BUILD_PLAN.md`
 - `README.md`
 - `changelog_checkpoint.md`
+- `config/`
+- `manage.py`
 - `requirements.txt`
 - `docs/Portfolio_MVP_V1.md`
 - `docs/Technical_Planning_v1.md`
@@ -154,20 +166,20 @@
 - Cross-document consistency: active planning docs synchronized to the revised clothing recognition direction; owner-decision items remain.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Code implementation status: dependency baseline complete; clean Django scaffold not started.
-- Git status: initialized on `main`, tracking `origin/main`; latest known committed `HEAD` before the P1.1 Git checkpoint is `1048175 docs: sync checkpoint with phase 1 readiness`.
+- Code implementation status: dependency baseline and clean Django scaffold complete; settings/environment structure not started.
+- Git status: initialized on `main`, tracking `origin/main`; latest known committed `HEAD` before the P1.2 Git checkpoint is `69e968e chore: define python and django dependency baseline`.
 - Assistant-first synthesis: present at `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md`, used as discovery support, not implementation authority.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, pushed clothing scope commit `9f5a5e2`, pushed governance commit `accc24b`, pushed Phase 1 readiness checkpoint commit `0c04cbd`, and pushed checkpoint sync commit `1048175`.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, pushed clothing scope commit `9f5a5e2`, pushed governance commit `accc24b`, pushed Phase 1 readiness checkpoint commit `0c04cbd`, pushed checkpoint sync commit `1048175`, and pushed dependency baseline commit `69e968e`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
 - CI status: not configured.
-- Test status: no Django tests exist yet; dependency verification commands passed for P1.1.
+- Test status: no Django tests exist yet; dependency verification commands passed for P1.1 and Django system check passed for P1.2.
 - Online demo status: not deployed.
 
 ## 6. Current Blockers
 
 - Existing remote initial README commit must remain preserved.
-- Owner approval is required before implementing `P1.2`.
+- Owner approval is required before implementing `P1.3`.
 - No force push is allowed.
 - OWNER_DECISION_REQUIRED items:
   - final project/repository name;
@@ -191,9 +203,9 @@
 
 ## 7. Next Concrete Micro-Slice
 
-P1.2 - Clean Django Project Scaffold.
+P1.3 - Settings and Environment Structure.
 
-Use `codex_prompt_ERP.txt` to run the next-step report first. Do not implement P1.2 until the owner approves the exact micro-slice.
+Use `codex_prompt_ERP.txt` to run the next-step report first. Do not implement P1.3 until the owner approves the exact micro-slice.
 
 ## 8. Scope Guardrails
 
@@ -233,34 +245,30 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P1.1 dependency baseline implementation and integrity documentation sync.
+- Operation: P1.2 clean Django project scaffold implementation and integrity documentation sync.
 - Files created/updated:
-  - `requirements.txt`
-  - `.env.example`
+  - `manage.py`
+  - `config/__init__.py`
+  - `config/settings.py`
+  - `config/urls.py`
+  - `config/asgi.py`
+  - `config/wsgi.py`
   - `README.md`
   - `BUILD_PLAN.md`
   - `DEVELOPMENT_NOTES.md`
   - `changelog_checkpoint.md`
 - Source project modified: no.
 - Verification:
-  - `python --version` returned `Python 3.13.12`
-  - `python -m venv .venv` passed
-  - `.venv/bin/python -m pip install --upgrade pip` passed and installed pip `26.1.2`
-  - `.venv/bin/python -m pip install -r requirements.txt` passed
   - `.venv/bin/python -m pip check` returned `No broken requirements found.`
-  - `.venv/bin/python -m django --version` returned `5.2.16`
-  - `.venv/bin/python -m pytest --version` returned `pytest 9.1.1`
-  - import smoke check returned Django `5.2.16`, Psycopg `3.3.4`, django-environ `0.14.0`, django-htmx `1.28.0`, and pytest `9.1.1`
+  - `.venv/bin/python manage.py check` returned `System check identified no issues (0 silenced).`
   - `git diff --check` passed
-  - `git status --short --branch` showed `main...origin/main` with uncommitted P1.1 changes only
+  - `git status --short --branch` showed `main...origin/main` with uncommitted P1.2 changes only
   - `git diff --name-status` showed tracked changes in `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, `README.md`, and `changelog_checkpoint.md`
-  - `git diff --stat` showed tracked documentation changes only; untracked `requirements.txt` and `.env.example` are visible in Git status
-  - `git rev-parse HEAD` and `git rev-parse origin/main` both returned `1048175da11124dc3d98e301ced1bf9ffb5aa294`
-  - `git log --oneline --decorate -5` showed `1048175` at `HEAD`, `origin/main`, and `origin/HEAD`
-- Known issues from implementation:
-  - initial install attempt failed because new files were first placed one directory above the project; those accidental files were removed and the approved files were recreated inside this repository
-  - first import smoke check assumed `django_htmx.__version__`; corrected to package metadata lookup
-- Result: P1.1 acceptance criteria and required verification passed. Phase 1 is now `IN_PROGRESS`, and the next micro-slice is `P1.2 - Clean Django Project Scaffold`.
+  - `git diff --stat` showed tracked documentation changes only; untracked `manage.py` and `config/` are visible in Git status
+  - `git rev-parse HEAD` and `git rev-parse origin/main` both returned `69e968e84511873ca5dde89610f9dbedc8e89f52`
+  - `git log --oneline --decorate -5` showed `69e968e` at `HEAD`, `origin/main`, and `origin/HEAD`
+- Known issues from implementation: none blocking P1.2.
+- Result: P1.2 acceptance criteria and required verification passed. Phase 1 remains `IN_PROGRESS`, and the next micro-slice is `P1.3 - Settings and Environment Structure`.
 
 Previous restructuring files:
   - `DEVELOPMENT_NOTES.md`
@@ -280,16 +288,16 @@ Previous restructuring files:
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Latest known committed HEAD before the P1.1 Git checkpoint: `1048175 docs: sync checkpoint with phase 1 readiness`
+- Latest known committed HEAD before the P1.2 Git checkpoint: `69e968e chore: define python and django dependency baseline`
 - Last pushed Phase 1 readiness milestone: `0c04cbd docs: mark phase 1 ready`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, and checkpoint sync commit `1048175` pushed on top
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, and dependency baseline commit `69e968e` pushed on top
 - GitHub SSH authentication: works through `ssh.github.com` on port `443`
-- Push status: `HEAD` and `origin/main` were aligned at `1048175` before this uncommitted P1.1 work. P1.1 is not committed or pushed yet. Exact current HEAD after any future checkpoint commit must be read from Git.
-- Working tree state during this checkpoint sync: uncommitted P1.1 changes are expected in `requirements.txt`, `.env.example`, `README.md`, `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, and `changelog_checkpoint.md`; `.venv/` and `codex_prompt_ERP.txt` remain ignored local files.
+- Push status: `HEAD` and `origin/main` were aligned at `69e968e` before this uncommitted P1.2 work. P1.2 is not committed or pushed yet. Exact current HEAD after any future checkpoint commit must be read from Git.
+- Working tree state during this checkpoint sync: uncommitted P1.2 changes are expected in `manage.py`, `config/`, `README.md`, `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, and `changelog_checkpoint.md`; `.venv/`, `config/__pycache__/`, and `codex_prompt_ERP.txt` remain ignored local files.
 
 ## 13. Handoff Instruction
 

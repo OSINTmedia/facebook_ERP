@@ -364,7 +364,7 @@ Avoid libraries that depend on:
 - Proposed commit message: `chore: scaffold clean django project`.
 - Rollback/recovery note: remove only scaffold files from this slice if created in wrong path.
 - Stop gate: system check passes.
-- Status: NOT_STARTED.
+- Status: PASSED.
 
 ### P1.3 Settings and Environment Structure
 

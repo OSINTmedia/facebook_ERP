@@ -79,6 +79,14 @@ Use Django 5.2 LTS on Python 3.13 with Psycopg 3, django-environ, django-htmx, p
 Reason:
 This gives the rebuild a stable Django/PostgreSQL foundation compatible with the planned backend-capable demo, server-rendered HTMX workflows, environment-based settings, and automated tests without introducing app code, frontend build tooling, or deployment-specific services before their approved slices.
 
+### 2026-07-29 - Neutral Django project package
+
+Decision:
+Use `config` as the internal Django project package for the clean scaffold.
+
+Reason:
+This keeps the scaffold conventional and avoids treating the unresolved final public project/repository name as an implementation blocker. Product-facing naming remains owner-controlled and can evolve independently from the internal settings package.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:
