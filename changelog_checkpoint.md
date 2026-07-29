@@ -39,7 +39,7 @@
 
 - Phase: Phase 1 - Django/PostgreSQL Foundation and CI
 - Status: IN_PROGRESS
-- Current micro-slice: Documentation integrity audit and correction for P1.4/P1.5
+- Current micro-slice: P1.6 - CI and Initial Test Harness
 - Next implementation micro-slice: P1.6 - CI and Initial Test Harness
 - Started: 2026-07-27
 - Last updated: 2026-07-29
@@ -87,7 +87,7 @@
   - `a01e246 chore: configure environment-aware django settings`
 - P1.4 PostgreSQL and Test Database Baseline implemented and pushed:
   - `323c268 chore: document postgresql database baseline`
-- P1.4 corrective local environment and runtime verification completed in the current uncommitted working tree:
+- P1.4 corrective local environment and runtime verification completed, committed, and pushed:
   - local/test settings require PostgreSQL configuration and contain no SQLite fallback
   - non-PostgreSQL `DATABASE_URL` values are rejected during settings import
   - missing `DATABASE_URL` fails clearly with `ImproperlyConfigured`
@@ -101,6 +101,7 @@
   - `static/css/app.css` is found and served over local HTTP
   - root route returns `200`; unknown routes return `404`, not `500`
   - shell does not introduce public catalog, marketing, broad ERP, orders, payments, delivery, analytics, auth behavior, Product CRUD, or HTMX behavior
+  - committed and pushed with P1.4 runtime correction as `dc21677 feat: establish postgresql runtime and application shell`
 - Owner-controlled documents frozen for Phase 1 baseline:
   - `docs/Portfolio_MVP_V1.md`
   - `docs/Technical_Planning_v1.md`
@@ -150,8 +151,8 @@
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Git status: initialized on `main`, tracking `origin/main`; exact current `HEAD` and `origin/main` are aligned at `323c268 chore: document postgresql database baseline`. Git commands remain the source of truth for exact current `HEAD` after any future checkpoint commit.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, and PostgreSQL baseline commit `323c268`.
+- Git status: initialized on `main`, tracking `origin/main`; latest verified P1.4/P1.5 implementation checkpoint is `dc21677 feat: establish postgresql runtime and application shell`. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, and P1.4/P1.5 runtime-shell checkpoint commit `dc21677`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
 - CI status: not configured.
@@ -203,7 +204,7 @@
 - Existing remote initial README commit must remain preserved.
 - No force push is allowed.
 - Gate 1 remains open until P1.6 CI/test harness verification passes.
-- Current working tree still needs a Git checkpoint before P1.6 implementation begins.
+- P1.6 still requires an approved next-step report before implementation begins.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -228,7 +229,7 @@
 
 P1.6 - CI and Initial Test Harness.
 
-Before P1.6 implementation begins, prepare and review a Git checkpoint for the verified P1.4/P1.5 working tree and documentation sync. Do not implement P1.6 until the owner approves that exact next-step report.
+Before P1.6 implementation begins, prepare and review the next-step report for that exact micro-slice. Do not implement P1.6 until the owner approves that exact next-step report.
 
 ## 8. Scope Guardrails
 
@@ -269,12 +270,27 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: code-first documentation integrity audit and correction for verified P1.4 and P1.5 completion.
-- Files updated:
+- Operation: documentation-only checkpoint freshness synchronization for the P1.6 handoff.
+- Files committed and pushed in `dc21677 feat: establish postgresql runtime and application shell`:
   - `BUILD_PLAN.md`
   - `DEVELOPMENT_NOTES.md`
+  - `README.md`
   - `changelog_checkpoint.md`
-- Files intentionally not modified:
+  - `config/settings/base.py`
+  - `config/tests.py`
+  - `config/urls.py`
+  - `config/views.py`
+  - `static/css/app.css`
+  - `templates/base.html`
+  - `templates/shell/home.html`
+- File updated by this documentation-only freshness sync:
+  - `changelog_checkpoint.md`
+- Documentation files updated during the prior P1.4/P1.5 documentation integrity audit:
+  - `BUILD_PLAN.md`
+  - `DEVELOPMENT_NOTES.md`
+  - `README.md`
+  - `changelog_checkpoint.md`
+- Files intentionally not modified by this freshness sync:
   - frozen docs under `docs/`
   - discovery/archive docs
   - `config/`
@@ -314,19 +330,24 @@ Private local prompt:
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Current committed `HEAD`: `323c268 chore: document postgresql database baseline`
-- Current `origin/main`: `323c268 chore: document postgresql database baseline`
+- Latest verified implementation checkpoint: `dc21677 feat: establish postgresql runtime and application shell`
+- Exact current `HEAD`: read from Git with `git rev-parse HEAD`
+- Exact current `origin/main`: read from Git with `git rev-parse origin/main`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, and PostgreSQL baseline commit `323c268` pushed on top.
-- Push status: `HEAD` and `origin/main` are aligned at `323c268` before this uncommitted documentation/source checkpoint.
-- Working tree state during this checkpoint sync:
-  - P1.4 corrective tracked changes remain uncommitted in `config/settings/base.py` and live documentation files.
-  - P1.5 shell implementation remains uncommitted in `config/urls.py`, `config/views.py`, `config/tests.py`, `static/`, and `templates/`.
-  - Documentation integrity corrections remain uncommitted in `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, and `changelog_checkpoint.md`.
-  - Earlier README documentation sync remains uncommitted in `README.md`.
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, and P1.4/P1.5 runtime-shell checkpoint commit `dc21677` pushed on top.
+- Push status: the P1.4/P1.5 implementation checkpoint `dc21677` was pushed normally to `origin/main`.
+- Required Git state before P1.6 implementation:
+  - working tree clean;
+  - current branch `main`;
+  - `HEAD` equals `origin/main`;
+  - no staged, unstaged, or untracked project files requiring checkpoint.
+- Implementation checkpoint state:
+  - The P1.4 corrective runtime/configuration changes and P1.5 shell implementation are committed and pushed.
+  - This freshness sync intentionally changes only `changelog_checkpoint.md`.
+- Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
 - Exact current `HEAD` after any future checkpoint commit must be read from Git; do not hardcode a future commit hash into this checkpoint.
 
@@ -335,7 +356,7 @@ Private local prompt:
 A new Codex chat must:
 
 1. read this file first;
-2. verify the current Git state with Git commands;
-3. prepare a Git checkpoint for the verified P1.4/P1.5 working tree and documentation sync when the owner requests it;
-4. after that checkpoint is committed and pushed, prepare the next-step report for `P1.6 - CI and Initial Test Harness`;
+2. verify branch, `HEAD`, `origin/main`, and clean working tree with Git commands;
+3. confirm P1.1 through P1.5 are `PASSED`;
+4. prepare the next-step report for `P1.6 - CI and Initial Test Harness`;
 5. avoid implementing P1.6 until the owner approves that exact micro-slice.
