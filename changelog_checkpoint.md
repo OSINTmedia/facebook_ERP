@@ -14,51 +14,33 @@
 
 - Discovery audits completed.
 - Owner-controlled planning documents are frozen for the Phase 1 starting baseline.
-- Execution roadmap, public README, and live checkpoint drafted.
+- Execution roadmap, public README, and live checkpoint exist.
 - Documentation structure normalized for context transfer.
 - Clothing domain owner review completed for `docs/domain/CLOTHING_DATA_SPEC_V1.md`.
-- Clothing direction revised to description-first semantic recognition with observed text, candidate meaning, and confirmed structured fact layers.
+- Clothing direction is description-first semantic recognition with observed text, candidate meaning, and confirmed structured fact layers.
 - Material is a small typed semantic fact when confirmed.
 - Detailed garment measurements are deferred to a separate approved micro-slice.
 - GitHub repository already exists: `https://github.com/OSINTmedia/facebook_ERP`.
 - GitHub repository visibility: public.
 - GitHub default branch: `main`.
 - Remote contains the preserved initial README commit `dce852b`.
-- Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed to `origin/main`.
-- Clothing recognition scope commit `9f5a5e2 docs: align planning with clothing recognition scope` has been pushed to `origin/main`.
-- Documentation governance commit `accc24b docs: sync governance before phase 1` has been pushed to `origin/main`.
-- Phase 1 readiness checkpoint commit `0c04cbd docs: mark phase 1 ready` has been pushed to `origin/main`.
-- Python and Django dependency baseline implemented.
-- Dependency file created at `requirements.txt`.
-- Local placeholder environment example created at `.env.example`.
-- README now documents only the verified dependency, scaffold, environment-aware settings, and PostgreSQL-oriented settings setup path.
-- P1.1 dependency baseline commit `69e968e chore: define python and django dependency baseline` has been pushed to `origin/main`.
-- Clean Django project scaffold implemented.
-- Minimal Django project files created: `manage.py` and `config/`.
-- Django system check passes locally with the default local settings module.
-- Environment-aware settings structure implemented.
-- Settings package created at `config/settings/` with shared, local, test, and production-safe modules.
-- Django entry points default to `config.settings.local`.
-- Production settings require explicit `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL`.
-- Production settings reject `DJANGO_DEBUG=True`.
-- Missing required production secrets fail safely during Django startup.
-- PostgreSQL-oriented database settings baseline implemented.
-- Non-PostgreSQL `DATABASE_URL` values are rejected during settings import.
-- Test settings define an explicit test database name separate from the development database.
-- Local Git repository is initialized.
-- Local branch `main` tracks `origin/main`.
-- Local remote is `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
-- GitHub SSH authentication works through `ssh.github.com` on port `443`.
-- CI not configured.
-- Online demo not available.
+- Phase 1 is active and remains `IN_PROGRESS`.
+- P1.1 Python and Django Dependency Baseline is `PASSED`.
+- P1.2 Clean Django Project Scaffold is `PASSED`.
+- P1.3 Settings and Environment Structure is `PASSED`.
+- P1.4 PostgreSQL and Test Database Baseline is `PASSED`.
+- P1.5 Base Application Shell is `PASSED`.
+- P1.6 CI and Initial Test Harness is `NOT_STARTED`.
+- CI is not configured.
+- Online demo is not deployed.
 - Private workflow prompt `codex_prompt_ERP.txt` exists locally and is intentionally ignored by Git.
-- Phase 0 documentation governance is complete.
 
 ## 2. Current Phase
 
 - Phase: Phase 1 - Django/PostgreSQL Foundation and CI
 - Status: IN_PROGRESS
-- Current micro-slice: P1.5 - Base Application Shell
+- Current micro-slice: Documentation integrity audit and correction for P1.4/P1.5
+- Next implementation micro-slice: P1.6 - CI and Initial Test Harness
 - Started: 2026-07-27
 - Last updated: 2026-07-29
 
@@ -91,60 +73,34 @@
 - Documentation baseline committed and pushed:
   - `549db75 docs: add portfolio rebuild planning baseline`
   - preserved `dce852b Initial commit`
-  - normal push to `origin/main`
-- Clothing-domain owner review completed:
-  - description-first product input
-  - observed text / candidate meaning / confirmed fact boundary
-  - existing Product Type and Tag recognition retained
-  - material as a small typed semantic fact
-  - size/color as choice truth
-  - buyer-question coverage readiness
-  - detailed measurements deferred
 - Clothing recognition scope documentation committed and pushed:
   - `9f5a5e2 docs: align planning with clothing recognition scope`
-  - preserved `dce852b Initial commit`
-  - preserved `549db75 docs: add portfolio rebuild planning baseline`
 - Documentation governance corrective sync committed and pushed:
   - `accc24b docs: sync governance before phase 1`
-  - frozen owner-controlled docs for Phase 1 baseline
-  - preserved private `codex_prompt_ERP.txt` as ignored local workflow file
-  - included assistant-first synthesis as discovery evidence
 - Phase 1 readiness checkpoint committed and pushed:
   - `0c04cbd docs: mark phase 1 ready`
-  - Phase 0 remains `PASSED`
-  - Phase 1 remains `NOT_STARTED`
-  - next technical micro-slice remains `P1.1 - Python and Django Dependency Baseline`
-- P1.1 Python and Django Dependency Baseline implemented:
-  - `requirements.txt` created with pinned Django/PostgreSQL/env/HTMX/test dependencies
-  - `.env.example` created with placeholder-only local development values
-  - README setup section updated with verified dependency-baseline commands
-  - dependency install verified in local `.venv` on Python `3.13.12`
-  - committed and pushed as `69e968e chore: define python and django dependency baseline`
-- P1.2 Clean Django Project Scaffold implemented:
-  - `manage.py` created
-  - `config/` project package created with minimal settings, URLs, WSGI, and ASGI entry points
-  - README setup section updated with verified `python manage.py check`
-  - `.venv/bin/python manage.py check` passes
-  - apps, feature routes, templates, migrations, CI, database commands, and frontend build setup remain not started
-- P1.3 Settings and Environment Structure implemented:
-  - single `config/settings.py` replaced by `config/settings/` package
-  - `config/settings/base.py`, `local.py`, `test.py`, and `production.py` created
-  - `manage.py`, `config/asgi.py`, and `config/wsgi.py` default to `config.settings.local`
-  - `.env.example` updated with placeholder-only settings module and CSRF origins values
-  - README setup/status updated to describe verified environment-aware settings
-  - production settings fail safely without required secret, host, and database URL values
-  - production settings reject `DJANGO_DEBUG=True`
-  - apps, feature routes, templates, migrations, CI, database commands, and deployment provider setup remain not started
-- P1.4 PostgreSQL and Test Database Baseline implemented:
-  - settings now reject non-PostgreSQL `DATABASE_URL` schemes during import
-  - default local database URL remains placeholder-only and PostgreSQL-oriented
-  - production database parsing uses the same PostgreSQL-only validation after requiring `DATABASE_URL`
-  - test settings define `TEST_DATABASE_NAME` with a separate placeholder default
-  - test settings reject an empty test database name and reject using the development database name as the test database
-  - `.env.example` documents placeholder local PostgreSQL and test database values
-  - README setup/status documents the verified non-connecting PostgreSQL settings baseline
-  - no database was created, migrated, or connected to during implementation
-  - apps, feature routes, templates, migrations, CI, database commands, and deployment provider setup remain not started
+- P1.1 Python and Django Dependency Baseline implemented, committed, and pushed:
+  - `69e968e chore: define python and django dependency baseline`
+- P1.2 Clean Django Project Scaffold implemented, committed, and pushed:
+  - `4914f2b chore: scaffold clean django project`
+- P1.3 Settings and Environment Structure implemented, committed, and pushed:
+  - `a01e246 chore: configure environment-aware django settings`
+- P1.4 PostgreSQL and Test Database Baseline implemented and pushed:
+  - `323c268 chore: document postgresql database baseline`
+- P1.4 corrective local environment and runtime verification completed in the current uncommitted working tree:
+  - local/test settings require PostgreSQL configuration and contain no SQLite fallback
+  - non-PostgreSQL `DATABASE_URL` values are rejected during settings import
+  - missing `DATABASE_URL` fails clearly with `ImproperlyConfigured`
+  - project-specific local PostgreSQL identity verified as host `127.0.0.1`, port `5432`, role `facebook_erp_dev`, database `facebook_erp_dev`
+  - direct Django database connection passed
+  - default Django migrations are applied
+- P1.5 Base Application Shell implemented and verified locally:
+  - root route renders the minimal private seller-workspace shell
+  - base and page templates render successfully
+  - message region, active navigation state, and disabled future placeholders exist
+  - `static/css/app.css` is found and served over local HTTP
+  - root route returns `200`; unknown routes return `404`, not `500`
+  - shell does not introduce public catalog, marketing, broad ERP, orders, payments, delivery, analytics, auth behavior, Product CRUD, or HTMX behavior
 - Owner-controlled documents frozen for Phase 1 baseline:
   - `docs/Portfolio_MVP_V1.md`
   - `docs/Technical_Planning_v1.md`
@@ -161,7 +117,7 @@
 - `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md`
 - `docs/domain/CLOTHING_DATA_SPEC_V1.md`
 
-### Rebuild documents
+### Rebuild documents and source
 
 - `.env.example`
 - `APP_EXPERIENCE_PLAN.md`
@@ -170,7 +126,8 @@
 - `README.md`
 - `changelog_checkpoint.md`
 - `config/`
-- `config/settings/`
+- `templates/`
+- `static/`
 - `manage.py`
 - `requirements.txt`
 - `docs/Portfolio_MVP_V1.md`
@@ -182,34 +139,72 @@
 - `codex_prompt_ERP.txt` exists locally for owner-run Codex workflow prompts.
 - It is intentionally ignored and must not be staged or committed.
 
-### Historical references
+### Local environment
 
-- `docs/archive/old_docs/`
+- `.env` exists locally, is ignored by Git, has permission `0600`, and must not be printed, staged, or committed.
 
 ## 5. Current Verification
 
 - Required planning and evidence documents: present in the normalized structure.
 - Clothing domain spec: owner-reviewed, revised as version `1.1`, and frozen as an owner-controlled domain boundary.
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
-- Cross-document consistency: active planning docs synchronized to the revised clothing recognition direction; owner-decision items remain.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Code implementation status: dependency baseline, clean Django scaffold, environment-aware settings structure, and PostgreSQL/test database baseline complete; base application shell not started.
-- Git status: initialized on `main`, tracking `origin/main`; latest known committed `HEAD` before the P1.4 Git checkpoint is `a01e246 chore: configure environment-aware django settings`. Git commands are the source of truth for exact current `HEAD` after any future checkpoint commit.
-- Assistant-first synthesis: present at `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md`, used as discovery support, not implementation authority.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, pushed clothing scope commit `9f5a5e2`, pushed governance commit `accc24b`, pushed Phase 1 readiness checkpoint commit `0c04cbd`, pushed checkpoint sync commit `1048175`, pushed dependency baseline commit `69e968e`, pushed scaffold commit `4914f2b`, and pushed settings commit `a01e246`.
+- Git status: initialized on `main`, tracking `origin/main`; exact current `HEAD` and `origin/main` are aligned at `323c268 chore: document postgresql database baseline`. Git commands remain the source of truth for exact current `HEAD` after any future checkpoint commit.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, and PostgreSQL baseline commit `323c268`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
 - CI status: not configured.
-- Test status: no Django tests exist yet; dependency verification commands passed for P1.1, Django system check passed for P1.2, environment-aware settings startup checks passed for P1.3, and non-connecting PostgreSQL settings checks passed for P1.4.
 - Online demo status: not deployed.
+
+### P1.4 verification
+
+- Project runs through `.venv`.
+- Python resolves to `.venv/bin/python`.
+- Django and psycopg resolve from `.venv`.
+- `.env` exists locally, is ignored by Git, and has permission `0600`.
+- Missing `DATABASE_URL` fails clearly with `ImproperlyConfigured`.
+- No executable placeholder database credentials remain.
+- No SQLite fallback exists.
+- Active local database backend is PostgreSQL.
+- Project-specific local PostgreSQL identity:
+  - host: `127.0.0.1`
+  - port: `5432`
+  - role: `facebook_erp_dev`
+  - database: `facebook_erp_dev`
+- Direct Django database connection passed.
+- `current_user` is `facebook_erp_dev`.
+- `current_database` is `facebook_erp_dev`.
+- PostgreSQL server version is `18.4`.
+- `python manage.py check` passed.
+- `python manage.py migrate --check` passed.
+- `python manage.py showmigrations` passed.
+- Default Django migrations are applied.
+- `python manage.py test config -v 2` passed with 1 test.
+- Local Django server starts successfully.
+- Previous `social_commerce` credential blocker is resolved.
+
+### P1.5 verification
+
+- Root route returns HTTP `200`.
+- Unknown route returns HTTP `404`, not `500`.
+- `base.html` and `shell/home.html` render successfully.
+- `static/css/app.css` is found by Django.
+- `/static/css/app.css` returns HTTP `200` with CSS content.
+- Shell includes application identity, Dashboard direction, Products direction, Add product placeholder, Account placeholder, Sign out placeholder, main landmark, page heading, message region, and active navigation indication.
+- Disabled future controls use valid placeholder semantics and do not claim that later-phase functionality exists.
+- Shell is a private seller-workspace foundation, not a storefront, marketing page, broad ERP, order, payment, delivery, or analytics UI.
+- Minor mobile navigation clipping and final responsive polish are deferred UX refinements, not P1.5 blockers.
+- Authentication, Product CRUD, Account, Sign out, dashboard data, Product Workspace behavior, and HTMX interactions remain later-phase functionality.
 
 ## 6. Current Blockers
 
+- No current P1.4/P1.5 runtime blocker remains.
 - Existing remote initial README commit must remain preserved.
-- Owner approval is required before implementing `P1.5`.
 - No force push is allowed.
-- OWNER_DECISION_REQUIRED items:
+- Gate 1 remains open until P1.6 CI/test harness verification passes.
+- Current working tree still needs a Git checkpoint before P1.6 implementation begins.
+- OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
   - Product Detail inclusion;
@@ -231,9 +226,9 @@
 
 ## 7. Next Concrete Micro-Slice
 
-P1.5 - Base Application Shell.
+P1.6 - CI and Initial Test Harness.
 
-Use `codex_prompt_ERP.txt` to run the next-step report first. Do not implement P1.5 until the owner approves the exact micro-slice.
+Before P1.6 implementation begins, prepare and review a Git checkpoint for the verified P1.4/P1.5 working tree and documentation sync. Do not implement P1.6 until the owner approves that exact next-step report.
 
 ## 8. Scope Guardrails
 
@@ -252,6 +247,7 @@ Use `codex_prompt_ERP.txt` to run the next-step report first. Do not implement P
 - Source project contains media/backups and `.env`; these must not be copied or published.
 - Future demo must use synthetic data only.
 - Measurement implementation can easily bloat the first product form unless kept as a separate approved micro-slice.
+- Minor shell mobile navigation clipping is deferred UX refinement, not a P1.5 blocker.
 
 ## 10. Documentation Priority for New Chats
 
@@ -273,68 +269,73 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P1.4 PostgreSQL and test database baseline implementation and integrity documentation sync.
-- Files created/updated:
+- Operation: code-first documentation integrity audit and correction for verified P1.4 and P1.5 completion.
+- Files updated:
+  - `BUILD_PLAN.md`
+  - `DEVELOPMENT_NOTES.md`
+  - `changelog_checkpoint.md`
+- Files intentionally not modified:
+  - frozen docs under `docs/`
+  - discovery/archive docs
+  - `config/`
+  - `templates/`
+  - `static/`
+  - `requirements.txt`
+  - `.env`
   - `.env.example`
+  - `.gitignore`
+  - `manage.py`
   - `README.md`
-  - `BUILD_PLAN.md`
-  - `DEVELOPMENT_NOTES.md`
-  - `changelog_checkpoint.md`
-  - `config/settings/base.py`
-  - `config/settings/test.py`
-  - `config/settings/production.py`
+  - `codex_prompt_ERP.txt`
 - Source project modified: no.
-- Verification:
-  - `.venv/bin/python manage.py check` returned `System check identified no issues (0 silenced).`
-  - `.venv/bin/python manage.py check --settings=config.settings.test` returned `System check identified no issues (0 silenced).`
-  - production settings check with placeholder environment values returned `System check identified no issues (0 silenced).`
-  - non-connecting settings inspection returned local database `django.db.backends.postgresql social_commerce` and test database `django.db.backends.postgresql test_social_commerce`
-  - local settings check with `DATABASE_URL=sqlite:///db.sqlite3` exited `1` with `ImproperlyConfigured: DATABASE_URL must use a PostgreSQL URL.`
-  - test settings check with `TEST_DATABASE_NAME=social_commerce` exited `1` with `ImproperlyConfigured: TEST_DATABASE_NAME must differ from the development database name.`
-  - `git diff --check` passed
-  - `git status --short --branch` showed `main...origin/main` with uncommitted P1.4 changes only
-  - `git diff --name-status` showed tracked changes in `.env.example`, `README.md`, `config/settings/base.py`, `config/settings/production.py`, and `config/settings/test.py`
-  - `git diff --stat` showed tracked P1.4 source and README changes
-  - `git rev-parse HEAD` and `git rev-parse origin/main` both returned `a01e246c19e17f814fbf07471d3105043765627f`
-  - `git log --oneline --decorate -5` showed `a01e246` at `HEAD`, `origin/main`, and `origin/HEAD`
-- Known issues from implementation: none blocking P1.4.
-- Result: P1.4 acceptance criteria and required verification passed. Phase 1 remains `IN_PROGRESS`, and the next micro-slice is `P1.5 - Base Application Shell`.
-
-Previous restructuring files:
-  - `DEVELOPMENT_NOTES.md`
-  - `BUILD_PLAN.md`
-  - `README.md`
-  - `changelog_checkpoint.md`
-  - `docs/Portfolio_MVP_V1.md`
-  - `docs/Technical_Planning_v1.md`
-  - `docs/User_Journey_Freeze_v1.md`
-  - `docs/discovery/DISCOVERY_REPORT.md`
-  - `docs/discovery/backend.md`
-  - `docs/discovery/frontend.md`
-  - `docs/archive/old_docs/`
+- Verification evidence rechecked during this documentation integrity audit:
+  - P1.4 verdict: `PASSED`
+  - P1.5 verdict: `PASSED`
+  - `.venv` Python/Django/psycopg verified
+  - `.env` ignored and `0600`
+  - missing `DATABASE_URL` fails clearly
+  - PostgreSQL backend verified with local identity `facebook_erp_dev` on `127.0.0.1:5432`
+  - direct Django database connection passed
+  - default migrations applied
+  - `python manage.py check` passed
+  - `python manage.py migrate --check` passed
+  - `python manage.py showmigrations` passed
+  - `python manage.py test config -v 2` passed with 1 test
+  - local Django server starts
+  - root route returns `200`
+  - unknown route returns `404`
+  - shell CSS returns `200`
+  - shell foundation passed the P1.5 phase-boundary audit
+- Known issues from documentation integrity audit: none.
+- Result: Phase 1 remains `IN_PROGRESS`; P1.4 and P1.5 are `PASSED`; Gate 1 remains open; next micro-slice is `P1.6 - CI and Initial Test Harness`.
 
 ## 12. Git Checkpoint
 
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Latest known committed HEAD before the P1.4 Git checkpoint: `a01e246 chore: configure environment-aware django settings`
-- Last pushed Phase 1 readiness milestone: `0c04cbd docs: mark phase 1 ready`
+- Current committed `HEAD`: `323c268 chore: document postgresql database baseline`
+- Current `origin/main`: `323c268 chore: document postgresql database baseline`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, and settings commit `a01e246` pushed on top
-- GitHub SSH authentication: works through `ssh.github.com` on port `443`
-- Push status: `HEAD` and `origin/main` were aligned at `a01e246` before this uncommitted P1.4 work. P1.4 is not committed or pushed yet. Exact current HEAD after any future checkpoint commit must be read from Git.
-- Working tree state during this checkpoint sync: uncommitted P1.4 changes are expected in `.env.example`, `README.md`, `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md`, `config/settings/base.py`, `config/settings/production.py`, and `config/settings/test.py`; `.venv/`, `config/__pycache__/`, `config/settings/__pycache__/`, and `codex_prompt_ERP.txt` remain ignored local files.
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, and PostgreSQL baseline commit `323c268` pushed on top.
+- Push status: `HEAD` and `origin/main` are aligned at `323c268` before this uncommitted documentation/source checkpoint.
+- Working tree state during this checkpoint sync:
+  - P1.4 corrective tracked changes remain uncommitted in `config/settings/base.py` and live documentation files.
+  - P1.5 shell implementation remains uncommitted in `config/urls.py`, `config/views.py`, `config/tests.py`, `static/`, and `templates/`.
+  - Documentation integrity corrections remain uncommitted in `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, and `changelog_checkpoint.md`.
+  - Earlier README documentation sync remains uncommitted in `README.md`.
+  - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
+- Exact current `HEAD` after any future checkpoint commit must be read from Git; do not hardcode a future commit hash into this checkpoint.
 
 ## 13. Handoff Instruction
 
 A new Codex chat must:
 
 1. read this file first;
-2. identify the current micro-slice;
-3. verify it against `BUILD_PLAN.md`;
-4. report inconsistencies;
-5. avoid implementation until explicit approval.
+2. verify the current Git state with Git commands;
+3. prepare a Git checkpoint for the verified P1.4/P1.5 working tree and documentation sync when the owner requests it;
+4. after that checkpoint is committed and pushed, prepare the next-step report for `P1.6 - CI and Initial Test Harness`;
+5. avoid implementing P1.6 until the owner approves that exact micro-slice.

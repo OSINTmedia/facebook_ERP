@@ -32,14 +32,17 @@ This rebuild is intended to demonstrate:
 
 ## Current Status
 
-Status: Dependency baseline, clean Django scaffold, environment-aware settings structure, and PostgreSQL-oriented database settings baseline created.
+Status: Phase 1 remains in progress. P1.4 PostgreSQL/local environment verification and P1.5 base application shell are complete; P1.6 CI and initial test harness is next.
 
 - Product discovery completed from an earlier private prototype.
 - Owner-controlled planning documents are frozen for the Phase 1 starting baseline.
 - Python/Django dependency baseline exists in `requirements.txt`.
 - Minimal Django project scaffold exists with `manage.py` and the `config` project package.
 - Environment-specific Django settings exist for local, test, and production-safe startup paths.
-- Local and test database settings are PostgreSQL-oriented and do not include a SQLite fallback.
+- Local and test database settings require PostgreSQL configuration and do not include a SQLite fallback.
+- Project-specific local PostgreSQL works through ignored `.env` credentials.
+- Default Django migrations are applied locally.
+- Minimal server-rendered shell route is verified locally with template, static CSS, root route, and 404 checks.
 - Django system check passes locally.
 - Seller app features have not started.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
@@ -145,7 +148,7 @@ The future demo must use synthetic data, no real seller/customer data, no source
 
 ## Local Setup
 
-Application feature work has not started yet. The current verified setup is limited to dependency installation, the minimal Django scaffold check, environment-aware settings startup checks, and non-connecting PostgreSQL settings inspection.
+Seller feature work has not started yet. The current verified setup covers dependency installation, the clean Django scaffold, environment-aware settings, PostgreSQL-only local runtime, default migrations, and the base application shell smoke checks.
 
 Expected local Python version: Python 3.13.x.
 
@@ -154,15 +157,24 @@ python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
+cp .env.example .env
+# configure local PostgreSQL credentials in the ignored .env
 python -m pip check
 python -c "import importlib.metadata as md; import django, psycopg, environ, django_htmx, pytest; print('django', django.get_version()); print('psycopg', psycopg.__version__); print('django-environ', environ.__version__); print('django-htmx', md.version('django-htmx')); print('pytest', pytest.__version__)"
 python manage.py check
 python manage.py check --settings=config.settings.test
+python manage.py makemigrations --check --dry-run
+python manage.py migrate
+python manage.py showmigrations
+python manage.py test config
+python manage.py runserver 127.0.0.1:8000
 ```
 
-Create a local `.env` from `.env.example` when local settings values need to differ from scaffold defaults. Local settings default to placeholder PostgreSQL values; test settings use `TEST_DATABASE_NAME` to keep the test database separate from the development database. Production settings require explicit `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL` values. Do not commit real secrets.
+Create a local `.env` from `.env.example` before running Django locally. Local and test settings require a PostgreSQL `DATABASE_URL`; test settings use `TEST_DATABASE_NAME` to keep the test database separate from the development database. Production settings require explicit `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL` values. Do not commit real secrets.
 
-Database creation, migrations, and database-dependent tests are deferred until the local PostgreSQL setup is explicitly approved and available.
+The verified local database is project-specific PostgreSQL and is configured only through ignored local environment values. Default Django migrations are applied locally.
+
+After local PostgreSQL credentials are configured in `.env`, run `source .venv/bin/activate && python manage.py runserver 127.0.0.1:8000` to review the root shell route locally. The route renders only the base application shell; authenticated seller workflows and product screens are still deferred.
 
 ## Roadmap Summary
 

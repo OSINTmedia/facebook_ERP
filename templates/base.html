@@ -1,0 +1,48 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Seller Workspace{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <header class="app-header">
+    <div class="app-header__inner">
+      <a class="brand" href="{% url 'shell_home' %}">Seller Workspace</a>
+
+      <nav class="primary-nav" aria-label="Primary">
+        <a
+          class="nav-link{% if current_nav == 'dashboard' %} nav-link--active{% endif %}"
+          href="{% url 'shell_home' %}"
+          {% if current_nav == 'dashboard' %}aria-current="page"{% endif %}
+        >
+          Dashboard
+        </a>
+        <span class="nav-link nav-link--disabled" aria-disabled="true">Products</span>
+        <span class="nav-link nav-link--disabled" aria-disabled="true">Add product</span>
+        <span class="nav-link nav-link--disabled" aria-disabled="true">Account</span>
+        <span class="nav-link nav-link--disabled" aria-disabled="true">Sign out</span>
+      </nav>
+    </div>
+  </header>
+
+  <section id="messages" class="messages" aria-label="Messages" aria-live="polite">
+    {% for message in messages %}
+      <div
+        class="message message--{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}"
+        role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}"
+      >
+        {{ message }}
+      </div>
+    {% endfor %}
+  </section>
+
+  <main id="main-content" class="app-main">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

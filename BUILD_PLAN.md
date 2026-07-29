@@ -138,7 +138,7 @@ Use only these status values:
 ## 8. Mandatory Stop Gates
 
 - Gate 0: documents owner-reviewed.
-- Gate 1: repository and CI foundation passed.
+- Gate 1: repository and CI foundation; passes only after P1.6 CI/test harness verification.
 - Gate 2: data ownership and business isolation passed.
 - Gate 3: first vertical slice passed.
 - Gate 4: UX/navigation passed.
@@ -391,34 +391,35 @@ Avoid libraries that depend on:
 - Exact scope: configure database URL handling and test database expectations.
 - Explicit exclusions: no migrations beyond default framework if not needed, no production database, no prototype database access.
 - Likely files: settings, `.env.example`, README setup.
-- Backend acceptance criteria: database configuration is explicit and portable.
+- Backend acceptance criteria: database configuration is explicit and portable; local PostgreSQL runtime access is verified.
 - Frontend/UX acceptance criteria: none.
-- Automated verification: `python manage.py check`; database-dependent verification only after owner-approved local DB setup.
-- Manual user verification: owner confirms local PostgreSQL expectation.
+- Automated verification: `python manage.py check`, `python manage.py migrate --check`, `python manage.py showmigrations`, and `python manage.py test config -v 2` after owner-approved local DB setup.
+- Manual user verification: owner confirms local PostgreSQL expectation and local server startup.
 - Failure cases: SQLite-only drift, hardcoded database credentials, unmanaged local assumptions.
 - Documentation updates: README local setup after verified commands exist.
 - Proposed commit message: `chore: document postgresql database baseline`.
 - Rollback/recovery note: revise settings before adding models.
 - Stop gate: database configuration approved.
 - Status: PASSED.
+- Runtime verification: project-specific local PostgreSQL role/database `facebook_erp_dev` verified through `.venv`, direct Django database connection, applied default migrations, config test, local server startup, and HTTP response. PostgreSQL-only and no-SQLite boundaries remain.
 
 ### P1.5 Base Application Shell
 
-- Objective: create the minimal authenticated layout shell before feature pages accumulate.
+- Objective: create the minimal private seller-workspace application shell before feature pages accumulate.
 - Dependency: P1.3 `PASSED`.
 - Exact scope: base template structure, message region, navigation placeholders, static CSS path.
 - Explicit exclusions: no product workspace, dashboard metrics, inventory controls, or public catalog.
 - Likely files: base template, static CSS, URL/view placeholder if needed.
 - Backend acceptance criteria: route protection direction is documented.
 - Frontend/UX acceptance criteria: active location pattern, semantic messages, mobile container, and no marketing landing page.
-- Automated verification: template render smoke test if route exists.
-- Manual user verification: owner reviews shell first viewport and nav anchors.
+- Automated verification: template render smoke test, root route `200`, unknown route `404`, and shell CSS `200`.
+- Manual user verification: owner/browser review completed for the foundation shell; mobile polish remains deferred UX refinement.
 - Failure cases: nav labels imply broader ERP scope; no active-state pattern; inaccessible messages.
 - Documentation updates: APP experience notes if owner changes shell contract, checkpoint.
 - Proposed commit message: `feat: add minimal application shell`.
 - Rollback/recovery note: keep shell small so it can be revised before feature pages.
 - Stop gate: shell UX gate passed.
-- Status: NOT_STARTED.
+- Status: PASSED.
 
 ### P1.6 CI and Initial Test Harness
 

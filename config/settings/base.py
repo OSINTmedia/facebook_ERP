@@ -9,9 +9,6 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 
 env = environ.Env()
 
-DEFAULT_DATABASE_URL = (
-    "postgres://social_commerce:social_commerce@localhost:5432/social_commerce"
-)
 POSTGRES_DATABASE_SCHEMES = {"postgres", "postgresql"}
 
 
@@ -66,7 +63,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 DATABASES = {
     "default": postgres_database_config(
-        env("DATABASE_URL", default=DEFAULT_DATABASE_URL),
+        env("DATABASE_URL"),
         "DATABASE_URL",
     )
 }
@@ -78,6 +75,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [BASE_DIR / "static"]
 
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"

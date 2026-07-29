@@ -90,7 +90,7 @@ This keeps the scaffold conventional and avoids treating the unresolved final pu
 ### 2026-07-29 - Production settings fail fast without provider lock-in
 
 Decision:
-Keep local settings placeholder-friendly, keep test settings explicit, and make production settings fail during Django startup unless `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL` are provided. Production settings also reject `DJANGO_DEBUG=True`.
+Keep non-database local settings placeholder-friendly, keep test settings explicit, and make production settings fail during Django startup unless `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL` are provided. Production settings also reject `DJANGO_DEBUG=True`.
 
 Reason:
 The rebuild needs production-safe runtime boundaries before deployment work, but provider-specific configuration, real secrets, and hosting decisions remain deferred. Failing fast prevents accidental insecure startup while preserving the planned hosted Django/PostgreSQL demo path.
@@ -102,6 +102,25 @@ Reject non-PostgreSQL `DATABASE_URL` values during settings import and keep the 
 
 Reason:
 The portfolio app needs database behavior that matches the planned PostgreSQL demo before models and constraints are introduced. Keeping this as configuration-only avoids silently creating local database state while preventing SQLite drift.
+
+### 2026-07-29 - Local DATABASE_URL fails fast
+
+Decision:
+Require `DATABASE_URL` for local and test settings instead of falling back to executable placeholder PostgreSQL credentials.
+
+Reason:
+A missing `.env` previously attempted to authenticate with example credentials and produced a misleading PostgreSQL password failure. Failing at settings import makes the environment contract explicit while preserving the PostgreSQL-only boundary.
+
+### 2026-07-29 - Configuration approval is not runtime readiness
+
+Decision:
+A database configuration baseline is not considered fully operational until the application proves a direct PostgreSQL connection, migration access, test execution, local server startup, and HTTP response.
+
+Incident summary:
+The local `.env` was initially missing, executable example credentials caused misleading authentication attempts, and one run used system Django instead of the project virtual environment. A project-specific PostgreSQL role/database was then created manually, the ignored `.env` was aligned with those local credentials, and direct connection, migrations, tests, and local server verification passed.
+
+Reason:
+Infrastructure gates must use runtime evidence rather than configuration inspection alone. HTTP `200` alone also does not prove a shell is ready; templates, static CSS, `404` behavior, semantic structure, and phase-specific acceptance criteria must be verified separately.
 
 ### 2026-07-27 - Variant-level stock
 
