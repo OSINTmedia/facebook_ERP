@@ -88,4 +88,8 @@ LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = "shell_home"
 LOGOUT_REDIRECT_URL = "accounts:login"
 
+DEMO_ACCESS_ENABLED = env.bool("DEMO_ACCESS_ENABLED", default=False)
+DEMO_USER_EMAIL = env("DEMO_USER_EMAIL", default="")
+DEMO_USER_PASSWORD = env("DEMO_USER_PASSWORD", default="")
+
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])

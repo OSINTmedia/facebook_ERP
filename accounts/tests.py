@@ -1,6 +1,16 @@
-from django.contrib.auth import get_user_model
-from django.test import TestCase
+from io import StringIO
+
+from django.conf import settings
+from django.contrib.auth import authenticate, get_user_model
+from django.core.management import call_command
+from django.core.management.base import CommandError
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
+
+
+DEMO_TEST_EMAIL = "demo-seller@example.test"
+DEMO_TEST_PASSWORD = "synthetic-test-password"
+DEMO_TEST_NEW_PASSWORD = "synthetic-test-password-updated"
 
 
 class UserModelTests(TestCase):
@@ -65,6 +75,18 @@ class UserModelTests(TestCase):
             )
 
 
+class DemoAccessSettingsTests(SimpleTestCase):
+    @override_settings(
+        DEMO_ACCESS_ENABLED=False,
+        DEMO_USER_EMAIL="",
+        DEMO_USER_PASSWORD="",
+    )
+    def test_demo_access_settings_default_to_disabled_state(self):
+        self.assertFalse(settings.DEMO_ACCESS_ENABLED)
+        self.assertEqual(settings.DEMO_USER_EMAIL, "")
+        self.assertEqual(settings.DEMO_USER_PASSWORD, "")
+
+
 class SellerAuthenticationTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
@@ -83,6 +105,33 @@ class SellerAuthenticationTests(TestCase):
 
         for label in ("Dashboard", "Products", "Add product", "Account", "Sign out"):
             self.assertNotContains(response, label)
+
+    @override_settings(
+        DEMO_ACCESS_ENABLED=False,
+        DEMO_USER_EMAIL=DEMO_TEST_EMAIL,
+        DEMO_USER_PASSWORD=DEMO_TEST_PASSWORD,
+    )
+    def test_login_page_hides_demo_credentials_when_demo_access_is_disabled(self):
+        response = self.client.get(reverse("accounts:login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Demo access")
+        self.assertNotContains(response, DEMO_TEST_EMAIL)
+        self.assertNotContains(response, DEMO_TEST_PASSWORD)
+
+    @override_settings(
+        DEMO_ACCESS_ENABLED=True,
+        DEMO_USER_EMAIL=DEMO_TEST_EMAIL,
+        DEMO_USER_PASSWORD=DEMO_TEST_PASSWORD,
+    )
+    def test_login_page_shows_configured_demo_credentials_when_enabled(self):
+        response = self.client.get(reverse("accounts:login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Demo access")
+        self.assertContains(response, "Synthetic demo credentials")
+        self.assertContains(response, DEMO_TEST_EMAIL)
+        self.assertContains(response, DEMO_TEST_PASSWORD)
 
     def test_valid_login_accepts_email_and_redirects_to_shell(self):
         response = self.client.post(
@@ -156,3 +205,109 @@ class SellerAuthenticationTests(TestCase):
             shell_response,
             f"{reverse('accounts:login')}?next={reverse('shell_home')}",
         )
+
+
+class SeedDemoUserCommandTests(TestCase):
+    @override_settings(
+        DEMO_ACCESS_ENABLED=False,
+        DEMO_USER_EMAIL=DEMO_TEST_EMAIL,
+        DEMO_USER_PASSWORD=DEMO_TEST_PASSWORD,
+    )
+    def test_command_refuses_disabled_demo_access(self):
+        with self.assertRaisesMessage(CommandError, "Demo access is disabled."):
+            call_command("seed_demo_user")
+
+    @override_settings(
+        DEMO_ACCESS_ENABLED=True,
+        DEMO_USER_EMAIL="",
+        DEMO_USER_PASSWORD=DEMO_TEST_PASSWORD,
+    )
+    def test_command_refuses_missing_email_configuration(self):
+        with self.assertRaisesMessage(
+            CommandError,
+            "DEMO_USER_EMAIL and DEMO_USER_PASSWORD must be configured.",
+        ):
+            call_command("seed_demo_user")
+
+    @override_settings(
+        DEMO_ACCESS_ENABLED=True,
+        DEMO_USER_EMAIL=DEMO_TEST_EMAIL,
+        DEMO_USER_PASSWORD="",
+    )
+    def test_command_refuses_missing_password_configuration(self):
+        with self.assertRaisesMessage(
+            CommandError,
+            "DEMO_USER_EMAIL and DEMO_USER_PASSWORD must be configured.",
+        ):
+            call_command("seed_demo_user")
+
+    @override_settings(
+        DEMO_ACCESS_ENABLED=True,
+        DEMO_USER_EMAIL=DEMO_TEST_EMAIL.upper(),
+        DEMO_USER_PASSWORD=DEMO_TEST_PASSWORD,
+    )
+    def test_first_run_creates_one_regular_active_user(self):
+        output = StringIO()
+
+        call_command("seed_demo_user", stdout=output)
+
+        user_model = get_user_model()
+        self.assertEqual(user_model.objects.count(), 1)
+        user = user_model.objects.get(email=DEMO_TEST_EMAIL)
+        self.assertTrue(user.is_active)
+        self.assertFalse(user.is_staff)
+        self.assertFalse(user.is_superuser)
+        self.assertTrue(user.check_password(DEMO_TEST_PASSWORD))
+        self.assertNotEqual(user.password, DEMO_TEST_PASSWORD)
+        self.assertNotIn(DEMO_TEST_PASSWORD, user.password)
+        self.assertIn("Demo user created.", output.getvalue())
+        self.assertNotIn(DEMO_TEST_PASSWORD, output.getvalue())
+
+    @override_settings(
+        DEMO_ACCESS_ENABLED=True,
+        DEMO_USER_EMAIL=DEMO_TEST_EMAIL,
+        DEMO_USER_PASSWORD=DEMO_TEST_PASSWORD,
+    )
+    def test_repeated_run_does_not_duplicate_user(self):
+        call_command("seed_demo_user", stdout=StringIO())
+        call_command("seed_demo_user", stdout=StringIO())
+
+        self.assertEqual(
+            get_user_model().objects.filter(email=DEMO_TEST_EMAIL).count(),
+            1,
+        )
+
+    @override_settings(
+        DEMO_ACCESS_ENABLED=True,
+        DEMO_USER_EMAIL=DEMO_TEST_EMAIL,
+        DEMO_USER_PASSWORD=DEMO_TEST_NEW_PASSWORD,
+    )
+    def test_repeated_run_updates_password_and_removes_admin_privileges(self):
+        user_model = get_user_model()
+        user = user_model.objects.create_user(
+            email=DEMO_TEST_EMAIL,
+            password=DEMO_TEST_PASSWORD,
+            is_active=False,
+            is_staff=True,
+            is_superuser=True,
+        )
+        previous_password_hash = user.password
+
+        output = StringIO()
+        call_command("seed_demo_user", stdout=output)
+
+        user.refresh_from_db()
+        self.assertEqual(user_model.objects.filter(email=DEMO_TEST_EMAIL).count(), 1)
+        self.assertNotEqual(user.password, previous_password_hash)
+        self.assertNotEqual(user.password, DEMO_TEST_NEW_PASSWORD)
+        self.assertNotIn(DEMO_TEST_NEW_PASSWORD, user.password)
+        self.assertTrue(user.is_active)
+        self.assertFalse(user.is_staff)
+        self.assertFalse(user.is_superuser)
+        self.assertTrue(user.check_password(DEMO_TEST_NEW_PASSWORD))
+        self.assertFalse(user.check_password(DEMO_TEST_PASSWORD))
+        self.assertIsNotNone(
+            authenticate(email=DEMO_TEST_EMAIL, password=DEMO_TEST_NEW_PASSWORD)
+        )
+        self.assertIn("Demo user updated.", output.getvalue())
+        self.assertNotIn(DEMO_TEST_NEW_PASSWORD, output.getvalue())

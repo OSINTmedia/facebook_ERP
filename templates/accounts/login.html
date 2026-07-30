@@ -10,6 +10,19 @@
         <h1 id="login-title">Sign in</h1>
       </div>
 
+      {% if demo_access %}
+        <section aria-labelledby="demo-access-title">
+          <p class="eyebrow" id="demo-access-title">Demo access</p>
+          <p>Synthetic demo credentials</p>
+          <dl>
+            <dt>Email</dt>
+            <dd>{{ demo_access.email }}</dd>
+            <dt>Password</dt>
+            <dd>{{ demo_access.password }}</dd>
+          </dl>
+        </section>
+      {% endif %}
+
       <form class="auth-form" method="post" action="{% url 'accounts:login' %}" novalidate>
         {% csrf_token %}
 

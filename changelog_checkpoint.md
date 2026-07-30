@@ -35,6 +35,7 @@
 - P2.1 Accounts App and Custom Seller User Model Baseline is `PASSED`.
 - P2.2 Business Model and Ownership Boundary Baseline is `PASSED`.
 - P2.3 Login Flow Baseline is `PASSED`.
+- Environment-Gated Demo Seller Access Bootstrap is `PASSED`.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
 - Local P1.6 verification commands passed.
 - Latest checked GitHub Actions run `30539320803` passed for commit `41b6fe4041c4cb20190c935bf4e3979b86c34569`.
@@ -45,7 +46,7 @@
 
 - Phase: Phase 2 - User and Business Ownership
 - Status: IN_PROGRESS
-- Current micro-slice: P2.3 - Login Flow Baseline (`PASSED`)
+- Current micro-slice: Environment-Gated Demo Seller Access Bootstrap (`PASSED`)
 - Next concrete micro-slice: P2.4 - Owner-Scoped Query Helper Baseline next-step report
 - Started: 2026-07-27
 - Last updated: 2026-07-30
@@ -170,8 +171,8 @@
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Git status: initialized on `main`, tracking `origin/main`; latest committed checkpoint before current uncommitted P2.3 implementation and audit sync is `a3d19cc feat: add business ownership baseline`. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, and P2.2 business ownership baseline commit `a3d19cc`.
+- Git status: initialized on `main`, tracking `origin/main`; latest committed checkpoint before current uncommitted demo-access bootstrap implementation and audit sync is `9f8fb8c feat: add seller login flow baseline`. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, and P2.3 login flow baseline commit `9f8fb8c`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
 - CI status: configured and passing on latest checked GitHub Actions run `30539320803` for commit `41b6fe4041c4cb20190c935bf4e3979b86c34569`.
@@ -336,12 +337,49 @@
   - `source .venv/bin/activate && python manage.py test --settings=config.settings.test -v 2` ran 19 tests, passed, and created/destroyed `test_facebook_erp_dev`.
 - Result: P2.3 is `PASSED`.
 
+### Environment-Gated Demo Seller Access Bootstrap verification
+
+- Environment-Gated Demo Seller Access Bootstrap implementation exists locally.
+- Files created by this support slice:
+  - `accounts/management/__init__.py`
+  - `accounts/management/commands/__init__.py`
+  - `accounts/management/commands/seed_demo_user.py`
+- Files modified by this support slice:
+  - `.env.example`
+  - ignored local `.env`
+  - `accounts/tests.py`
+  - `accounts/views.py`
+  - `config/settings/base.py`
+  - `templates/accounts/login.html`
+  - `DEVELOPMENT_NOTES.md`
+  - `changelog_checkpoint.md`
+- Scope audit result:
+  - Demo access is disabled by default through environment-backed settings.
+  - Committed configuration contains placeholders only.
+  - The ignored local `.env` enables the approved synthetic demo seller for local/manual verification and must not be staged.
+  - The demo seller account is created or reset only by the explicit `seed_demo_user` management command.
+  - The command uses `accounts.User`, normalizes email, hashes the configured password with Django password handling, forces active regular-user flags, and does not print the configured password or password hash.
+  - The login page displays demo credentials only when demo access is enabled and fully configured.
+  - No data migration, automatic startup seed, Business object, Product CRUD, owner-scoped query helper, public registration, password reset, email verification, auth bypass, HTMX behavior, Tailwind tooling, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
+- Verification commands run during implementation and integrity audit:
+  - `source .venv/bin/activate && python manage.py check` passed with `System check identified no issues (0 silenced).`
+  - `source .venv/bin/activate && python manage.py check --settings=config.settings.test` passed with `System check identified no issues (0 silenced).`
+  - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run` passed with `No changes detected`.
+  - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
+  - `source .venv/bin/activate && python manage.py seed_demo_user` passed and reported `Demo user updated.`
+  - `source .venv/bin/activate && python manage.py shell -c "<demo user boolean auth check>"` confirmed the local synthetic demo user exists, is active, is not staff, is not superuser, and authenticates successfully.
+  - `source .venv/bin/activate && python manage.py shell -c "<plaintext password boolean check>"` confirmed the configured demo password is not stored as plaintext.
+  - `source .venv/bin/activate && python manage.py test accounts --settings=config.settings.test -v 2` ran 22 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+  - `source .venv/bin/activate && python manage.py test --settings=config.settings.test -v 2` ran 28 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+- Result: Environment-Gated Demo Seller Access Bootstrap is `PASSED`.
+
 ## 6. Current Blockers
 
 - No current P1 blocker remains.
 - No current P2.1 blocker remains.
 - No current P2.2 blocker remains.
 - No current P2.3 blocker remains.
+- No current demo-access bootstrap blocker remains.
 - The old P2.1 local migration-history blocker is `RESOLVED`.
 - The old P2.1 test database permission blocker is `RESOLVED`.
 - Existing remote initial README commit must remain preserved.
@@ -371,7 +409,7 @@
 
 ## 7. Next Concrete Micro-Slice
 
-Phase 2 is in progress. P2.1, P2.2, and P2.3 have passed.
+Phase 2 is in progress. P2.1, P2.2, P2.3, and the Environment-Gated Demo Seller Access Bootstrap have passed.
 
 Next concrete step: prepare the next-step report for P2.4 - Owner-Scoped Query Helper Baseline, derived from the Phase 2 expected micro-slice order in `BUILD_PLAN.md`.
 
@@ -417,71 +455,72 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P2.3 - Login Flow Baseline implementation, integrity audit, and documentation sync.
+- Operation: Environment-Gated Demo Seller Access Bootstrap implementation, integrity audit, and documentation sync.
 - Files created by this operation:
-  - `accounts/forms.py`
-  - `accounts/views.py`
-  - `accounts/urls.py`
-  - `templates/accounts/login.html`
+  - `accounts/management/__init__.py`
+  - `accounts/management/commands/__init__.py`
+  - `accounts/management/commands/seed_demo_user.py`
 - Files modified by this operation:
+  - `.env.example`
+  - ignored local `.env`
   - `accounts/tests.py`
+  - `accounts/views.py`
   - `config/settings/base.py`
-  - `config/tests.py`
-  - `config/urls.py`
-  - `config/views.py`
-  - `static/css/app.css`
-  - `templates/base.html`
+  - `templates/accounts/login.html`
   - `changelog_checkpoint.md`
-  - `BUILD_PLAN.md`
   - `DEVELOPMENT_NOTES.md`
-  - `README.md`
 - Files intentionally not modified:
   - frozen docs under `docs/`
   - `APP_EXPERIENCE_PLAN.md`
+  - `BUILD_PLAN.md`
+  - `README.md`
   - `.github/workflows/django.yml`
-  - `.env`
-  - `.env.example`
   - `.gitignore`
   - `manage.py`
   - `businesses/`
+  - Product/catalog modules
   - `codex_prompt_ERP.txt`
 - Source project modified: no.
-- Scope audit result: P2.3 remained limited to the minimal server-rendered login/logout baseline for the existing custom user model; no signup, password reset, email verification, social auth, demo account, Business selector/resolver, owner-scoped query helper, cross-business access matrix, Product CRUD, domain models, HTMX behavior, Tailwind tooling, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
-- Verification commands run during P2.3 implementation and integrity audit:
+- Scope audit result: the support slice remained limited to environment-gated synthetic demo seller access; no signup, password reset, email verification, social auth, admin user, Business creation, Business selector/resolver, owner-scoped query helper, cross-business access matrix, Product CRUD, domain models, HTMX behavior, Tailwind tooling, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
+- Verification commands run during implementation and integrity audit:
   - `source .venv/bin/activate && python manage.py check` passed with `System check identified no issues (0 silenced).`
   - `source .venv/bin/activate && python manage.py check --settings=config.settings.test` passed with `System check identified no issues (0 silenced).`
   - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run` passed with `No changes detected`.
   - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
-  - `source .venv/bin/activate && python manage.py test accounts --settings=config.settings.test -v 2` ran 13 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-  - `source .venv/bin/activate && python manage.py test config --settings=config.settings.test -v 2` ran 2 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-  - `source .venv/bin/activate && python manage.py test --settings=config.settings.test -v 2` ran 19 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+  - `source .venv/bin/activate && python manage.py seed_demo_user` passed and reported `Demo user updated.`
+  - `source .venv/bin/activate && python manage.py shell -c "<demo user boolean auth check>"` confirmed the local synthetic demo user exists, is active, is not staff, is not superuser, and authenticates successfully.
+  - `source .venv/bin/activate && python manage.py shell -c "<plaintext password boolean check>"` confirmed the configured demo password is not stored as plaintext.
+  - `source .venv/bin/activate && python manage.py test accounts --settings=config.settings.test -v 2` ran 22 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+  - `source .venv/bin/activate && python manage.py test --settings=config.settings.test -v 2` ran 28 tests, passed, and created/destroyed `test_facebook_erp_dev`.
 - Known issues from this operation:
   - Online demo is not deployed.
+  - The local synthetic demo seller has no Business object yet because Business selection and ownership-scoped seller workflows remain later Phase 2 work.
   - Gate 2 remains open until the rest of Phase 2 ownership and access-control work passes.
-- Result: Phase 2 is `IN_PROGRESS`; P2.3 is `PASSED`; Gate 2 is not passed.
+- Result: Phase 2 is `IN_PROGRESS`; Environment-Gated Demo Seller Access Bootstrap is `PASSED`; Gate 2 is not passed.
 
 ## 12. Git Checkpoint
 
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Latest committed checkpoint before current uncommitted P2.3 implementation and audit sync: `a3d19cc feat: add business ownership baseline`
-- Last known `HEAD` before a future P2.3 checkpoint commit: `a3d19cc66406f1b7c286360144efbc2394ce752d`
-- Last known `origin/main` before a future P2.3 checkpoint commit: `a3d19cc66406f1b7c286360144efbc2394ce752d`
+- Latest committed checkpoint before current uncommitted demo-access bootstrap implementation and audit sync: `9f8fb8c feat: add seller login flow baseline`
+- Last known `HEAD` before a future demo-access checkpoint commit: `9f8fb8c6db72caefb7b9667a5912d8c32ec26798`
+- Last known `origin/main` before a future demo-access checkpoint commit: `9f8fb8c6db72caefb7b9667a5912d8c32ec26798`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, and P2.2 business ownership baseline commit `a3d19cc` pushed on top.
-- Push status: latest committed checkpoint `a3d19cc` was pushed normally to `origin/main`; no force push was used.
-- Current uncommitted P2.3 state:
-  - `accounts/forms.py`, `accounts/views.py`, `accounts/urls.py`, and `templates/accounts/login.html` are untracked.
-  - `accounts/tests.py`, `config/settings/base.py`, `config/tests.py`, `config/urls.py`, `config/views.py`, `static/css/app.css`, and `templates/base.html` are modified by the P2.3 implementation.
-  - `changelog_checkpoint.md`, `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, and `README.md` are modified by this post-operation integrity audit sync.
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, and P2.3 login flow baseline commit `9f8fb8c` pushed on top.
+- Push status: latest committed checkpoint `9f8fb8c` was pushed normally to `origin/main`; no force push was used.
+- Current uncommitted demo-access bootstrap state:
+  - `accounts/management/` is untracked and contains the new explicit demo-user management command.
+  - `.env.example`, `accounts/tests.py`, `accounts/views.py`, `config/settings/base.py`, and `templates/accounts/login.html` are modified by the implementation.
+  - `changelog_checkpoint.md` and `DEVELOPMENT_NOTES.md` are modified by this post-operation integrity audit sync.
+  - ignored local `.env` is modified with the approved synthetic demo access values and must not be staged or committed.
   - Current branch is `main`.
-  - `HEAD` and `origin/main` were aligned before the uncommitted P2.3 changes.
+  - `HEAD` and `origin/main` were aligned before the uncommitted demo-access bootstrap changes.
 - Documentation checkpoint state:
-  - P2.3 passed post-operation integrity audit and is ready for Git checkpoint review.
+  - Environment-Gated Demo Seller Access Bootstrap passed post-operation integrity audit and is ready for Git checkpoint review.
   - Exact staged, committed, and pushed state must be read from Git commands.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
@@ -494,8 +533,8 @@ A new Codex chat must:
 1. read this file first;
 2. verify branch, `HEAD`, `origin/main`, and working tree state with Git commands;
 3. confirm P1.1 through P1.6 are `PASSED`;
-4. confirm Gate 1 is passed, Phase 2 is `IN_PROGRESS`, and P2.1 through P2.3 are `PASSED`;
-5. inspect the uncommitted P2.3 login/settings/template/static/test/documentation changes before staging;
-6. proceed only with owner-approved Git checkpoint for P2.3;
-7. after P2.3 is committed and pushed, prepare the next-step report for P2.4 - Owner-Scoped Query Helper Baseline;
+4. confirm Gate 1 is passed, Phase 2 is `IN_PROGRESS`, P2.1 through P2.3 are `PASSED`, and Environment-Gated Demo Seller Access Bootstrap is `PASSED`;
+5. inspect the uncommitted demo-access settings/command/view/template/test/documentation changes before staging;
+6. proceed only with owner-approved Git checkpoint for Environment-Gated Demo Seller Access Bootstrap;
+7. after this support slice is committed and pushed, prepare the next-step report for P2.4 - Owner-Scoped Query Helper Baseline;
 8. do not implement P2.4 until owner approval.

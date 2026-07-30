@@ -152,6 +152,14 @@ Build the first seller login flow on Django's `LoginView` and `LogoutView`, keep
 Reason:
 This keeps P2.3 limited to a minimal server-rendered authentication baseline while preserving server-side validation, CSRF-protected session exit, safe return paths, and no seller navigation before authentication. Signup, password reset, demo accounts, business selection, and owner-scoped object access remain separate approved slices or owner decisions.
 
+### 2026-07-30 - Demo seller access is environment-gated and explicit
+
+Decision:
+Keep synthetic demo seller access disabled by default, expose configured demo credentials on the login page only when explicitly enabled by environment, and create or reset the account only through an explicit management command.
+
+Reason:
+The portfolio demo needs a repeatable seller login without creating a registration flow or hardcoding a password in tracked source. Environment gating, placeholder-only committed configuration, ignored local values, Django password hashing, and no automatic startup seed keep the demo account separate from admin, database, production, and personal credentials.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:
