@@ -122,6 +122,20 @@ The local `.env` was initially missing, executable example credentials caused mi
 Reason:
 Infrastructure gates must use runtime evidence rather than configuration inspection alone. HTTP `200` alone also does not prove a shell is ready; templates, static CSS, `404` behavior, semantic structure, and phase-specific acceptance criteria must be verified separately.
 
+### 2026-07-30 - Custom user baseline needs clean migration state
+
+Decision:
+Introduce the custom seller user model before Business or catalog schema, and do not silently rewrite the existing local development database after default Django auth/admin migrations were already applied.
+
+Incident summary:
+P2.1 added `accounts.User` as the custom email-based auth model. The existing local development database had already applied `admin.0001_initial` before the new `accounts.0001_initial` dependency existed, so Django reported `InconsistentMigrationHistory`. Local tests were also blocked because the configured PostgreSQL role could not create the test database.
+
+Reason:
+Django custom user models need to be established before dependent app migrations become part of the project baseline. The safe recovery path is an owner-approved PostgreSQL verification strategy, such as rebuilding the disposable local development database and enabling test database creation, rather than hiding the issue with SQLite or silently mutating local database state.
+
+Resolution:
+The owner approved and completed the local-only PostgreSQL unblock by rebuilding the disposable development database while it contained no seller or product data, preserving ignored `.env` credentials, and granting test database creation capability to the local development role. The clean migration graph now applies `accounts.0001_initial` before `admin.0001_initial`, and both the focused accounts tests and full test suite pass against PostgreSQL. Local `CREATEDB` exists only to support this development/test workflow and is not a production database-role recommendation.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

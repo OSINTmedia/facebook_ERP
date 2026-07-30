@@ -32,7 +32,7 @@ This rebuild is intended to demonstrate:
 
 ## Current Status
 
-Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User and Business Ownership has not started.
+Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User and Business Ownership is in progress.
 
 - Product discovery completed from an earlier private prototype.
 - Owner-controlled planning documents are frozen for the Phase 1 starting baseline.
@@ -44,8 +44,9 @@ Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User an
 - Default Django migrations are applied locally.
 - Minimal server-rendered shell route is verified locally with template, static CSS, root route, and 404 checks.
 - Django system check passes locally.
-- GitHub Actions CI is configured and passed for commit `23fb3ca`.
-- Seller app features have not started.
+- GitHub Actions CI is configured and passing on `main`.
+- Custom email-based seller user model baseline exists and is verified locally.
+- Visible seller app workflows have not started beyond the foundation shell.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
 - The GitHub repository is public, uses default branch `main`, and preserves the initial README commit `dce852b`.
 - Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed.

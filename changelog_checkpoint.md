@@ -31,18 +31,20 @@
 - P1.4 PostgreSQL and Test Database Baseline is `PASSED`.
 - P1.5 Base Application Shell is `PASSED`.
 - P1.6 CI and Initial Test Harness is `PASSED`.
+- Phase 2 User and Business Ownership is `IN_PROGRESS`.
+- P2.1 Accounts App and Custom Seller User Model Baseline is `PASSED`.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
 - Local P1.6 verification commands passed.
-- GitHub Actions run `30537591111` passed for commit `23fb3ca166b86dd1842d653ca9db44f75f696469`.
+- Latest checked GitHub Actions run `30539320803` passed for commit `41b6fe4041c4cb20190c935bf4e3979b86c34569`.
 - Online demo is not deployed.
 - Private workflow prompt `codex_prompt_ERP.txt` exists locally and is intentionally ignored by Git.
 
 ## 2. Current Phase
 
-- Phase: Phase 1 - Django/PostgreSQL Foundation and CI
-- Status: PASSED
-- Current micro-slice: P1.6-finalize - Post-Push CI Verification and Documentation Sync
-- Next implementation micro-slice: Phase 2 first micro-slice next-step report - User and Business Ownership
+- Phase: Phase 2 - User and Business Ownership
+- Status: IN_PROGRESS
+- Current micro-slice: P2.1 - Accounts App and Custom Seller User Model Baseline (`PASSED`)
+- Next concrete micro-slice: P2.2 - Business Model and Ownership Boundary Baseline next-step report
 - Started: 2026-07-27
 - Last updated: 2026-07-30
 
@@ -138,6 +140,7 @@
 - `BUILD_PLAN.md`
 - `README.md`
 - `changelog_checkpoint.md`
+- `accounts/`
 - `config/`
 - `.github/workflows/django.yml`
 - `templates/`
@@ -164,11 +167,11 @@
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Git status: initialized on `main`, tracking `origin/main`; latest committed checkpoint before current uncommitted P1.6-finalize documentation sync is `23fb3ca ci: add django verification workflow`. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, and P1.6 CI workflow commit `23fb3ca`.
+- Git status: initialized on `main`, tracking `origin/main`; latest committed checkpoint before current uncommitted P2.1 implementation is `41b6fe4 docs: record ci verification checkpoint`. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, and P1.6 documentation sync commit `41b6fe4`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
-- CI status: configured and passing on GitHub Actions run `30537591111` for commit `23fb3ca166b86dd1842d653ca9db44f75f696469`.
+- CI status: configured and passing on latest checked GitHub Actions run `30539320803` for commit `41b6fe4041c4cb20190c935bf4e3979b86c34569`.
 - Online demo status: not deployed.
 
 ### P1.4 verification
@@ -226,13 +229,57 @@
 - GitHub Actions run `30537591111` completed with `status: completed` and `conclusion: success`.
 - README now reflects that CI is configured and passing; no badge was added.
 
+### P2.1 verification
+
+- P2.1 Accounts App and Custom Seller User Model Baseline implementation exists locally.
+- Owner-approved PostgreSQL unblock completed after the initial audit:
+  - disposable local development database `facebook_erp_dev` was rebuilt with no seller or product data to preserve;
+  - local-only role `facebook_erp_dev` can create and destroy the test database for local verification;
+  - existing ignored `.env` credentials were preserved;
+  - production configuration was not modified;
+  - SQLite was not introduced.
+- Files created by P2.1:
+  - `accounts/__init__.py`
+  - `accounts/apps.py`
+  - `accounts/models.py`
+  - `accounts/admin.py`
+  - `accounts/tests.py`
+  - `accounts/migrations/__init__.py`
+  - `accounts/migrations/0001_initial.py`
+- Files modified by P2.1:
+  - `config/settings/base.py`
+- Scope audit result:
+  - `accounts.User` is a minimal custom email-based seller identity model.
+  - `AUTH_USER_MODEL` is set to `accounts.User`.
+  - No Business model, login/logout UI, route protection, Product CRUD, domain model, HTMX behavior, Tailwind tooling, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
+- Verification commands run during P2.1 post-unblock integrity audit:
+  - `source .venv/bin/activate && python manage.py check` passed with `System check identified no issues (0 silenced).`
+  - `source .venv/bin/activate && python manage.py check --settings=config.settings.test` passed with `System check identified no issues (0 silenced).`
+  - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run` passed with `No changes detected`.
+  - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
+  - `source .venv/bin/activate && python manage.py migrate --check` passed with no output.
+  - `source .venv/bin/activate && python manage.py showmigrations` showed all `accounts`, `admin`, `auth`, `contenttypes`, and `sessions` migrations applied.
+  - `source .venv/bin/activate && python manage.py showmigrations --plan` showed `accounts.0001_initial` applied before `admin.0001_initial`.
+  - `source .venv/bin/activate && python manage.py shell -c "<user model check>"` resolved `accounts.User`, `USERNAME_FIELD` as `email`, no accidental `auth.User`, and no `username` field.
+  - `source .venv/bin/activate && python manage.py test accounts --settings=config.settings.test -v 2` created `test_facebook_erp_dev`, applied the clean migration graph, ran 5 tests, passed, and destroyed the test database.
+  - `source .venv/bin/activate && python manage.py test --settings=config.settings.test -v 2` created `test_facebook_erp_dev`, applied the clean migration graph, ran 6 tests, passed, and destroyed the test database.
+- Resolved blockers:
+  - Previous `InconsistentMigrationHistory` is resolved.
+  - Previous test database permission blocker is resolved.
+  - Local `CREATEDB` permission is documented as a local test-environment capability only, not a production database role policy.
+- Result: P2.1 is `PASSED`.
+
 ## 6. Current Blockers
 
 - No current P1 blocker remains.
+- No current P2.1 blocker remains.
+- The old P2.1 local migration-history blocker is `RESOLVED`.
+- The old P2.1 test database permission blocker is `RESOLVED`.
 - Existing remote initial README commit must remain preserved.
 - No force push is allowed.
 - Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
-- Phase 2 must not start until the owner approves the next Phase 2 micro-slice.
+- Gate 2 remains open.
+- Do not proceed to P2.2 Business model work until the owner approves the next-step report.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -255,9 +302,11 @@
 
 ## 7. Next Concrete Micro-Slice
 
-Phase 2 has not started.
+Phase 2 is in progress. P2.1 has passed.
 
-Next concrete step: prepare the next-step report for the first Phase 2 User and Business Ownership micro-slice; do not implement until owner approval.
+Next concrete step: prepare the next-step report for P2.2 - Business Model and Ownership Boundary Baseline, derived from the Phase 2 expected micro-slice order in `BUILD_PLAN.md`.
+
+Do not implement P2.2 until owner approval.
 
 ## 8. Scope Guardrails
 
@@ -277,6 +326,7 @@ Next concrete step: prepare the next-step report for the first Phase 2 User and 
 - Future demo must use synthetic data only.
 - Measurement implementation can easily bloat the first product form unless kept as a separate approved micro-slice.
 - Minor shell mobile navigation clipping is deferred UX refinement, not a P1.5 blocker.
+- Local PostgreSQL `CREATEDB` is allowed only for this local test-environment role; it is not a production database role policy.
 
 ## 10. Documentation Priority for New Chats
 
@@ -298,73 +348,73 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P1.6-finalize - Post-Push CI Verification and Documentation Sync plus post-operation integrity audit.
-- Files modified by this sync:
+- Operation: P2.1 - Accounts App and Custom Seller User Model Baseline post-unblock integrity audit and documentation sync.
+- Files created by this operation:
+  - `accounts/__init__.py`
+  - `accounts/apps.py`
+  - `accounts/models.py`
+  - `accounts/admin.py`
+  - `accounts/tests.py`
+  - `accounts/migrations/__init__.py`
+  - `accounts/migrations/0001_initial.py`
+- Files modified by this operation:
   - `changelog_checkpoint.md`
   - `BUILD_PLAN.md`
+  - `DEVELOPMENT_NOTES.md`
   - `README.md`
-  - `requirements.txt`
+  - `config/settings/base.py`
 - Files intentionally not modified:
   - frozen docs under `docs/`
   - `APP_EXPERIENCE_PLAN.md`
-  - `DEVELOPMENT_NOTES.md`
   - `.github/workflows/django.yml`
   - `.env`
   - `.env.example`
   - `.gitignore`
   - `manage.py`
-  - `config/`
   - `templates/`
   - `static/`
   - `codex_prompt_ERP.txt`
 - Source project modified: no.
-- Scope audit result: P1.6-finalize remained limited to verified CI status and documentation sync; no domain apps, models, migrations, authentication, Product CRUD, HTMX behavior, Tailwind build tooling, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
-- Verification commands run during P1.6 implementation and post-push sync:
-  - `.venv/bin/python -m pip check` passed with `No broken requirements found.`
-  - `.venv/bin/python manage.py check --settings=config.settings.test` passed with no issues.
-  - `.venv/bin/python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
-  - `.venv/bin/python manage.py migrate --check --settings=config.settings.test` passed with no output.
-  - `.venv/bin/python manage.py test --settings=config.settings.test -v 2` passed with 1 test.
-  - `git status --short --branch` showed `main...origin/main` aligned before this documentation sync.
-  - `git rev-parse HEAD` returned `23fb3ca166b86dd1842d653ca9db44f75f696469`.
-  - `git rev-parse origin/main` returned `23fb3ca166b86dd1842d653ca9db44f75f696469`.
-  - `git log -1 --oneline --decorate` returned `23fb3ca (HEAD -> main, origin/main, origin/HEAD) ci: add django verification workflow`.
-  - `git diff --name-status` showed only `BUILD_PLAN.md`, `README.md`, `changelog_checkpoint.md`, and `requirements.txt` modified.
-  - `git diff --stat` showed 4 files changed, 69 insertions, and 55 deletions.
-  - `git diff --check` passed with no output.
-  - `git log --oneline --decorate -5` showed `23fb3ca` at `HEAD`, `origin/main`, and `origin/HEAD`, followed by preserved prior commits.
-  - stale pre-push wording scan returned no matches.
-  - frozen-doc/source drift check returned no modified files under `docs/`, `APP_EXPERIENCE_PLAN.md`, `DEVELOPMENT_NOTES.md`, `.github/workflows/django.yml`, `config/`, `templates/`, `static/`, `manage.py`, `.env.example`, or `.gitignore`.
-  - `git check-ignore -v .env .venv codex_prompt_ERP.txt` confirmed `.env`, `.venv/`, and `codex_prompt_ERP.txt` remain ignored.
-  - `curl -sS 'https://api.github.com/repos/OSINTmedia/facebook_ERP/actions/runs?per_page=1'` returned workflow run `30537591111` with `status: completed`, `conclusion: success`, and `head_sha: 23fb3ca166b86dd1842d653ca9db44f75f696469`.
-- Known issues from this sync:
+- Scope audit result: P2.1 remained limited to a custom email-based user baseline and focused tests; no Business model, login/logout UI, seller route protection, Product CRUD, domain models, HTMX behavior, Tailwind tooling, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
+- Verification commands run during P2.1 post-unblock integrity audit:
+  - `source .venv/bin/activate && python manage.py check` passed with `System check identified no issues (0 silenced).`
+  - `source .venv/bin/activate && python manage.py check --settings=config.settings.test` passed with `System check identified no issues (0 silenced).`
+  - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run` passed with `No changes detected`.
+  - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
+  - `source .venv/bin/activate && python manage.py migrate --check` passed with no output.
+  - `source .venv/bin/activate && python manage.py showmigrations` showed all required migrations applied.
+  - `source .venv/bin/activate && python manage.py showmigrations --plan` showed `accounts.0001_initial` before `admin.0001_initial`.
+  - `source .venv/bin/activate && python manage.py shell -c "<user model check>"` resolved `accounts.User` with `email` identity, no accidental `auth.User`, and no `username` field.
+  - `source .venv/bin/activate && python manage.py test accounts --settings=config.settings.test -v 2` ran 5 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+  - `source .venv/bin/activate && python manage.py test --settings=config.settings.test -v 2` ran 6 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+- Known issues from this operation:
   - Online demo is not deployed.
-  - Phase 2 has not started.
-- Result: Phase 1 is `PASSED`; P1.6 is `PASSED`; Gate 1 is passed; next concrete step is a next-step report for the first Phase 2 User and Business Ownership micro-slice.
+  - Gate 2 remains open until the rest of Phase 2 ownership and access-control work passes.
+- Result: Phase 2 is `IN_PROGRESS`; P2.1 is `PASSED`; Gate 2 is not passed.
 
 ## 12. Git Checkpoint
 
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Latest committed checkpoint before current uncommitted P1.6-finalize documentation sync: `23fb3ca ci: add django verification workflow`
-- Last known `HEAD` before a future documentation-sync checkpoint commit: `23fb3ca166b86dd1842d653ca9db44f75f696469`
-- Last known `origin/main` before a future documentation-sync checkpoint commit: `23fb3ca166b86dd1842d653ca9db44f75f696469`
+- Latest committed checkpoint before current uncommitted P2.1 implementation and audit sync: `41b6fe4 docs: record ci verification checkpoint`
+- Last known `HEAD` before a future P2.1 checkpoint commit: `41b6fe4041c4cb20190c935bf4e3979b86c34569`
+- Last known `origin/main` before a future P2.1 checkpoint commit: `41b6fe4041c4cb20190c935bf4e3979b86c34569`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, and P1.6 CI workflow commit `23fb3ca` pushed on top.
-- Push status: P1.6 CI workflow commit `23fb3ca` was pushed normally to `origin/main`; no force push was used.
-- Current uncommitted checkpoint state:
-  - `changelog_checkpoint.md` is modified by the P1.6-finalize documentation sync.
-  - `BUILD_PLAN.md` is modified by the P1.6 status sync.
-  - `README.md` is modified to reflect verified CI status.
-  - `requirements.txt` is modified to remove stale CI-future wording.
-  - current branch is `main`.
-  - `HEAD` and `origin/main` were aligned before the uncommitted P1.6-finalize changes.
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, and P1.6 documentation sync commit `41b6fe4` pushed on top.
+- Push status: latest committed checkpoint `41b6fe4` was pushed normally to `origin/main`; no force push was used.
+- Current uncommitted P2.1 state:
+  - `accounts/` is untracked and contains the new custom user app, tests, and initial migration.
+  - `config/settings/base.py` is modified for `accounts` and `AUTH_USER_MODEL`.
+  - `changelog_checkpoint.md`, `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, and `README.md` are modified by this post-unblock integrity audit sync.
+  - Current branch is `main`.
+  - `HEAD` and `origin/main` were aligned before the uncommitted P2.1 changes.
 - Documentation checkpoint state:
-  - The P1.6-finalize documentation sync passed post-operation integrity audit and is ready for Git checkpoint review; exact staged, committed, and pushed state must be read from Git commands.
+  - P2.1 passed post-unblock integrity audit and is ready for Git checkpoint review.
+  - Exact staged, committed, and pushed state must be read from Git commands.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
 - Exact current `HEAD` after any future checkpoint commit must be read from Git; do not hardcode a future commit hash into this checkpoint.
@@ -376,7 +426,8 @@ A new Codex chat must:
 1. read this file first;
 2. verify branch, `HEAD`, `origin/main`, and working tree state with Git commands;
 3. confirm P1.1 through P1.6 are `PASSED`;
-4. confirm Gate 1 is passed and Phase 2 has not started;
-5. inspect the uncommitted P1.6-finalize documentation changes before staging;
-6. proceed only with owner-approved Git checkpoint for this documentation sync;
-7. prepare the next-step report for the first Phase 2 User and Business Ownership micro-slice only after this documentation sync is accepted.
+4. confirm Gate 1 is passed, Phase 2 is `IN_PROGRESS`, and P2.1 is `PASSED`;
+5. inspect the uncommitted P2.1 accounts/settings/documentation changes before staging;
+6. proceed only with owner-approved Git checkpoint for P2.1;
+7. after P2.1 is committed and pushed, prepare the next-step report for P2.2 - Business Model and Ownership Boundary Baseline;
+8. do not implement P2.2 until owner approval.
