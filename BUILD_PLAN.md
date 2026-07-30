@@ -437,7 +437,8 @@ Avoid libraries that depend on:
 - Proposed commit message: `ci: add django verification workflow`.
 - Rollback/recovery note: fix or remove broken CI before next feature phase.
 - Stop gate: Gate 1.
-- Status: NOT_STARTED.
+- Current implementation state: local workflow added and local equivalent checks passed; GitHub Actions run and owner verification are still pending.
+- Status: IN_PROGRESS.
 
 ## 12. Remaining Phase Outlines
 
