@@ -151,7 +151,7 @@ Use only these status values:
 | Phase | Name | Goal | Status | Stop Gate | Portfolio Evidence |
 |---|---|---|---|---|---|
 | Phase 0 | Documentation Approval and Repository Foundation | Freeze planning docs and establish honest repository baseline | PASSED | Gate 0 | Frozen docs, honest history, corrective checkpoint before Phase 1 |
-| Phase 1 | Django/PostgreSQL Foundation and CI | Create minimal clean Django project, settings, test harness, and CI | IN_PROGRESS | Gate 1 | Scaffold commits, CI workflow, reproducible setup |
+| Phase 1 | Django/PostgreSQL Foundation and CI | Create minimal clean Django project, settings, test harness, and CI | PASSED | Gate 1 | Scaffold commits, CI workflow, reproducible setup |
 | Phase 2 | User and Business Ownership | Implement authentication and business ownership boundary | NOT_STARTED | Gate 2 | User/business tests, access-control tests |
 | Phase 3 | Catalog Core | Implement product core facts and lifecycle | NOT_STARTED | Gate 3 | Product model/forms/views/tests |
 | Phase 4 | Semantic Recognition and Choice Model | Implement description-first recognition for type/tag/material candidates plus stock-bearing choices | NOT_STARTED | Gate 3 | Recognition contract, alias tests, choice validation |
@@ -437,8 +437,8 @@ Avoid libraries that depend on:
 - Proposed commit message: `ci: add django verification workflow`.
 - Rollback/recovery note: fix or remove broken CI before next feature phase.
 - Stop gate: Gate 1.
-- Current implementation state: local workflow added and local equivalent checks passed; GitHub Actions run and owner verification are still pending.
-- Status: IN_PROGRESS.
+- Current implementation state: workflow committed and pushed as `23fb3ca`; GitHub Actions run `30537591111` completed successfully; local equivalent checks passed.
+- Status: PASSED.
 
 ## 12. Remaining Phase Outlines
 
@@ -448,6 +448,7 @@ Avoid libraries that depend on:
 - Dependency: Gate 1.
 - Scope boundary: User, Business, login/logout, active business policy, access tests.
 - Expected micro-slices: auth model, business model, login flow, owner-scoped query helper, cross-business access tests.
+- Current dependency state: Gate 1 is passed; next concrete step is the Phase 2 first micro-slice next-step report - User and Business Ownership. Do not implement until owner approval.
 - Stop gate: every seller-owned object created later has a business boundary and test pattern.
 
 ### Phase 3: Catalog Core

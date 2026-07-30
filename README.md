@@ -32,7 +32,7 @@ This rebuild is intended to demonstrate:
 
 ## Current Status
 
-Status: Phase 1 remains in progress. P1.4 PostgreSQL/local environment verification and P1.5 base application shell are complete; P1.6 CI and initial test harness is next.
+Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User and Business Ownership has not started.
 
 - Product discovery completed from an earlier private prototype.
 - Owner-controlled planning documents are frozen for the Phase 1 starting baseline.
@@ -44,6 +44,7 @@ Status: Phase 1 remains in progress. P1.4 PostgreSQL/local environment verificat
 - Default Django migrations are applied locally.
 - Minimal server-rendered shell route is verified locally with template, static CSS, root route, and 404 checks.
 - Django system check passes locally.
+- GitHub Actions CI is configured and passed for commit `23fb3ca`.
 - Seller app features have not started.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
 - The GitHub repository is public, uses default branch `main`, and preserves the initial README commit `dce852b`.
@@ -52,7 +53,6 @@ Status: Phase 1 remains in progress. P1.4 PostgreSQL/local environment verificat
 - Local branch `main` tracks `origin/main`.
 - Local remote is `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub SSH authentication works through `ssh.github.com` on port `443`.
-- CI is not configured yet.
 - Online demo is not deployed yet.
 - Existing remote history must be preserved; no force push is allowed.
 - Future commits should continue the documented micro-slice workflow without rewriting history.

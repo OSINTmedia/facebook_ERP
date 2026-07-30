@@ -24,25 +24,25 @@
 - GitHub repository visibility: public.
 - GitHub default branch: `main`.
 - Remote contains the preserved initial README commit `dce852b`.
-- Phase 1 is active and remains `IN_PROGRESS`.
+- Phase 1 Django/PostgreSQL foundation and CI is `PASSED`.
 - P1.1 Python and Django Dependency Baseline is `PASSED`.
 - P1.2 Clean Django Project Scaffold is `PASSED`.
 - P1.3 Settings and Environment Structure is `PASSED`.
 - P1.4 PostgreSQL and Test Database Baseline is `PASSED`.
 - P1.5 Base Application Shell is `PASSED`.
-- P1.6 CI and Initial Test Harness is `IN_PROGRESS`.
-- CI workflow has been added locally in `.github/workflows/django.yml`.
+- P1.6 CI and Initial Test Harness is `PASSED`.
+- CI workflow is committed and pushed in `.github/workflows/django.yml`.
 - Local P1.6 verification commands passed.
-- GitHub Actions has not run yet because the P1.6 changes have not been committed or pushed.
+- GitHub Actions run `30537591111` passed for commit `23fb3ca166b86dd1842d653ca9db44f75f696469`.
 - Online demo is not deployed.
 - Private workflow prompt `codex_prompt_ERP.txt` exists locally and is intentionally ignored by Git.
 
 ## 2. Current Phase
 
 - Phase: Phase 1 - Django/PostgreSQL Foundation and CI
-- Status: IN_PROGRESS
-- Current micro-slice: P1.6 - CI and Initial Test Harness
-- Next implementation micro-slice: P1.6 - CI and Initial Test Harness
+- Status: PASSED
+- Current micro-slice: P1.6-finalize - Post-Push CI Verification and Documentation Sync
+- Next implementation micro-slice: Phase 2 first micro-slice next-step report - User and Business Ownership
 - Started: 2026-07-27
 - Last updated: 2026-07-30
 
@@ -111,8 +111,9 @@
   - workflow installs dependencies from `requirements.txt`
   - workflow runs `pip check`, Django system check, migration dry-run check, migration apply, migration check, and Django tests
   - local equivalent verification passed
-  - GitHub Actions has not run yet because the changes are not committed or pushed
-  - P1.6 is not marked `PASSED` until remote CI runs and owner verification is complete
+  - committed and pushed as `23fb3ca ci: add django verification workflow`
+  - GitHub Actions run `30537591111` completed successfully for commit `23fb3ca166b86dd1842d653ca9db44f75f696469`
+  - P1.6 is marked `PASSED`; Gate 1 is passed
 - Owner-controlled documents frozen for Phase 1 baseline:
   - `docs/Portfolio_MVP_V1.md`
   - `docs/Technical_Planning_v1.md`
@@ -163,11 +164,11 @@
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Git status: initialized on `main`, tracking `origin/main`; latest committed checkpoint before current uncommitted P1.6 work is `0188e99 docs: refresh checkpoint before CI`. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, and P1.4/P1.5 runtime-shell checkpoint commit `dc21677`.
+- Git status: initialized on `main`, tracking `origin/main`; latest committed checkpoint before current uncommitted P1.6-finalize documentation sync is `23fb3ca ci: add django verification workflow`. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, and P1.6 CI workflow commit `23fb3ca`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
-- CI status: workflow added locally; not committed or pushed; GitHub Actions run not yet verified.
+- CI status: configured and passing on GitHub Actions run `30537591111` for commit `23fb3ca166b86dd1842d653ca9db44f75f696469`.
 - Online demo status: not deployed.
 
 ### P1.4 verification
@@ -212,7 +213,7 @@
 
 ### P1.6 local verification
 
-- `.github/workflows/django.yml` exists locally and is the only new source file from the P1.6 implementation.
+- `.github/workflows/django.yml` exists in the repository and is the only source file from the P1.6 implementation.
 - Workflow uses GitHub Actions on push and pull request to `main`.
 - Workflow uses a disposable PostgreSQL service with no repository secrets.
 - Workflow preserves the PostgreSQL-only settings boundary through `config.settings.test`.
@@ -222,16 +223,16 @@
   - `.venv/bin/python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
   - `.venv/bin/python manage.py migrate --check --settings=config.settings.test` passed with no output.
   - `.venv/bin/python manage.py test --settings=config.settings.test -v 2` passed with 1 test.
-- GitHub Actions has not run yet because no P1.6 commit has been pushed.
-- README was not updated with CI-pass wording or a badge.
+- GitHub Actions run `30537591111` completed with `status: completed` and `conclusion: success`.
+- README now reflects that CI is configured and passing; no badge was added.
 
 ## 6. Current Blockers
 
-- No current P1.4/P1.5 runtime blocker remains.
+- No current P1 blocker remains.
 - Existing remote initial README commit must remain preserved.
 - No force push is allowed.
-- Gate 1 remains open until P1.6 CI/test harness verification passes locally and on GitHub Actions.
-- P1.6 has local implementation and local verification, but still requires Git checkpoint review, commit/push approval, remote GitHub Actions verification, and owner confirmation before it can be marked `PASSED`.
+- Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
+- Phase 2 must not start until the owner approves the next Phase 2 micro-slice.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -254,9 +255,9 @@
 
 ## 7. Next Concrete Micro-Slice
 
-P1.6 - CI and Initial Test Harness remains active.
+Phase 2 has not started.
 
-Next concrete step: review the P1.6 integrity audit, then proceed to Git checkpoint review and owner-approved commit/push. After the pushed workflow runs successfully on GitHub Actions and the owner verifies the result, update documentation and mark P1.6 `PASSED` if all acceptance criteria remain satisfied.
+Next concrete step: prepare the next-step report for the first Phase 2 User and Business Ownership micro-slice; do not implement until owner approval.
 
 ## 8. Scope Guardrails
 
@@ -270,7 +271,7 @@ Next concrete step: review the P1.6 integrity audit, then proceed to Git checkpo
 ## 9. Known Risks
 
 - Existing remote initial commit must remain preserved.
-- README must remain honest until code, CI, and demo actually exist.
+- README must remain honest until seller features and the online demo actually exist; CI is now configured and verified.
 - Prototype behavior may tempt scope creep if copied wholesale.
 - Source project contains media/backups and `.env`; these must not be copied or published.
 - Future demo must use synthetic data only.
@@ -297,18 +298,17 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P1.6 CI and Initial Test Harness implementation plus post-operation integrity audit.
-- Files created by P1.6 implementation:
-  - `.github/workflows/django.yml`
-- Files updated by P1.6 integrity audit:
+- Operation: P1.6-finalize - Post-Push CI Verification and Documentation Sync plus post-operation integrity audit.
+- Files modified by this sync:
   - `changelog_checkpoint.md`
   - `BUILD_PLAN.md`
+  - `README.md`
+  - `requirements.txt`
 - Files intentionally not modified:
   - frozen docs under `docs/`
   - `APP_EXPERIENCE_PLAN.md`
   - `DEVELOPMENT_NOTES.md`
-  - `README.md`
-  - `requirements.txt`
+  - `.github/workflows/django.yml`
   - `.env`
   - `.env.example`
   - `.gitignore`
@@ -318,40 +318,53 @@ Private local prompt:
   - `static/`
   - `codex_prompt_ERP.txt`
 - Source project modified: no.
-- Scope audit result: P1.6 remained limited to CI/test harness setup; no domain apps, models, migrations, authentication, Product CRUD, HTMX behavior, Tailwind build tooling, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
-- Verification commands run during P1.6 implementation and integrity audit:
+- Scope audit result: P1.6-finalize remained limited to verified CI status and documentation sync; no domain apps, models, migrations, authentication, Product CRUD, HTMX behavior, Tailwind build tooling, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
+- Verification commands run during P1.6 implementation and post-push sync:
   - `.venv/bin/python -m pip check` passed with `No broken requirements found.`
   - `.venv/bin/python manage.py check --settings=config.settings.test` passed with no issues.
   - `.venv/bin/python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
   - `.venv/bin/python manage.py migrate --check --settings=config.settings.test` passed with no output.
   - `.venv/bin/python manage.py test --settings=config.settings.test -v 2` passed with 1 test.
-- Known issues from integrity audit:
-  - GitHub Actions has not run yet because the P1.6 workflow has not been committed or pushed.
-  - P1.6 cannot be marked `PASSED` until the remote CI run succeeds and the owner verifies it.
-- Result: Phase 1 remains `IN_PROGRESS`; P1.6 remains `IN_PROGRESS`; Gate 1 remains open; next concrete step is Git checkpoint review for P1.6.
+  - `git status --short --branch` showed `main...origin/main` aligned before this documentation sync.
+  - `git rev-parse HEAD` returned `23fb3ca166b86dd1842d653ca9db44f75f696469`.
+  - `git rev-parse origin/main` returned `23fb3ca166b86dd1842d653ca9db44f75f696469`.
+  - `git log -1 --oneline --decorate` returned `23fb3ca (HEAD -> main, origin/main, origin/HEAD) ci: add django verification workflow`.
+  - `git diff --name-status` showed only `BUILD_PLAN.md`, `README.md`, `changelog_checkpoint.md`, and `requirements.txt` modified.
+  - `git diff --stat` showed 4 files changed, 69 insertions, and 55 deletions.
+  - `git diff --check` passed with no output.
+  - `git log --oneline --decorate -5` showed `23fb3ca` at `HEAD`, `origin/main`, and `origin/HEAD`, followed by preserved prior commits.
+  - stale pre-push wording scan returned no matches.
+  - frozen-doc/source drift check returned no modified files under `docs/`, `APP_EXPERIENCE_PLAN.md`, `DEVELOPMENT_NOTES.md`, `.github/workflows/django.yml`, `config/`, `templates/`, `static/`, `manage.py`, `.env.example`, or `.gitignore`.
+  - `git check-ignore -v .env .venv codex_prompt_ERP.txt` confirmed `.env`, `.venv/`, and `codex_prompt_ERP.txt` remain ignored.
+  - `curl -sS 'https://api.github.com/repos/OSINTmedia/facebook_ERP/actions/runs?per_page=1'` returned workflow run `30537591111` with `status: completed`, `conclusion: success`, and `head_sha: 23fb3ca166b86dd1842d653ca9db44f75f696469`.
+- Known issues from this sync:
+  - Online demo is not deployed.
+  - Phase 2 has not started.
+- Result: Phase 1 is `PASSED`; P1.6 is `PASSED`; Gate 1 is passed; next concrete step is a next-step report for the first Phase 2 User and Business Ownership micro-slice.
 
 ## 12. Git Checkpoint
 
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Latest committed checkpoint before current uncommitted P1.6 work: `0188e99 docs: refresh checkpoint before CI`
-- Last known `HEAD` before a future P1.6 checkpoint commit: `0188e99b131fd4ca7cb1bee81fc69e92245bfa61`
-- Last known `origin/main` before a future P1.6 checkpoint commit: `0188e99b131fd4ca7cb1bee81fc69e92245bfa61`
+- Latest committed checkpoint before current uncommitted P1.6-finalize documentation sync: `23fb3ca ci: add django verification workflow`
+- Last known `HEAD` before a future documentation-sync checkpoint commit: `23fb3ca166b86dd1842d653ca9db44f75f696469`
+- Last known `origin/main` before a future documentation-sync checkpoint commit: `23fb3ca166b86dd1842d653ca9db44f75f696469`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, and P1.4/P1.5 runtime-shell checkpoint commit `dc21677` pushed on top.
-- Push status: no P1.6 commit or push has occurred yet.
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, and P1.6 CI workflow commit `23fb3ca` pushed on top.
+- Push status: P1.6 CI workflow commit `23fb3ca` was pushed normally to `origin/main`; no force push was used.
 - Current uncommitted checkpoint state:
-  - `.github/workflows/django.yml` is untracked before staging.
-  - `changelog_checkpoint.md` is modified by the P1.6 integrity audit.
+  - `changelog_checkpoint.md` is modified by the P1.6-finalize documentation sync.
   - `BUILD_PLAN.md` is modified by the P1.6 status sync.
+  - `README.md` is modified to reflect verified CI status.
+  - `requirements.txt` is modified to remove stale CI-future wording.
   - current branch is `main`.
-  - `HEAD` and `origin/main` were aligned before the uncommitted P1.6 changes.
-- Implementation checkpoint state:
-  - The P1.6 workflow implementation and checkpoint sync are ready for Git checkpoint review, but not staged, committed, or pushed.
+  - `HEAD` and `origin/main` were aligned before the uncommitted P1.6-finalize changes.
+- Documentation checkpoint state:
+  - The P1.6-finalize documentation sync passed post-operation integrity audit and is ready for Git checkpoint review; exact staged, committed, and pushed state must be read from Git commands.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
 - Exact current `HEAD` after any future checkpoint commit must be read from Git; do not hardcode a future commit hash into this checkpoint.
@@ -361,9 +374,9 @@ Private local prompt:
 A new Codex chat must:
 
 1. read this file first;
-2. verify branch, `HEAD`, `origin/main`, and clean working tree with Git commands;
-3. confirm P1.1 through P1.5 are `PASSED`;
-4. confirm P1.6 remains `IN_PROGRESS` until remote GitHub Actions verification passes;
-5. inspect the uncommitted P1.6 changes before staging;
-6. proceed only with owner-approved Git checkpoint, commit, push, and remote CI verification;
-7. do not mark P1.6 `PASSED` or start Phase 2 until GitHub Actions succeeds and owner verification is complete.
+2. verify branch, `HEAD`, `origin/main`, and working tree state with Git commands;
+3. confirm P1.1 through P1.6 are `PASSED`;
+4. confirm Gate 1 is passed and Phase 2 has not started;
+5. inspect the uncommitted P1.6-finalize documentation changes before staging;
+6. proceed only with owner-approved Git checkpoint for this documentation sync;
+7. prepare the next-step report for the first Phase 2 User and Business Ownership micro-slice only after this documentation sync is accepted.
