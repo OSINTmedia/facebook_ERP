@@ -38,7 +38,7 @@
 - Environment-Gated Demo Seller Access Bootstrap is `PASSED`.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
 - Local P1.6 verification commands passed.
-- Latest checked GitHub Actions run `30539320803` passed for commit `41b6fe4041c4cb20190c935bf4e3979b86c34569`.
+- Latest checked GitHub Actions run `30555152734` passed for commit `bfaacae1ca2b34eae003bba76966e8c7096f70bf`.
 - Online demo is not deployed.
 - Private workflow prompt `codex_prompt_ERP.txt` exists locally and is intentionally ignored by Git.
 
@@ -47,7 +47,7 @@
 - Phase: Phase 2 - User and Business Ownership
 - Status: IN_PROGRESS
 - Current micro-slice: Environment-Gated Demo Seller Access Bootstrap (`PASSED`)
-- Next concrete micro-slice: P2.4 - Owner-Scoped Query Helper Baseline next-step report
+- Next concrete micro-slice: P2.4 Owner-Scoped Query Helper Baseline
 - Started: 2026-07-27
 - Last updated: 2026-07-30
 
@@ -171,11 +171,11 @@
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Git status: initialized on `main`, tracking `origin/main`; latest committed checkpoint before current uncommitted demo-access bootstrap implementation and audit sync is `9f8fb8c feat: add seller login flow baseline`. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, and P2.3 login flow baseline commit `9f8fb8c`.
+- Git status at repository handoff audit: initialized on `main`, tracking `origin/main`; working tree was clean before this handoff checkpoint correction; `HEAD`, `origin/main`, and actual remote `main` were aligned at `bfaacae1ca2b34eae003bba76966e8c7096f70bf`. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, and demo-access bootstrap commit `bfaacae`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
-- CI status: configured and passing on latest checked GitHub Actions run `30539320803` for commit `41b6fe4041c4cb20190c935bf4e3979b86c34569`.
+- CI status: configured and passing on latest checked GitHub Actions run `30555152734` for commit `bfaacae1ca2b34eae003bba76966e8c7096f70bf`.
 - Online demo status: not deployed.
 
 ### P1.4 verification
@@ -411,7 +411,7 @@
 
 Phase 2 is in progress. P2.1, P2.2, P2.3, and the Environment-Gated Demo Seller Access Bootstrap have passed.
 
-Next concrete step: prepare the next-step report for P2.4 - Owner-Scoped Query Helper Baseline, derived from the Phase 2 expected micro-slice order in `BUILD_PLAN.md`.
+Next concrete step: prepare the next-step report for P2.4 Owner-Scoped Query Helper Baseline, derived from the Phase 2 expected micro-slice order in `BUILD_PLAN.md`.
 
 Do not implement P2.4 until owner approval.
 
@@ -455,20 +455,23 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: Environment-Gated Demo Seller Access Bootstrap implementation, integrity audit, and documentation sync.
-- Files created by this operation:
+- Operation: Repository Handoff Readiness Audit and documentation reconciliation.
+- Files corrected by this operation:
+  - `changelog_checkpoint.md`
+- Source/test files corrected by this operation:
+  - none
+- Runtime state corrected by this operation:
+  - applied the already-committed `businesses.0001_initial` migration to the disposable local development database after `python manage.py migrate --check` identified that local database state was behind committed migrations
+- Previously completed demo-access files:
   - `accounts/management/__init__.py`
   - `accounts/management/commands/__init__.py`
   - `accounts/management/commands/seed_demo_user.py`
-- Files modified by this operation:
   - `.env.example`
   - ignored local `.env`
   - `accounts/tests.py`
   - `accounts/views.py`
   - `config/settings/base.py`
   - `templates/accounts/login.html`
-  - `changelog_checkpoint.md`
-  - `DEVELOPMENT_NOTES.md`
 - Files intentionally not modified:
   - frozen docs under `docs/`
   - `APP_EXPERIENCE_PLAN.md`
@@ -482,45 +485,59 @@ Private local prompt:
   - `codex_prompt_ERP.txt`
 - Source project modified: no.
 - Scope audit result: the support slice remained limited to environment-gated synthetic demo seller access; no signup, password reset, email verification, social auth, admin user, Business creation, Business selector/resolver, owner-scoped query helper, cross-business access matrix, Product CRUD, domain models, HTMX behavior, Tailwind tooling, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
-- Verification commands run during implementation and integrity audit:
+- Verification commands run during repository handoff audit:
+  - `git status --short --branch` reported `## main...origin/main` before this checkpoint correction.
+  - `git diff --name-status`, `git diff --stat`, `git diff --check`, `git diff --cached --name-status`, `git diff --cached --stat`, and `git diff --cached --check` had no output before this checkpoint correction.
+  - `git rev-parse HEAD`, `git rev-parse origin/main`, and `git ls-remote origin refs/heads/main` all resolved to `bfaacae1ca2b34eae003bba76966e8c7096f70bf`.
+  - `git ls-files .env codex_prompt_ERP.txt` had no output.
+  - `git check-ignore -v .env codex_prompt_ERP.txt` confirmed both files are ignored.
+  - Tracked-source credential scan found no committed demo email or demo password values outside ignored local files.
   - `source .venv/bin/activate && python manage.py check` passed with `System check identified no issues (0 silenced).`
   - `source .venv/bin/activate && python manage.py check --settings=config.settings.test` passed with `System check identified no issues (0 silenced).`
   - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run` passed with `No changes detected`.
   - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
+  - `source .venv/bin/activate && python manage.py migrate --check` passed after applying the already-committed local `businesses.0001_initial` migration.
+  - `source .venv/bin/activate && python manage.py showmigrations` showed all current `accounts`, `admin`, `auth`, `businesses`, `contenttypes`, and `sessions` migrations applied.
+  - `source .venv/bin/activate && python manage.py showmigrations --plan` showed `accounts.0001_initial` before `admin.0001_initial`.
+  - `source .venv/bin/activate && python manage.py findstatic css/app.css --verbosity 2` found `static/css/app.css`.
   - `source .venv/bin/activate && python manage.py seed_demo_user` passed and reported `Demo user updated.`
-  - `source .venv/bin/activate && python manage.py shell -c "<demo user boolean auth check>"` confirmed the local synthetic demo user exists, is active, is not staff, is not superuser, and authenticates successfully.
-  - `source .venv/bin/activate && python manage.py shell -c "<plaintext password boolean check>"` confirmed the configured demo password is not stored as plaintext.
+  - `source .venv/bin/activate && python manage.py shell -c "<demo user boolean auth check>"` confirmed `accounts.User`, `USERNAME_FIELD=email`, demo access enabled locally, configured demo account present, active, not staff, not superuser, authenticates, and no plaintext password is stored.
+  - `source .venv/bin/activate && python manage.py shell -c "<demo settings default check>"` confirmed demo access defaults to disabled and empty values when no `.env` is loaded.
+  - `source .venv/bin/activate && python manage.py shell -c "<business owner model check>"` confirmed `Business.owner` targets `accounts.User`, uses `PROTECT`, and no active-business query policy/helper exists yet.
   - `source .venv/bin/activate && python manage.py test accounts --settings=config.settings.test -v 2` ran 22 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+  - `source .venv/bin/activate && python manage.py test businesses --settings=config.settings.test -v 2` ran 4 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+  - `source .venv/bin/activate && python manage.py test config --settings=config.settings.test -v 2` ran 2 tests, passed, and created/destroyed `test_facebook_erp_dev`.
   - `source .venv/bin/activate && python manage.py test --settings=config.settings.test -v 2` ran 28 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+  - `source .venv/bin/activate && python manage.py shell -c "<route/static boolean check>"` confirmed login route `200`, anonymous root redirect, authenticated root `200`, base/template inheritance, stylesheet references, unknown route `404`, and POST logout redirect.
+  - Public GitHub Actions API showed run `30555152734` completed successfully for `bfaacae1ca2b34eae003bba76966e8c7096f70bf`; local `gh run list` is unavailable because GitHub CLI is not authenticated.
 - Known issues from this operation:
   - Online demo is not deployed.
   - The local synthetic demo seller has no Business object yet because Business selection and ownership-scoped seller workflows remain later Phase 2 work.
   - Gate 2 remains open until the rest of Phase 2 ownership and access-control work passes.
-- Result: Phase 2 is `IN_PROGRESS`; Environment-Gated Demo Seller Access Bootstrap is `PASSED`; Gate 2 is not passed.
+- Result: Phase 2 is `IN_PROGRESS`; Environment-Gated Demo Seller Access Bootstrap is committed, pushed, verified, and `PASSED`; repository is ready for new-chat handoff after this checkpoint correction is committed and pushed.
 
 ## 12. Git Checkpoint
 
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Latest committed checkpoint before current uncommitted demo-access bootstrap implementation and audit sync: `9f8fb8c feat: add seller login flow baseline`
-- Last known `HEAD` before a future demo-access checkpoint commit: `9f8fb8c6db72caefb7b9667a5912d8c32ec26798`
-- Last known `origin/main` before a future demo-access checkpoint commit: `9f8fb8c6db72caefb7b9667a5912d8c32ec26798`
+- Latest committed checkpoint before current handoff-audit correction: `bfaacae feat: add environment-gated demo seller access`
+- Last known `HEAD` before a future handoff-audit checkpoint commit: `bfaacae1ca2b34eae003bba76966e8c7096f70bf`
+- Last known `origin/main` before a future handoff-audit checkpoint commit: `bfaacae1ca2b34eae003bba76966e8c7096f70bf`
+- Last known actual remote `main` before a future handoff-audit checkpoint commit: `bfaacae1ca2b34eae003bba76966e8c7096f70bf`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, and P2.3 login flow baseline commit `9f8fb8c` pushed on top.
-- Push status: latest committed checkpoint `9f8fb8c` was pushed normally to `origin/main`; no force push was used.
-- Current uncommitted demo-access bootstrap state:
-  - `accounts/management/` is untracked and contains the new explicit demo-user management command.
-  - `.env.example`, `accounts/tests.py`, `accounts/views.py`, `config/settings/base.py`, and `templates/accounts/login.html` are modified by the implementation.
-  - `changelog_checkpoint.md` and `DEVELOPMENT_NOTES.md` are modified by this post-operation integrity audit sync.
-  - ignored local `.env` is modified with the approved synthetic demo access values and must not be staged or committed.
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, and demo-access bootstrap commit `bfaacae` pushed on top.
+- Push status: latest committed checkpoint `bfaacae` was pushed normally to `origin/main`; no force push was used.
+- Current uncommitted handoff-audit state:
+  - `changelog_checkpoint.md` is modified by this repository handoff audit correction.
   - Current branch is `main`.
-  - `HEAD` and `origin/main` were aligned before the uncommitted demo-access bootstrap changes.
+  - `HEAD`, `origin/main`, and actual remote `main` were aligned before this handoff-audit documentation correction.
 - Documentation checkpoint state:
-  - Environment-Gated Demo Seller Access Bootstrap passed post-operation integrity audit and is ready for Git checkpoint review.
+  - Environment-Gated Demo Seller Access Bootstrap is committed, pushed, and verified.
+  - Repository handoff audit passed with a checkpoint correction and is ready for Git checkpoint review.
   - Exact staged, committed, and pushed state must be read from Git commands.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
@@ -534,7 +551,7 @@ A new Codex chat must:
 2. verify branch, `HEAD`, `origin/main`, and working tree state with Git commands;
 3. confirm P1.1 through P1.6 are `PASSED`;
 4. confirm Gate 1 is passed, Phase 2 is `IN_PROGRESS`, P2.1 through P2.3 are `PASSED`, and Environment-Gated Demo Seller Access Bootstrap is `PASSED`;
-5. inspect the uncommitted demo-access settings/command/view/template/test/documentation changes before staging;
-6. proceed only with owner-approved Git checkpoint for Environment-Gated Demo Seller Access Bootstrap;
-7. after this support slice is committed and pushed, prepare the next-step report for P2.4 - Owner-Scoped Query Helper Baseline;
+5. if the working tree contains only this handoff-audit checkpoint correction, proceed only with owner-approved Git checkpoint for the handoff audit;
+6. after the handoff-audit correction is committed and pushed, prepare the next-step report for P2.4 Owner-Scoped Query Helper Baseline;
+7. if the working tree is already clean and aligned, the standard new-chat pre-prompt may be used before P2.4 planning;
 8. do not implement P2.4 until owner approval.
