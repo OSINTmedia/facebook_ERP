@@ -46,7 +46,8 @@ Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User an
 - Django system check passes locally.
 - GitHub Actions CI is configured and passing on `main`.
 - Custom email-based seller user model baseline exists and is verified locally.
-- Visible seller app workflows have not started beyond the foundation shell.
+- Minimal email/password login and POST logout flow exists and is verified locally.
+- Visible seller app workflows remain limited to login/logout and the foundation shell; product workflows have not started.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
 - The GitHub repository is public, uses default branch `main`, and preserves the initial README commit `dce852b`.
 - Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed.
@@ -149,7 +150,7 @@ The future demo must use synthetic data, no real seller/customer data, no source
 
 ## Local Setup
 
-Seller feature work has not started yet. The current verified setup covers dependency installation, the clean Django scaffold, environment-aware settings, PostgreSQL-only local runtime, default migrations, and the base application shell smoke checks.
+Seller feature work is currently limited to email/password authentication, POST logout, and the foundation shell. The current verified setup covers dependency installation, the clean Django scaffold, environment-aware settings, PostgreSQL-only local runtime, default migrations, authentication checks, and auth-gated shell smoke checks.
 
 Expected local Python version: Python 3.13.x.
 
@@ -175,7 +176,7 @@ Create a local `.env` from `.env.example` before running Django locally. Local a
 
 The verified local database is project-specific PostgreSQL and is configured only through ignored local environment values. Default Django migrations are applied locally.
 
-After local PostgreSQL credentials are configured in `.env`, run `source .venv/bin/activate && python manage.py runserver 127.0.0.1:8000` to review the root shell route locally. The route renders only the base application shell; authenticated seller workflows and product screens are still deferred.
+After local PostgreSQL credentials are configured in `.env`, run `source .venv/bin/activate && python manage.py runserver 127.0.0.1:8000` to review the auth-gated shell locally. Anonymous users are redirected to the login page; after signing in, the root route renders only the base application shell. Product screens are still deferred.
 
 ## Roadmap Summary
 

@@ -144,6 +144,14 @@ Use `on_delete=PROTECT` for the initial `Business.owner` relationship.
 Reason:
 The Business row is the tenant boundary future seller-owned data will depend on. Until an owner-approved account/business lifecycle policy exists, protecting the owner relationship prevents accidental deletion from silently removing the ownership boundary while keeping active business selection and deletion workflows deferred.
 
+### 2026-07-30 - Authentication baseline keeps redirects and logout server-owned
+
+Decision:
+Build the first seller login flow on Django's `LoginView` and `LogoutView`, keep the shell behind `LoginRequiredMixin`, normalize email input in the authentication form, reject unsafe external `next` redirects through Django's built-in checks, and require POST for logout.
+
+Reason:
+This keeps P2.3 limited to a minimal server-rendered authentication baseline while preserving server-side validation, CSRF-protected session exit, safe return paths, and no seller navigation before authentication. Signup, password reset, demo accounts, business selection, and owner-scoped object access remain separate approved slices or owner decisions.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

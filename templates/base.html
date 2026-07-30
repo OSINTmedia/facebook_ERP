@@ -12,21 +12,28 @@
 
   <header class="app-header">
     <div class="app-header__inner">
-      <a class="brand" href="{% url 'shell_home' %}">Seller Workspace</a>
+      {% if request.user.is_authenticated %}
+        <a class="brand" href="{% url 'shell_home' %}">Seller Workspace</a>
 
-      <nav class="primary-nav" aria-label="Primary">
-        <a
-          class="nav-link{% if current_nav == 'dashboard' %} nav-link--active{% endif %}"
-          href="{% url 'shell_home' %}"
-          {% if current_nav == 'dashboard' %}aria-current="page"{% endif %}
-        >
-          Dashboard
-        </a>
-        <span class="nav-link nav-link--disabled" aria-disabled="true">Products</span>
-        <span class="nav-link nav-link--disabled" aria-disabled="true">Add product</span>
-        <span class="nav-link nav-link--disabled" aria-disabled="true">Account</span>
-        <span class="nav-link nav-link--disabled" aria-disabled="true">Sign out</span>
-      </nav>
+        <nav class="primary-nav" aria-label="Primary">
+          <a
+            class="nav-link{% if current_nav == 'dashboard' %} nav-link--active{% endif %}"
+            href="{% url 'shell_home' %}"
+            {% if current_nav == 'dashboard' %}aria-current="page"{% endif %}
+          >
+            Dashboard
+          </a>
+          <span class="nav-link nav-link--disabled" aria-disabled="true">Products</span>
+          <span class="nav-link nav-link--disabled" aria-disabled="true">Add product</span>
+          <span class="nav-link nav-link--disabled" aria-disabled="true">Account</span>
+          <form class="nav-form" method="post" action="{% url 'accounts:logout' %}">
+            {% csrf_token %}
+            <button class="nav-link nav-link--button" type="submit">Sign out</button>
+          </form>
+        </nav>
+      {% else %}
+        <span class="brand">Seller Workspace</span>
+      {% endif %}
     </div>
   </header>
 

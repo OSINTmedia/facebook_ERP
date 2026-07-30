@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.urls import reverse
 
 
 class UserModelTests(TestCase):
@@ -62,3 +63,96 @@ class UserModelTests(TestCase):
                 password="test-password",
                 is_superuser=False,
             )
+
+
+class SellerAuthenticationTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            email="seller@example.com",
+            password="test-password",
+        )
+
+    def test_login_page_renders_email_password_form_without_seller_nav(self):
+        response = self.client.get(reverse("accounts:login"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/login.html")
+        self.assertContains(response, 'type="email"')
+        self.assertContains(response, 'name="username"')
+        self.assertContains(response, 'type="password"')
+
+        for label in ("Dashboard", "Products", "Add product", "Account", "Sign out"):
+            self.assertNotContains(response, label)
+
+    def test_valid_login_accepts_email_and_redirects_to_shell(self):
+        response = self.client.post(
+            reverse("accounts:login"),
+            {
+                "username": "SELLER@example.com",
+                "password": "test-password",
+            },
+        )
+
+        self.assertRedirects(response, reverse("shell_home"))
+
+    def test_invalid_login_shows_validation_error(self):
+        response = self.client.post(
+            reverse("accounts:login"),
+            {
+                "username": self.user.email,
+                "password": "wrong-password",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "accounts/login.html")
+        self.assertTrue(response.context["form"].non_field_errors())
+
+    def test_login_uses_safe_internal_next_url(self):
+        response = self.client.post(
+            f"{reverse('accounts:login')}?next={reverse('shell_home')}",
+            {
+                "username": self.user.email,
+                "password": "test-password",
+            },
+        )
+
+        self.assertRedirects(response, reverse("shell_home"))
+
+    def test_login_rejects_external_next_url(self):
+        response = self.client.post(
+            f"{reverse('accounts:login')}?next=https://example.com/escape",
+            {
+                "username": self.user.email,
+                "password": "test-password",
+            },
+        )
+
+        self.assertRedirects(response, reverse("shell_home"))
+        self.assertNotIn("example.com", response["Location"])
+
+    def test_authenticated_user_is_redirected_away_from_login_page(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("accounts:login"))
+
+        self.assertRedirects(response, reverse("shell_home"))
+
+    def test_logout_requires_post(self):
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse("accounts:logout"))
+
+        self.assertEqual(response.status_code, 405)
+
+    def test_post_logout_ends_session_and_redirects_to_login(self):
+        self.client.force_login(self.user)
+
+        response = self.client.post(reverse("accounts:logout"))
+
+        self.assertRedirects(response, reverse("accounts:login"))
+        shell_response = self.client.get(reverse("shell_home"))
+        self.assertRedirects(
+            shell_response,
+            f"{reverse('accounts:login')}?next={reverse('shell_home')}",
+        )
