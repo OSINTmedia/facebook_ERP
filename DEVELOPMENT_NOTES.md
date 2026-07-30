@@ -136,6 +136,14 @@ Django custom user models need to be established before dependent app migrations
 Resolution:
 The owner approved and completed the local-only PostgreSQL unblock by rebuilding the disposable development database while it contained no seller or product data, preserving ignored `.env` credentials, and granting test database creation capability to the local development role. The clean migration graph now applies `accounts.0001_initial` before `admin.0001_initial`, and both the focused accounts tests and full test suite pass against PostgreSQL. Local `CREATEDB` exists only to support this development/test workflow and is not a production database-role recommendation.
 
+### 2026-07-30 - Protect Business ownership boundary from silent owner deletion
+
+Decision:
+Use `on_delete=PROTECT` for the initial `Business.owner` relationship.
+
+Reason:
+The Business row is the tenant boundary future seller-owned data will depend on. Until an owner-approved account/business lifecycle policy exists, protecting the owner relationship prevents accidental deletion from silently removing the ownership boundary while keeping active business selection and deletion workflows deferred.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:
