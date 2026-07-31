@@ -97,6 +97,18 @@ class BusinessSelectorTests(TestCase):
         self.assertIsNone(business)
         self.assertEqual(Business.objects.count(), 0)
 
+    def test_resolve_active_business_ignores_other_owners_businesses(self):
+        other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+
+        business = resolve_active_business(self.owner)
+
+        self.assertIsNone(business)
+        self.assertEqual(list(businesses_owned_by(self.owner)), [])
+        self.assertEqual(Business.objects.get(), other_business)
+
     def test_resolve_active_business_returns_single_owned_business(self):
         owned_business = Business.objects.create(owner=self.owner, name="Seller Studio")
         Business.objects.create(owner=self.other_owner, name="Other Studio")
@@ -132,3 +144,13 @@ class BusinessSelectorTests(TestCase):
 
         with self.assertRaises(Http404):
             get_owned_business_or_404(self.owner, other_business.id)
+
+    def test_get_owned_business_or_404_hides_missing_business_id(self):
+        with self.assertRaises(Http404):
+            get_owned_business_or_404(self.owner, 999)
+
+    def test_get_owned_business_or_404_hides_business_from_anonymous_user(self):
+        owned_business = Business.objects.create(owner=self.owner, name="Seller Studio")
+
+        with self.assertRaises(Http404):
+            get_owned_business_or_404(AnonymousUser(), owned_business.id)
