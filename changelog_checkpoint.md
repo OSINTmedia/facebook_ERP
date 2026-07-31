@@ -39,7 +39,7 @@
 - P2.4 Owner-Scoped Query Helper Baseline is `PASSED`.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
 - Local P1.6 verification commands passed.
-- Latest checked GitHub Actions run `30557368544` passed for committed `HEAD` `66a143afc483ff95853bb70ab2183136f70e8ccd`.
+- Latest checked GitHub Actions run `30624740680` passed for committed `HEAD` `6b88e8b7aa5377fddccf1ac00c3b04cf324f7a71`.
 - Online demo is not deployed.
 - Private workflow prompt `codex_prompt_ERP.txt` exists locally and is intentionally ignored by Git.
 
@@ -177,11 +177,11 @@
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Git status at P2.4 integrity audit: initialized on `main`, tracking `origin/main`; current committed `HEAD` and `origin/main` are aligned at `66a143afc483ff95853bb70ab2183136f70e8ccd`; working tree contains uncommitted P2.4 source/test changes plus this documentation sync. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, demo-access bootstrap commit `bfaacae`, and repository handoff checkpoint commit `66a143a`.
+- Git status at P2.4 post-push checkpoint sync: initialized on `main`, tracking `origin/main`; current committed `HEAD` and `origin/main` are aligned at `6b88e8b7aa5377fddccf1ac00c3b04cf324f7a71`; working tree contains this uncommitted checkpoint-only sync. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, demo-access bootstrap commit `bfaacae`, repository handoff checkpoint commit `66a143a`, and P2.4 owner-scoped query helper commit `6b88e8b`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
-- CI status: configured and passing on latest checked GitHub Actions run `30557368544` for committed `HEAD` `66a143afc483ff95853bb70ab2183136f70e8ccd`; P2.4 changes are verified locally but not yet committed or run in CI.
+- CI status: configured and passing on latest checked GitHub Actions run `30624740680` for committed `HEAD` `6b88e8b7aa5377fddccf1ac00c3b04cf324f7a71`.
 - Online demo status: not deployed.
 
 ### P1.4 verification
@@ -488,21 +488,21 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P2.4 Owner-Scoped Query Helper Baseline implementation and integrity audit.
+- Operation: P2.4.1 Post-Push Checkpoint Reality Sync.
 - Files created by this operation:
-  - `businesses/selectors.py`
+  - none
 - Files modified by this operation:
-  - `businesses/tests.py`
-  - `BUILD_PLAN.md`
-  - `DEVELOPMENT_NOTES.md`
   - `changelog_checkpoint.md`
 - Files intentionally not modified:
   - frozen docs under `docs/`
   - `APP_EXPERIENCE_PLAN.md`
+  - `BUILD_PLAN.md`
+  - `DEVELOPMENT_NOTES.md`
   - `README.md`
   - `.github/workflows/django.yml`
   - `.gitignore`
   - `manage.py`
+  - `businesses/`
   - `accounts/`
   - `config/`
   - `templates/`
@@ -510,52 +510,46 @@ Private local prompt:
   - Product/catalog modules
   - `codex_prompt_ERP.txt`
 - Source project modified: no.
-- Scope audit result: the implementation remained limited to read-side owner-scoped Business query helpers and tests; no Business creation, Business switcher, onboarding, shell integration, Product CRUD, catalog model, cross-business product matrix, HTMX behavior, Tailwind tooling, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, stock/lifecycle/availability logic, deterministic replies, or AI-truth behavior was added.
-- Verification commands run during P2.4 implementation and integrity audit:
-  - `source .venv/bin/activate && python manage.py check` passed with `System check identified no issues (0 silenced).`
-  - `source .venv/bin/activate && python manage.py check --settings=config.settings.test` passed with `System check identified no issues (0 silenced).`
-  - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run` passed with `No changes detected`.
-  - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
-  - `source .venv/bin/activate && python manage.py test businesses --settings=config.settings.test -v 2 --noinput` ran 11 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-  - `source .venv/bin/activate && python manage.py test config --settings=config.settings.test -v 2 --noinput` ran 2 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-  - `source .venv/bin/activate && python manage.py test --settings=config.settings.test -v 2 --noinput` ran 35 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-  - An initial parallel launch of multiple Django test commands collided on the shared PostgreSQL test database and produced `database "test_facebook_erp_dev" already exists`; the tests were rerun sequentially and passed.
-  - Documentation drift firewall checks confirmed `changelog_checkpoint.md` and `BUILD_PLAN.md` agree on Phase 2 status and the next P2.5 micro-slice after this sync; frozen docs and README were not modified.
+- Scope audit result: the operation remained limited to correcting stale post-push checkpoint wording after the already committed and pushed P2.4 implementation; no code, tests, migrations, dependencies, README, frozen docs, UI, deployment configuration, Product CRUD, catalog model, HTMX behavior, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
+- Verification commands run during P2.4.1 checkpoint sync:
+  - `git status --short --branch` reported `## main...origin/main` before this checkpoint-only sync.
+  - `git rev-parse HEAD` and `git rev-parse origin/main` both resolved to `6b88e8b7aa5377fddccf1ac00c3b04cf324f7a71`.
+  - `git log --oneline --decorate -5` showed `6b88e8b feat: add owner-scoped business query helper` at `HEAD`, `origin/main`, and `origin/HEAD`.
+  - Public GitHub Actions API showed run `30624740680` completed successfully for `6b88e8b7aa5377fddccf1ac00c3b04cf324f7a71`.
+  - `BUILD_PLAN.md` still names P2.5 Cross-Business Access Test Baseline as the next micro-slice.
 - Known issues from this operation:
   - Online demo is not deployed.
   - Multiple businesses per seller remain unsupported by the resolver until an owner-approved active-business policy or switcher exists.
   - P2.5 cross-business access test work still requires an owner-approved next-step report before implementation.
   - Gate 2 remains open until the rest of Phase 2 ownership and access-control work passes.
-- Result: Phase 2 is `IN_PROGRESS`; P2.4 Owner-Scoped Query Helper Baseline is implemented, verified locally, and `PASSED`; repository is ready for Git checkpoint review but not committed or pushed.
+- Result: Phase 2 is `IN_PROGRESS`; P2.4 Owner-Scoped Query Helper Baseline is implemented, locally verified, committed, pushed, CI-passed, and `PASSED`; checkpoint reality sync is not yet committed or pushed.
 
 ## 12. Git Checkpoint
 
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Latest committed checkpoint before current P2.4 implementation: `66a143a docs: refresh repository handoff checkpoint`
-- Last known committed `HEAD` before a future P2.4 commit: `66a143afc483ff95853bb70ab2183136f70e8ccd`
-- Last known `origin/main` before a future P2.4 commit: `66a143afc483ff95853bb70ab2183136f70e8ccd`
-- Last known actual remote `main` before a future P2.4 commit: `66a143afc483ff95853bb70ab2183136f70e8ccd`
+- Latest committed checkpoint before current checkpoint-only sync: `6b88e8b feat: add owner-scoped business query helper`
+- Last known committed `HEAD` before a future checkpoint-only sync commit: `6b88e8b7aa5377fddccf1ac00c3b04cf324f7a71`
+- Last known `origin/main` before a future checkpoint-only sync commit: `6b88e8b7aa5377fddccf1ac00c3b04cf324f7a71`
+- Last known actual remote `main` before a future checkpoint-only sync commit: `6b88e8b7aa5377fddccf1ac00c3b04cf324f7a71`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, demo-access bootstrap commit `bfaacae`, and repository handoff checkpoint commit `66a143a` pushed on top.
-- Push status: latest committed checkpoint `66a143a` was pushed normally to `origin/main`; no force push was used.
-- Current uncommitted P2.4 state:
-  - `businesses/selectors.py` is created.
-  - `businesses/tests.py` is modified.
-  - `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, and `changelog_checkpoint.md` are modified for documentation sync.
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, demo-access bootstrap commit `bfaacae`, repository handoff checkpoint commit `66a143a`, and P2.4 owner-scoped query helper commit `6b88e8b` pushed on top.
+- Push status: latest committed P2.4 implementation `6b88e8b` was pushed normally to `origin/main`; no force push was used.
+- Current uncommitted checkpoint-sync state:
+  - `changelog_checkpoint.md` is modified by this post-push checkpoint reality sync.
   - Current branch is `main`.
-  - Committed `HEAD`, `origin/main`, and actual remote `main` are aligned before this P2.4 implementation commit.
+  - Committed `HEAD`, `origin/main`, and actual remote `main` are aligned before this checkpoint-only sync commit.
 - Documentation checkpoint state:
-  - P2.4 Owner-Scoped Query Helper Baseline is implemented, locally verified, and marked `PASSED`.
-  - P2.4 source/test/doc changes are not yet committed or pushed.
+  - P2.4 Owner-Scoped Query Helper Baseline is implemented, locally verified, committed, pushed, CI-passed, and marked `PASSED`.
+  - This checkpoint-only post-push sync is not yet committed or pushed.
   - Exact staged, committed, and pushed state must be read from Git commands.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
-- Exact current `HEAD` after any future P2.4 commit must be read from Git; do not hardcode a future commit hash into this checkpoint.
+- Exact current `HEAD` after any future checkpoint-only sync commit must be read from Git; do not hardcode a future commit hash into this checkpoint.
 
 ## 13. Handoff Instruction
 
@@ -565,7 +559,7 @@ A new Codex chat must:
 2. verify branch, `HEAD`, `origin/main`, and working tree state with Git commands;
 3. confirm P1.1 through P1.6 are `PASSED`;
 4. confirm Gate 1 is passed, Phase 2 is `IN_PROGRESS`, P2.1 through P2.4 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
-5. if the working tree contains only the P2.4 source/test/doc changes listed in the Git Checkpoint, proceed only with owner-approved Git checkpoint for P2.4;
-6. after the P2.4 implementation is committed and pushed, prepare the next-step report for P2.5 Cross-Business Access Test Baseline;
-7. if the working tree is already clean and aligned after P2.4 commit/push, the standard new-chat pre-prompt may be used before P2.5 planning;
+5. if the working tree contains only this checkpoint-only post-push sync, proceed only with owner-approved Git checkpoint for the sync;
+6. after this checkpoint sync is committed and pushed, prepare the next-step report for P2.5 Cross-Business Access Test Baseline;
+7. if the working tree is already clean and aligned after this checkpoint sync commit/push, the standard new-chat pre-prompt may be used before P2.5 planning;
 8. do not implement P2.5 until owner approval.
