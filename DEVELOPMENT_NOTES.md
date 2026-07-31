@@ -160,6 +160,14 @@ Keep synthetic demo seller access disabled by default, expose configured demo cr
 Reason:
 The portfolio demo needs a repeatable seller login without creating a registration flow or hardcoding a password in tracked source. Environment gating, placeholder-only committed configuration, ignored local values, Django password hashing, and no automatic startup seed keep the demo account separate from admin, database, production, and personal credentials.
 
+### 2026-07-31 - Active business resolution is read-only and policy-limited
+
+Decision:
+Add a small read-side Business selector boundary that filters by authenticated owner, returns no active business when none exists, and refuses multiple-business resolution until an owner-approved active-business policy or switcher exists.
+
+Reason:
+Future seller-owned queries need one reusable ownership boundary before catalog objects exist, but P2.4 should not silently create Business rows or decide the unresolved one-business-versus-switcher policy. Making the unsupported multi-business state explicit keeps later Product, dashboard, and HTMX endpoints from copying prototype-style implicit first-business behavior.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:
