@@ -31,24 +31,24 @@
 - P1.4 PostgreSQL and Test Database Baseline is `PASSED`.
 - P1.5 Base Application Shell is `PASSED`.
 - P1.6 CI and Initial Test Harness is `PASSED`.
-- Phase 2 User and Business Ownership is `PASSED` locally; P2.5 Git checkpoint and CI remain pending.
+- Phase 2 User and Business Ownership is `PASSED`.
 - P2.1 Accounts App and Custom Seller User Model Baseline is `PASSED`.
 - P2.2 Business Model and Ownership Boundary Baseline is `PASSED`.
 - P2.3 Login Flow Baseline is `PASSED`.
 - Environment-Gated Demo Seller Access Bootstrap is `PASSED`.
 - P2.4 Owner-Scoped Query Helper Baseline is `PASSED`.
-- P2.5 Cross-Business Access Test Baseline is `PASSED` locally.
+- P2.5 Cross-Business Access Test Baseline is `PASSED`.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
 - Local P1.6 verification commands passed.
-- Latest checked GitHub Actions run `30626190659` passed for committed `HEAD` `41cbd3e62f55f40d432b7ed12b07fb4a2d957b29`.
+- Latest checked GitHub Actions run `30627627838` passed for committed `HEAD` `2b76de9b7a28b9bf6a543c736b677eeac90c1808`.
 - Online demo is not deployed.
 - Private workflow prompt `codex_prompt_ERP.txt` exists locally and is intentionally ignored by Git.
 
 ## 2. Current Phase
 
 - Phase: Phase 2 - User and Business Ownership
-- Status: PASSED locally; Git checkpoint pending for P2.5
-- Current micro-slice: P2.5 Cross-Business Access Test Baseline (`PASSED` locally)
+- Status: PASSED
+- Current micro-slice: P2.5 Cross-Business Access Test Baseline (`PASSED`)
 - Next concrete micro-slice: P3.1 Product Model Baseline next-step report
 - Started: 2026-07-27
 - Last updated: 2026-07-31
@@ -183,11 +183,11 @@
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Git status at P2.5 integrity audit: initialized on `main`, tracking `origin/main`; current committed `HEAD` and `origin/main` are aligned at `41cbd3e62f55f40d432b7ed12b07fb4a2d957b29`; working tree contains uncommitted P2.5 test changes plus this live checkpoint sync. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, demo-access bootstrap commit `bfaacae`, repository handoff checkpoint commit `66a143a`, P2.4 owner-scoped query helper commit `6b88e8b`, and P2.4 post-push checkpoint sync commit `41cbd3e`.
+- Git status at P2.5 post-push checkpoint sync: initialized on `main`, tracking `origin/main`; current committed `HEAD` and `origin/main` are aligned at `2b76de9b7a28b9bf6a543c736b677eeac90c1808`; working tree contains this uncommitted checkpoint-only sync. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
+- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, demo-access bootstrap commit `bfaacae`, repository handoff checkpoint commit `66a143a`, P2.4 owner-scoped query helper commit `6b88e8b`, P2.4 post-push checkpoint sync commit `41cbd3e`, and P2.5 cross-business access baseline commit `2b76de9`.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
-- CI status: configured and passing on latest checked GitHub Actions run `30626190659` for committed `HEAD` `41cbd3e62f55f40d432b7ed12b07fb4a2d957b29`; P2.5 is locally verified but not yet committed or run in CI.
+- CI status: configured and passing on latest checked GitHub Actions run `30627627838` for committed `HEAD` `2b76de9b7a28b9bf6a543c736b677eeac90c1808`.
 - Online demo status: not deployed.
 
 ### P1.4 verification
@@ -428,7 +428,7 @@
   - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
   - `source .venv/bin/activate && python manage.py test businesses --settings=config.settings.test -v 2 --noinput` ran 14 tests, passed, and created/destroyed `test_facebook_erp_dev`.
   - `source .venv/bin/activate && python manage.py test --settings=config.settings.test -v 2 --noinput` ran 38 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-- Result: P2.5 Cross-Business Access Test Baseline is `PASSED` locally.
+- Result: P2.5 Cross-Business Access Test Baseline is `PASSED`.
 
 ## 6. Current Blockers
 
@@ -444,7 +444,7 @@
 - Existing remote initial README commit must remain preserved.
 - No force push is allowed.
 - Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
-- Gate 2 is passed locally after P2.5 access-control tests; P2.5 Git checkpoint and CI remain pending.
+- Gate 2 is passed after P2.5 access-control tests, Git checkpoint, push, and CI.
 - Do not proceed to P3.1 Product Model Baseline implementation until the owner approves the next-step report.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
@@ -469,9 +469,9 @@
 
 ## 7. Next Concrete Micro-Slice
 
-Phase 2 has passed locally. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed.
+Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed.
 
-Next concrete step after the P2.5 Git checkpoint: prepare the next-step report for P3.1 Product Model Baseline, derived from the Phase 3 expected micro-slice order in `BUILD_PLAN.md`.
+Next concrete step: prepare the next-step report for P3.1 Product Model Baseline, derived from the Phase 3 expected micro-slice order in `BUILD_PLAN.md`.
 
 Do not implement P3.1 until owner approval. The P3.1 report must surface any owner decision required by product price or lifecycle scope instead of resolving it silently.
 
@@ -516,11 +516,10 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P2.5 Cross-Business Access Test Baseline implementation and integrity audit.
+- Operation: P2.5.1 Post-Push Checkpoint Reality Sync.
 - Files created by this operation:
   - none
 - Files modified by this operation:
-  - `businesses/tests.py`
   - `BUILD_PLAN.md`
   - `changelog_checkpoint.md`
 - Files intentionally not modified:
@@ -531,6 +530,7 @@ Private local prompt:
   - `.github/workflows/django.yml`
   - `.gitignore`
   - `manage.py`
+  - `businesses/`
   - `accounts/`
   - `config/`
   - `templates/`
@@ -538,50 +538,45 @@ Private local prompt:
   - Product/catalog modules
   - `codex_prompt_ERP.txt`
 - Source project modified: no.
-- Scope audit result: the operation remained limited to Business selector access tests plus live planning/checkpoint status sync; no selector code, models, migrations, dependencies, README, frozen docs, UI, deployment configuration, Business switcher, onboarding, Product CRUD, catalog model, HTMX behavior, public catalog, chatbot, orders, payments, delivery, broad ERP, stock/lifecycle/availability logic, deterministic replies, or AI-truth behavior was added.
-- Verification commands run during P2.5 implementation and integrity audit:
-  - `source .venv/bin/activate && python manage.py check` passed with `System check identified no issues (0 silenced).`
-  - `source .venv/bin/activate && python manage.py check --settings=config.settings.test` passed with `System check identified no issues (0 silenced).`
-  - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run` passed with `No changes detected`.
-  - `source .venv/bin/activate && python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
-  - `source .venv/bin/activate && python manage.py test businesses --settings=config.settings.test -v 2 --noinput` ran 14 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-  - `source .venv/bin/activate && python manage.py test --settings=config.settings.test -v 2 --noinput` ran 38 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-  - Public GitHub Actions API showed run `30626190659` completed successfully for committed `HEAD` `41cbd3e62f55f40d432b7ed12b07fb4a2d957b29`; P2.5 is not yet committed, so CI has not run for P2.5.
-  - Documentation drift firewall checks confirmed `changelog_checkpoint.md` and `BUILD_PLAN.md` agree that Phase 2 is passed locally and P3.1 Product Model Baseline next-step reporting is next after the P2.5 Git checkpoint.
+- Scope audit result: the operation remained limited to correcting stale post-push checkpoint and build-plan wording after the already committed and pushed P2.5 implementation; no code, tests, migrations, dependencies, README, frozen docs, UI, deployment configuration, Product CRUD, catalog model, HTMX behavior, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
+- Verification commands run during P2.5.1 checkpoint sync:
+  - `git status --short --branch` reported `## main...origin/main` before this checkpoint-only sync.
+  - `git rev-parse HEAD` and `git rev-parse origin/main` both resolved to `2b76de9b7a28b9bf6a543c736b677eeac90c1808`.
+  - `git log --oneline --decorate -5` showed `2b76de9 test: add cross-business access baseline` at `HEAD`, `origin/main`, and `origin/HEAD`.
+  - Public GitHub Actions API showed run `30627627838` completed successfully for `2b76de9b7a28b9bf6a543c736b677eeac90c1808`.
+  - `BUILD_PLAN.md` names P3.1 Product Model Baseline next-step reporting as the next concrete step and does not authorize implementation without owner approval.
 - Known issues from this operation:
   - Online demo is not deployed.
   - Multiple businesses per seller remain unsupported by the resolver until an owner-approved active-business policy or switcher exists.
   - P3.1 Product Model Baseline requires an owner-approved next-step report before implementation.
-  - P2.5 source/test/doc changes are not yet committed or pushed.
-- Result: Phase 2 is `PASSED` locally; P2.5 Cross-Business Access Test Baseline is implemented, locally verified, and `PASSED`; repository is ready for Git checkpoint review but P2.5 is not yet committed or pushed.
+- Result: Phase 2 is `PASSED`; P2.5 Cross-Business Access Test Baseline is implemented, locally verified, committed, pushed, CI-passed, and `PASSED`; checkpoint reality sync is not yet committed or pushed.
 
 ## 12. Git Checkpoint
 
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Latest committed checkpoint before current P2.5 implementation: `41cbd3e docs: sync checkpoint after p2.4 push`
-- Last known committed `HEAD` before a future P2.5 commit: `41cbd3e62f55f40d432b7ed12b07fb4a2d957b29`
-- Last known `origin/main` before a future P2.5 commit: `41cbd3e62f55f40d432b7ed12b07fb4a2d957b29`
-- Last known actual remote `main` before a future P2.5 commit: `41cbd3e62f55f40d432b7ed12b07fb4a2d957b29`
+- Latest committed checkpoint before current checkpoint-only sync: `2b76de9 test: add cross-business access baseline`
+- Last known committed `HEAD` before a future checkpoint-only sync commit: `2b76de9b7a28b9bf6a543c736b677eeac90c1808`
+- Last known `origin/main` before a future checkpoint-only sync commit: `2b76de9b7a28b9bf6a543c736b677eeac90c1808`
+- Last known actual remote `main` before a future checkpoint-only sync commit: `2b76de9b7a28b9bf6a543c736b677eeac90c1808`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, demo-access bootstrap commit `bfaacae`, repository handoff checkpoint commit `66a143a`, P2.4 owner-scoped query helper commit `6b88e8b`, and P2.4 post-push checkpoint sync commit `41cbd3e` pushed on top.
-- Push status: latest committed checkpoint `41cbd3e` was pushed normally to `origin/main`; no force push was used.
-- Current uncommitted P2.5 state:
-  - `businesses/tests.py` is modified by P2.5 cross-business access tests.
-  - `BUILD_PLAN.md` and `changelog_checkpoint.md` are modified for documentation sync.
+- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, demo-access bootstrap commit `bfaacae`, repository handoff checkpoint commit `66a143a`, P2.4 owner-scoped query helper commit `6b88e8b`, P2.4 post-push checkpoint sync commit `41cbd3e`, and P2.5 cross-business access baseline commit `2b76de9` pushed on top.
+- Push status: latest committed P2.5 implementation `2b76de9` was pushed normally to `origin/main`; no force push was used.
+- Current uncommitted checkpoint-sync state:
+  - `BUILD_PLAN.md` and `changelog_checkpoint.md` are modified by this post-push checkpoint reality sync.
   - Current branch is `main`.
-  - Committed `HEAD`, `origin/main`, and actual remote `main` are aligned before this P2.5 implementation commit.
+  - Committed `HEAD`, `origin/main`, and actual remote `main` are aligned before this checkpoint-only sync commit.
 - Documentation checkpoint state:
-  - P2.5 Cross-Business Access Test Baseline is implemented, locally verified, and marked `PASSED`.
-  - P2.5 source/test/doc changes are not yet committed or pushed.
+  - P2.5 Cross-Business Access Test Baseline is implemented, locally verified, committed, pushed, CI-passed, and marked `PASSED`.
+  - This checkpoint-only post-push sync is not yet committed or pushed.
   - Exact staged, committed, and pushed state must be read from Git commands.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
-- Exact current `HEAD` after any future P2.5 commit must be read from Git; do not hardcode a future commit hash into this checkpoint.
+- Exact current `HEAD` after any future checkpoint-only sync commit must be read from Git; do not hardcode a future commit hash into this checkpoint.
 
 ## 13. Handoff Instruction
 
@@ -590,8 +585,8 @@ A new Codex chat must:
 1. read this file first;
 2. verify branch, `HEAD`, `origin/main`, and working tree state with Git commands;
 3. confirm P1.1 through P1.6 are `PASSED`;
-4. confirm Gate 1 is passed, Phase 2 is locally `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
-5. if the working tree contains only the P2.5 source/test/doc changes listed in the Git Checkpoint, proceed only with owner-approved Git checkpoint for P2.5;
-6. after the P2.5 implementation is committed and pushed, prepare the next-step report for P3.1 Product Model Baseline;
-7. if the working tree is already clean and aligned after P2.5 commit/push, the standard new-chat pre-prompt may be used before P3.1 planning;
+4. confirm Gate 1 is passed, Phase 2 is `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
+5. if the working tree contains only this checkpoint-only post-push sync, proceed only with owner-approved Git checkpoint for the sync;
+6. after this checkpoint sync is committed and pushed, prepare the next-step report for P3.1 Product Model Baseline;
+7. if the working tree is already clean and aligned after this checkpoint sync commit/push, the standard new-chat pre-prompt may be used before P3.1 planning;
 8. do not implement P3.1 until owner approval.

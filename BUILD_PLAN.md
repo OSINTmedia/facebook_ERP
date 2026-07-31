@@ -448,7 +448,7 @@ Avoid libraries that depend on:
 - Dependency: Gate 1.
 - Scope boundary: User, Business, login/logout, active business policy, access tests.
 - Expected micro-slices: auth model, business model, login flow, owner-scoped query helper, cross-business access tests.
-- Current dependency state: Gate 1 is passed; P2.1 Accounts App and Custom Seller User Model Baseline, P2.2 Business Model and Ownership Boundary Baseline, P2.3 Login Flow Baseline, Environment-Gated Demo Seller Access Bootstrap, P2.4 Owner-Scoped Query Helper Baseline, and P2.5 Cross-Business Access Test Baseline are passed locally. Gate 2 is passed locally; P2.5 Git checkpoint and CI remain pending. Next concrete step after the P2.5 checkpoint is the next-step report for P3.1 Product Model Baseline. Do not implement P3.1 until owner approval.
+- Current dependency state: Gate 1 is passed; P2.1 Accounts App and Custom Seller User Model Baseline, P2.2 Business Model and Ownership Boundary Baseline, P2.3 Login Flow Baseline, Environment-Gated Demo Seller Access Bootstrap, P2.4 Owner-Scoped Query Helper Baseline, and P2.5 Cross-Business Access Test Baseline are passed, committed, pushed, and CI-passed. Gate 2 is passed. Next concrete step is the next-step report for P3.1 Product Model Baseline. Do not implement P3.1 until owner approval.
 - Stop gate: every seller-owned object created later has a business boundary and test pattern.
 
 ### Phase 3: Catalog Core
