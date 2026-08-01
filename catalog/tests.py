@@ -251,6 +251,8 @@ class ProductListViewTests(TestCase):
         self.assertContains(response, owned_product.name)
         self.assertContains(response, owned_product.description)
         self.assertContains(response, "Active")
+        self.assertContains(response, "Add product")
+        self.assertContains(response, "Edit")
         self.assertContains(response, 'aria-current="page"')
         self.assertNotContains(response, "Red dress")
         self.assertEqual(list(response.context["products"]), [owned_product])
@@ -313,3 +315,294 @@ class ProductListViewTests(TestCase):
         )
         self.assertNotContains(response, "First business product", status_code=409)
         self.assertNotContains(response, "Second business product", status_code=409)
+
+
+class ProductCreateViewTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="create-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="create-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+        self.url = reverse("catalog:product_create")
+        self.list_url = reverse("catalog:product_list")
+
+    def test_product_create_requires_authentication(self):
+        response = self.client.get(self.url)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self.url}",
+        )
+
+    def test_product_create_renders_approved_form_fields(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/product_form.html")
+        self.assertContains(response, "Add product")
+        self.assertContains(response, 'name="name"')
+        self.assertContains(response, 'name="description"')
+        self.assertContains(response, 'name="lifecycle"')
+        self.assertContains(response, "Create product")
+        self.assertNotContains(response, 'name="business"')
+
+    def test_product_create_without_business_shows_workspace_state(self):
+        seller_without_business = get_user_model().objects.create_user(
+            email="create-no-business@example.com",
+            password="test-password",
+        )
+        self.client.force_login(seller_without_business)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No business workspace yet.")
+        self.assertNotContains(response, 'name="name"')
+
+    def test_product_create_post_without_business_does_not_create_product(self):
+        seller_without_business = get_user_model().objects.create_user(
+            email="create-post-no-business@example.com",
+            password="test-password",
+        )
+        self.client.force_login(seller_without_business)
+
+        response = self.client.post(
+            self.url,
+            {
+                "name": "Black trousers",
+                "description": "Classic black trousers.",
+                "lifecycle": Product.Lifecycle.ACTIVE,
+            },
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertContains(
+            response,
+            "No business workspace yet.",
+            status_code=409,
+        )
+        self.assertEqual(Product.objects.count(), 0)
+
+    def test_product_create_refuses_multiple_businesses_without_switcher(self):
+        Business.objects.create(owner=self.owner, name="Second Studio")
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 409)
+        self.assertContains(
+            response,
+            "Multiple business workspaces need an approved switcher",
+            status_code=409,
+        )
+        self.assertNotContains(response, 'name="name"', status_code=409)
+
+    def test_product_create_assigns_business_server_side(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                "business": self.other_business.pk,
+                "name": "Black trousers",
+                "description": "Classic black trousers.",
+                "lifecycle": Product.Lifecycle.ACTIVE,
+            },
+        )
+
+        self.assertRedirects(response, self.list_url)
+        product = Product.objects.get()
+        self.assertEqual(product.business, self.business)
+        self.assertEqual(product.name, "Black trousers")
+        self.assertEqual(product.description, "Classic black trousers.")
+        self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
+
+    def test_product_create_preserves_validation_errors_without_creating_product(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                "name": "",
+                "description": "",
+                "lifecycle": Product.Lifecycle.ACTIVE,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/product_form.html")
+        self.assertContains(response, "This field is required.")
+        self.assertEqual(Product.objects.count(), 0)
+
+    def test_product_create_rejects_external_next_url(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            f"{self.url}?next=https://example.com/escape",
+            {
+                "name": "Black trousers",
+                "description": "Classic black trousers.",
+                "lifecycle": Product.Lifecycle.ACTIVE,
+            },
+        )
+
+        self.assertRedirects(response, self.list_url)
+        self.assertNotIn("example.com", response["Location"])
+
+
+class ProductUpdateViewTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="edit-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="edit-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="Black trousers",
+            description="Classic black trousers.",
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+        self.other_product = Product.objects.create(
+            business=self.other_business,
+            name="Red dress",
+            description="Red dress from another business.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        self.url = reverse("catalog:product_edit", kwargs={"pk": self.product.pk})
+        self.list_url = reverse("catalog:product_list")
+
+    def test_product_edit_requires_authentication(self):
+        response = self.client.get(self.url)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self.url}",
+        )
+
+    def test_product_edit_renders_form_for_owned_product(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/product_form.html")
+        self.assertContains(response, "Edit Black trousers")
+        self.assertContains(response, 'value="Black trousers"')
+        self.assertContains(response, "Classic black trousers.")
+        self.assertContains(response, "Save changes")
+        self.assertNotContains(response, 'name="business"')
+
+    def test_product_edit_updates_owned_product(self):
+        self.client.force_login(self.owner)
+        return_url = f"{self.list_url}?from=edit"
+
+        response = self.client.post(
+            self.url,
+            {
+                "next": return_url,
+                "name": "Updated trousers",
+                "description": "Updated description.",
+                "lifecycle": Product.Lifecycle.ACTIVE,
+            },
+        )
+
+        self.assertRedirects(response, return_url)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.business, self.business)
+        self.assertEqual(self.product.name, "Updated trousers")
+        self.assertEqual(self.product.description, "Updated description.")
+        self.assertEqual(self.product.lifecycle, Product.Lifecycle.ACTIVE)
+
+    def test_product_edit_preserves_validation_errors_without_changing_product(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                "name": "",
+                "description": "",
+                "lifecycle": "archived",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/product_form.html")
+        self.assertContains(response, "This field is required.")
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name, "Black trousers")
+        self.assertEqual(self.product.description, "Classic black trousers.")
+        self.assertEqual(self.product.lifecycle, Product.Lifecycle.DRAFT)
+
+    def test_product_edit_hides_another_business_product(self):
+        self.client.force_login(self.owner)
+        other_url = reverse(
+            "catalog:product_edit",
+            kwargs={"pk": self.other_product.pk},
+        )
+
+        response = self.client.get(other_url)
+
+        self.assertEqual(response.status_code, 404)
+
+    def test_product_edit_post_hides_another_business_product_without_change(self):
+        self.client.force_login(self.owner)
+        other_url = reverse(
+            "catalog:product_edit",
+            kwargs={"pk": self.other_product.pk},
+        )
+
+        response = self.client.post(
+            other_url,
+            {
+                "name": "Leaked update",
+                "description": "Should not save.",
+                "lifecycle": Product.Lifecycle.DRAFT,
+            },
+        )
+
+        self.assertEqual(response.status_code, 404)
+        self.other_product.refresh_from_db()
+        self.assertEqual(self.other_product.name, "Red dress")
+        self.assertEqual(self.other_product.lifecycle, Product.Lifecycle.ACTIVE)
+
+    def test_product_edit_refuses_multiple_businesses_without_switcher(self):
+        Business.objects.create(owner=self.owner, name="Second Studio")
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 409)
+        self.assertContains(
+            response,
+            "Multiple business workspaces need an approved switcher",
+            status_code=409,
+        )
+        self.assertNotContains(response, "Black trousers", status_code=409)

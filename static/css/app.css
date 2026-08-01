@@ -223,6 +223,13 @@ h1 {
   color: var(--color-muted);
 }
 
+.product-summary__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .status-pill {
   display: inline-flex;
   min-height: 1.75rem;
@@ -234,6 +241,22 @@ h1 {
   font-size: 0.8rem;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.page-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.return-link {
+  color: var(--color-accent);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.return-link:hover {
+  text-decoration: underline;
 }
 
 .auth-page {
@@ -263,6 +286,12 @@ h1 {
   gap: 1rem;
 }
 
+.product-form {
+  display: grid;
+  max-width: 36rem;
+  gap: 1rem;
+}
+
 .form-field {
   display: grid;
   gap: 0.35rem;
@@ -273,7 +302,9 @@ h1 {
   font-weight: 700;
 }
 
-.form-field input {
+.form-field input,
+.form-field select,
+.form-field textarea {
   width: 100%;
   min-height: 2.75rem;
   padding: 0.6rem 0.7rem;
@@ -283,7 +314,14 @@ h1 {
   font: inherit;
 }
 
-.form-field input:focus {
+.form-field textarea {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
   border-color: var(--color-accent);
   outline: 3px solid var(--color-accent-soft);
 }
@@ -324,6 +362,25 @@ h1 {
   color: var(--color-surface);
 }
 
+.button--secondary {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+.button--compact {
+  min-height: 2rem;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
 @media (max-width: 720px) {
   .app-header__inner {
     align-items: flex-start;
@@ -338,6 +395,11 @@ h1 {
 
   .product-summary {
     align-items: stretch;
+    flex-direction: column;
+  }
+
+  .product-summary__actions {
+    align-items: flex-start;
     flex-direction: column;
   }
 

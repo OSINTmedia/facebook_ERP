@@ -42,6 +42,7 @@
 - P3.1 Product Model Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P3.2 Product Form Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P3.3 Product List Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
+- P3.4 Product Create/Edit Baseline is implemented, integrity-audited, and locally verified; Prompt 5 release, push, Git/remote alignment, CI success, and Phase 3 governance closure remain pending.
 - Legacy post-push checkpoint sync slices exist as historical records only; Version 2 removes routine post-push documentation micro-slices.
 - Successful commit, push, Git/remote alignment, and CI success are operational closure for the same functional micro-slice, not a new documentation micro-slice.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
@@ -54,8 +55,8 @@
 
 - Phase: Phase 3 - Catalog Core
 - Status: IN_PROGRESS
-- Current governance correction: Workflow Version 2 adoption (documentation-only, no functional slice ID; Release handled by Prompt 5)
-- Next planned functional micro-slice: P3.4 Product Create/Edit Baseline
+- Current functional micro-slice: P3.4 Product Create/Edit Baseline pending Prompt 5 release
+- Next planned functional micro-slice after P3.4 delivery closure: P4.1 Semantic Recognition Service Contract Baseline
 - Started: 2026-07-27
 - Last updated: 2026-08-01
 
@@ -534,6 +535,39 @@
   - `.venv/bin/python manage.py test --settings=config.settings.test -v 2 --noinput` ran 56 tests, passed, and created/destroyed `test_facebook_erp_dev`.
 - Result: P3.3 Product List Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`; exact delivery metadata is read from Git/GitHub.
 
+### P3.4 verification
+
+- P3.4 Product Create/Edit Baseline implementation exists locally and is pending Prompt 5 release.
+- Files created by P3.4:
+  - `templates/catalog/product_form.html`
+- Files modified by P3.4:
+  - `catalog/tests.py`
+  - `catalog/urls.py`
+  - `catalog/views.py`
+  - `static/css/app.css`
+  - `templates/base.html`
+  - `templates/catalog/product_list.html`
+  - `DEVELOPMENT_NOTES.md`
+  - `README.md`
+  - `changelog_checkpoint.md`
+- Scope audit result:
+  - `/products/add/` is an authenticated Product create route using the existing `ProductForm`.
+  - `/products/<id>/edit/` is an authenticated Product edit route scoped to the seller's resolved single owned Business.
+  - Product create assigns `business` server-side from the active Business resolver; seller-submitted `business` data is ignored.
+  - Product edit hides another Business's Product with `Http404`.
+  - Sellers with no Business see a no-workspace state and no Business is created.
+  - Multiple Business ambiguity returns an explicit unsupported state instead of selecting one Business silently.
+  - The Add product navigation is enabled, Product list exposes Add product and Edit actions, and create/edit forms include save, cancel, validation errors, and safe internal return behavior.
+  - No Product Detail, price, choice/variant model, stock, computed availability, recognition, material facts, measurements, media, HTMX behavior, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
+- Verification commands run during implementation and integrity audit:
+  - `.venv/bin/python manage.py check` passed with `System check identified no issues (0 silenced).`
+  - `.venv/bin/python manage.py check --settings=config.settings.test` passed with `System check identified no issues (0 silenced).`
+  - `.venv/bin/python manage.py makemigrations --check --dry-run` passed with `No changes detected`.
+  - `.venv/bin/python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
+  - `.venv/bin/python manage.py test catalog --settings=config.settings.test -v 2 --noinput` ran 33 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+  - `.venv/bin/python manage.py test --settings=config.settings.test -v 2 --noinput` ran 71 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+- Result: P3.4 Product Create/Edit Baseline is implemented, integrity-audited, and locally verified. It is not `PASSED` until Prompt 5 completes commit, push, Git/remote alignment, latest relevant CI success, and required Phase 3 governance closure.
+
 ## 6. Current Blockers
 
 - No current P1 blocker remains.
@@ -548,6 +582,8 @@
 - No current P3.2 implementation blocker remains.
 - No current P3.2.1 blocker remains.
 - No current P3.3 implementation blocker remains.
+- No current P3.4 implementation blocker remains.
+- P3.4 Prompt 5 release remains an operational delivery gate, not a new functional micro-slice.
 - The old P2.1 local migration-history blocker is `RESOLVED`.
 - The old P2.1 test database permission blocker is `RESOLVED`.
 - Existing remote initial README commit must remain preserved.
@@ -555,7 +591,7 @@
 - Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
 - Gate 2 is passed after P2.5 access-control tests, Git checkpoint, push, and CI.
 - Gate 3 is not passed; Phase 3 remains in progress.
-- Do not proceed to Product create/edit planning or implementation until this Version 2 governance correction is released and the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully.
+- Do not proceed to the next functional micro-slice until P3.4 is committed, pushed, `HEAD` and `origin/main` are aligned, latest relevant CI succeeds, and required Phase 3 governance closure is completed inside Prompt 5.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -579,19 +615,23 @@
 
 ## 7. Next Functional Micro-Slice
 
-Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed. Phase 3 is in progress. P3.1 Product Model Baseline, P3.2 Product Form Baseline, and P3.3 Product List Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
+Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed. Phase 3 is in progress. P3.1 Product Model Baseline, P3.2 Product Form Baseline, and P3.3 Product List Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. P3.4 Product Create/Edit Baseline is implemented, integrity-audited, and locally verified, but not yet released.
 
 Version 2 workflow is adopted by this documentation-governance correction: one functional micro-slice now closes through the Release step, and successful commit/push/CI does not create a documentation micro-slice.
 
-Next planned functional micro-slice: P3.4 Product Create/Edit Baseline.
+Next planned functional micro-slice after P3.4 delivery closure: P4.1 Semantic Recognition Service Contract Baseline.
 
 The next functional slice may start only when:
 
+- Prompt 5 commits and pushes P3.4;
 - working tree is clean;
 - `HEAD` and `origin/main` are aligned;
 - latest relevant CI completed successfully.
+- Phase 3 governance closure is completed inside Prompt 5 if CI succeeds.
 
 Exact commit hash and CI run are read from Git/GitHub. Do not create a new `.1 Post-Push...` micro-slice ID solely to record successful delivery metadata.
+
+Exact current HEAD, origin/main, push state, and latest CI result are read from Git/GitHub. A successful clean push and successful CI close this functional slice without a routine documentation follow-up.
 
 ## 8. Scope Guardrails
 
@@ -634,25 +674,31 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: Workflow Version 2 delivery-governance migration.
+- Operation: P3.4 Product Create/Edit Baseline implementation, integrity audit, and documentation sync.
 - Files modified by this operation:
-  - `BUILD_PLAN.md`
+  - `catalog/tests.py`
+  - `catalog/urls.py`
+  - `catalog/views.py`
+  - `static/css/app.css`
+  - `templates/base.html`
+  - `templates/catalog/product_list.html`
+  - `templates/catalog/product_form.html`
   - `DEVELOPMENT_NOTES.md`
+  - `README.md`
   - `changelog_checkpoint.md`
 - Files intentionally not modified:
-  - application source
-  - tests
   - migrations
-  - templates
-  - static files
+  - settings
+  - CI workflow
   - `APP_EXPERIENCE_PLAN.md`
-  - `README.md`
+  - `BUILD_PLAN.md`
   - frozen docs under `docs/`
   - `codex_prompt_ERP.txt`
   - Git history or remote configuration
 - Source prototype modified: no.
-- Scope audit result: the operation remained limited to documentation governance. It removes the routine post-push documentation loop and preserves functional scope.
-- Result: Version 2 workflow is adopted by this governance correction; Prompt 5 performs the Release step.
+- Scope audit result: the operation remained limited to Product create/edit baseline behavior and required live documentation updates.
+- Result: P3.4 is locally accepted and pending Prompt 5 Release.
+- Post-CI governance closure required: yes, for Phase 3 Catalog Core. If P3.4 commit/push/CI succeeds, Prompt 5 may update only `changelog_checkpoint.md`, `BUILD_PLAN.md`, and `README.md` to mark Phase 3 `PASSED`, move Phase 4 to the next active phase, and keep Gate 3 not passed until semantic recognition, choices, inventory, and availability work complete.
 
 ## 12. Git Checkpoint
 
@@ -664,8 +710,8 @@ Private local prompt:
 - GitHub repository visibility: public
 - GitHub default branch: `main`
 - Delivery metadata authority: exact current `HEAD`, `origin/main`, actual remote `main`, CI run, and CI conclusion must be read from Git/GitHub.
-- Last functional milestone: P3.3 Product List Baseline is committed, pushed, CI-passed, and `PASSED`; exact commit and CI run are Git/GitHub authority.
-- Release instruction: Do not stage, commit, or push the Workflow Version 2 governance correction during Prompt 0; Prompt 5 performs the Release step.
+- Last released functional milestone: P3.3 Product List Baseline is committed, pushed, CI-passed, and `PASSED`; exact commit and CI run are Git/GitHub authority.
+- Current unreleased functional milestone: P3.4 Product Create/Edit Baseline is locally implemented and verified; Prompt 5 performs the Release step.
 - Post-push documentation rule: no routine post-push documentation sync and no new `.1 Post-Push...` micro-slice ID solely for successful delivery metadata.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
@@ -680,8 +726,9 @@ A new Codex chat must:
 4. confirm Version 2 workflow is active: Release closes the functional micro-slice, and routine post-push documentation sync is removed;
 5. confirm P1.1 through P1.6 are `PASSED`;
 6. confirm Gate 1 is passed, Phase 2 is `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
-7. confirm Phase 3 is `IN_PROGRESS`, and P3.1, P3.2, and P3.3 are `PASSED`;
-8. if the working tree contains only the Version 2 documentation-governance correction in approved files, proceed only with owner-approved Prompt 5 Release;
-9. after Prompt 5 Release, start P3.4 Product Create/Edit Baseline only when the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully;
-10. do not create a post-push documentation micro-slice solely to record successful delivery metadata;
-11. do not implement Product create/edit until owner approval.
+7. confirm Phase 3 is `IN_PROGRESS`, P3.1 through P3.3 are `PASSED`, and P3.4 is locally implemented and pending Release;
+8. if the working tree contains only P3.4 approved source/test/UI/docs changes, proceed only with owner-approved Prompt 5 Release;
+9. after Prompt 5 Release and successful CI, complete the Phase 3 governance closure inside Prompt 5 using only the allowed closure files named above;
+10. after P3.4 release and Phase 3 governance closure, start P4.1 Semantic Recognition Service Contract Baseline only when the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully;
+11. do not create a post-push documentation micro-slice solely to record successful delivery metadata;
+12. do not implement P4.1 until owner approval.

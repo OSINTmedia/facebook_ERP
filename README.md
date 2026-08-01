@@ -50,7 +50,8 @@ Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User an
 - Business ownership and cross-business access-control test baselines are verified locally.
 - Minimal business-owned Product model and Product form baselines exist and are verified locally.
 - A read-only, business-scoped Product list route exists and is verified locally.
-- Visible seller app workflows remain limited to login/logout, the foundation shell, and the read-only Product list; Product create/edit UI, stock, and full workspace behavior have not started.
+- Business-scoped Product create/edit routes exist and are verified locally.
+- Visible seller app workflows remain limited to login/logout, the foundation shell, the Product list, and baseline Product create/edit; stock and full workspace behavior have not started.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
 - The GitHub repository is public, uses default branch `main`, and preserves the initial README commit `dce852b`.
 - Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed.
@@ -179,7 +180,7 @@ Create a local `.env` from `.env.example` before running Django locally. Local a
 
 The verified local database is project-specific PostgreSQL and is configured only through ignored local environment values. Default Django migrations are applied locally.
 
-After local PostgreSQL credentials are configured in `.env`, run `source .venv/bin/activate && python manage.py runserver 127.0.0.1:8000` to review the auth-gated shell locally. Anonymous users are redirected to the login page; after signing in, the root route renders the base application shell and the Products nav opens the read-only Product list. Product create/edit, stock, and full workspace screens are still deferred.
+After local PostgreSQL credentials are configured in `.env`, run `source .venv/bin/activate && python manage.py runserver 127.0.0.1:8000` to review the auth-gated shell locally. Anonymous users are redirected to the login page; after signing in, the root route renders the base application shell, the Products nav opens the Product list, and Add product opens the baseline Product create form. Product stock and full workspace screens are still deferred.
 
 ## Roadmap Summary
 

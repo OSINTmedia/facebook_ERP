@@ -30,7 +30,7 @@
           >
             Products
           </a>
-          <span class="nav-link nav-link--disabled" aria-disabled="true">Add product</span>
+          <a class="nav-link" href="{% url 'catalog:product_create' %}">Add product</a>
           <span class="nav-link nav-link--disabled" aria-disabled="true">Account</span>
           <form class="nav-form" method="post" action="{% url 'accounts:logout' %}">
             {% csrf_token %}

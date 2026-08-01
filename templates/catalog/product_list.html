@@ -18,6 +18,9 @@
         <p>No business workspace yet.</p>
       </div>
     {% elif products %}
+      <div class="page-actions">
+        <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ request.get_full_path|urlencode }}">Add product</a>
+      </div>
       <ul class="product-list" aria-label="Products">
         {% for product in products %}
           <li class="product-list__item">
@@ -26,7 +29,10 @@
                 <h2>{{ product.name }}</h2>
                 <p>{{ product.description }}</p>
               </div>
-              <span class="status-pill">{{ product.get_lifecycle_display }}</span>
+              <div class="product-summary__actions">
+                <span class="status-pill">{{ product.get_lifecycle_display }}</span>
+                <a class="button button--secondary button--compact" href="{% url 'catalog:product_edit' product.pk %}?next={{ request.get_full_path|urlencode }}">Edit</a>
+              </div>
             </article>
           </li>
         {% endfor %}
@@ -34,6 +40,9 @@
     {% else %}
       <div class="empty-state" role="status">
         <p>No products yet.</p>
+      </div>
+      <div class="page-actions">
+        <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ request.get_full_path|urlencode }}">Add product</a>
       </div>
     {% endif %}
   </section>

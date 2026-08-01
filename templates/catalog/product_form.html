@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }} | Seller Workspace{% endblock %}
+
+{% block content %}
+  <section class="shell-page" aria-labelledby="product-form-title">
+    <div class="shell-heading">
+      <p class="eyebrow">Seller workspace</p>
+      <h1 id="product-form-title">{{ page_title }}</h1>
+    </div>
+
+    <div>
+      <a class="return-link" href="{{ return_url }}">Back to Products</a>
+    </div>
+
+    {% if business_policy_blocked %}
+      <div class="empty-state empty-state--warning" role="alert">
+        <p>Multiple business workspaces need an approved switcher before products can be changed.</p>
+      </div>
+    {% elif not active_business %}
+      <div class="empty-state" role="status">
+        <p>No business workspace yet.</p>
+      </div>
+    {% else %}
+      <form class="product-form" method="post" novalidate>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ return_url }}">
+
+        {% if form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in form.non_field_errors %}
+              <p>{{ error }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="form-field">
+          <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
+          {{ form.name }}
+          {% for error in form.name.errors %}
+            <p class="field-error">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="form-field">
+          <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+          {{ form.description }}
+          {% for error in form.description.errors %}
+            <p class="field-error">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="form-field">
+          <label for="{{ form.lifecycle.id_for_label }}">{{ form.lifecycle.label }}</label>
+          {{ form.lifecycle }}
+          {% for error in form.lifecycle.errors %}
+            <p class="field-error">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="form-actions">
+          <button class="button button--primary" type="submit">{{ submit_label }}</button>
+          <a class="button button--secondary" href="{{ return_url }}">Cancel</a>
+        </div>
+      </form>
+    {% endif %}
+  </section>
+{% endblock %}

@@ -192,6 +192,14 @@ Make the first Product UI route a read-only, authenticated list scoped through t
 Reason:
 P3.3 needs to expose existing Product records without expanding into create/edit, stock, recognition, search, or final workspace-card behavior. Reusing the existing Business resolver keeps cross-business isolation centralized and avoids silently deciding the unresolved one-business-versus-switcher policy.
 
+### 2026-08-01 - Product create/edit keeps the first mutation boundary narrow
+
+Decision:
+Add Product create/edit routes around the existing ProductForm, assign Business ownership only from the resolved active Business, hide cross-business Product edits with `Http404`, and keep no-Business and multiple-Business states explicit instead of creating or selecting a workspace.
+
+Reason:
+P3.4 introduces the first seller Product mutation path, so it needs stricter ownership behavior than the read-only list while still avoiding later catalog decisions. Price, choices, stock, availability, recognition, material, measurements, media, Product Detail, clone, archive, and HTMX behavior remain separate approved slices because adding them here would turn the baseline Product form into the broad product bundle that the roadmap deliberately defers.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:
