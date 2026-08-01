@@ -208,6 +208,14 @@ Implement the first semantic recognition boundary as a pure `catalog.recognition
 Reason:
 Phase 4 needs executable recognition semantics before Product Type, Tag, material, choice, or form integration models exist. Keeping P4.1 database-free prevents the assistant layer from silently becoming structured truth, avoids unresolved alias/material UI decisions, and gives later slices a tested contract for observed text versus candidate meaning versus confirmed facts.
 
+### 2026-08-01 - Product Type vocabulary is business-scoped before Product assignment
+
+Decision:
+Introduce `catalog.BusinessProductType` as the business-owned canonical Product Type vocabulary and feed Product Type recognition only from the supplied Business. Leave Product assignment, confirmation UI, aliases, Tags, and type-management screens to later approved slices.
+
+Reason:
+Existing Product Type recognition needs a persisted vocabulary source, but a recognized type candidate is still not a confirmed Product fact. Scoping the vocabulary through Business prevents cross-seller leakage while avoiding unresolved decisions about how sellers create, manage, alias, and confirm Product Types in the UI.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

@@ -44,7 +44,8 @@
 - P3.2 Product Form Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P3.3 Product List Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P3.4 Product Create/Edit Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
-- P4.1 Semantic Recognition Service Contract Baseline is implemented, integrity-audited, locally verified, and pending Prompt 5 release before it can be marked `PASSED`.
+- P4.1 Semantic Recognition Service Contract Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
+- P4.2 Product Type Recognition Baseline is implemented, integrity-audited, locally verified, and pending Prompt 5 release before it can be marked `PASSED`.
 - Legacy post-push checkpoint sync slices exist as historical records only; Version 2 removes routine post-push documentation micro-slices.
 - Successful commit, push, Git/remote alignment, and CI success are operational closure for the same functional micro-slice, not a new documentation micro-slice.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
@@ -57,8 +58,8 @@
 
 - Phase: Phase 4 - Semantic Recognition and Choice Model
 - Status: IN_PROGRESS
-- Current functional micro-slice: P4.1 Semantic Recognition Service Contract Baseline, pending release
-- Next planned functional micro-slice: P4.2 Product Type Recognition Baseline, after P4.1 release gate passes
+- Current functional micro-slice: P4.2 Product Type Recognition Baseline, pending release
+- Next planned functional micro-slice: P4.3 Tag Recognition Baseline, after P4.2 release gate passes
 - Started: 2026-07-27
 - Last updated: 2026-08-01
 
@@ -593,7 +594,41 @@
   - `.venv/bin/python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
   - `.venv/bin/python manage.py test catalog --settings=config.settings.test -v 2 --noinput` ran 39 tests, passed, and created/destroyed `test_facebook_erp_dev`.
   - `.venv/bin/python manage.py test --settings=config.settings.test -v 2 --noinput` ran 77 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-- Result: P4.1 Semantic Recognition Service Contract Baseline is implemented, integrity-audited, and locally verified. It remains pending Prompt 5 commit, push, clean Git/remote alignment, and successful CI before it can be marked `PASSED`.
+- Result: P4.1 Semantic Recognition Service Contract Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`; exact delivery metadata is read from Git/GitHub.
+
+### P4.2 verification
+
+- P4.2 Product Type Recognition Baseline implementation exists locally and is pending Prompt 5 release.
+- Files created by P4.2:
+  - `catalog/migrations/0002_business_product_type.py`
+- Files modified by P4.2:
+  - `catalog/models.py`
+  - `catalog/recognition.py`
+  - `catalog/tests.py`
+  - `BUILD_PLAN.md`
+  - `DEVELOPMENT_NOTES.md`
+  - `changelog_checkpoint.md`
+- Scope audit result:
+  - `catalog.BusinessProductType` is a business-owned Product Type vocabulary source.
+  - Product Type names are stripped on save, must contain non-whitespace text, and are unique per Business after case-insensitive trim normalization.
+  - `BusinessProductType.business` is required and uses `PROTECT`, preserving the Business ownership boundary.
+  - Product Type recognition reads only the supplied Business vocabulary and returns transient unconfirmed candidates through the P4.1 recognition contract.
+  - Recognition without a Business returns no Product Type candidates.
+  - No Product foreign key, Product form assignment, type-management UI, aliases, Tags, material fact persistence, size/color choices, stock, computed availability, readiness, buyer replies, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
+- Repairs made during integrity audit:
+  - hardened Product Type name normalization before direct save;
+  - changed uniqueness to case-insensitive trimmed uniqueness;
+  - added a database-level nonblank-name check;
+  - regenerated the uncommitted initial P4.2 migration so the repaired constraints are the baseline migration for this slice.
+- Verification commands run during implementation and integrity audit:
+  - `.venv/bin/python manage.py check` passed with `System check identified no issues (0 silenced).`
+  - `.venv/bin/python manage.py check --settings=config.settings.test` passed with `System check identified no issues (0 silenced).`
+  - `.venv/bin/python manage.py makemigrations --check --dry-run` passed with `No changes detected`.
+  - `.venv/bin/python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
+  - `.venv/bin/python manage.py test catalog --settings=config.settings.test -v 2 --noinput` ran 50 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+  - `.venv/bin/python manage.py test --settings=config.settings.test -v 2 --noinput` ran 88 tests, passed, and created/destroyed `test_facebook_erp_dev`.
+  - `git diff --check` passed with no whitespace errors.
+- Result: P4.2 Product Type Recognition Baseline is implemented, integrity-audited, and locally verified. It remains pending Prompt 5 commit, push, clean Git/remote alignment, and successful CI before it can be marked `PASSED`.
 
 ## 6. Current Blockers
 
@@ -611,7 +646,8 @@
 - No current P3.3 implementation blocker remains.
 - No current P3.4 implementation blocker remains.
 - No current Phase 3 blocker remains.
-- No current P4.1 local implementation blocker remains; Prompt 5 release is pending.
+- No current P4.1 blocker remains.
+- No current P4.2 local implementation blocker remains; Prompt 5 release is pending.
 - The old P2.1 local migration-history blocker is `RESOLVED`.
 - The old P2.1 test database permission blocker is `RESOLVED`.
 - Existing remote initial README commit must remain preserved.
@@ -619,7 +655,7 @@
 - Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
 - Gate 2 is passed after P2.5 access-control tests, Git checkpoint, push, and CI.
 - Phase 3 is passed after P3.4 release, Git/remote alignment, successful CI, and governance closure.
-- Gate 3 is not passed; P4.1 is locally verified but unreleased, and Product Type recognition, Tag recognition, aliases, choices, inventory, and availability work remain incomplete.
+- Gate 3 is not passed; P4.2 is locally verified but unreleased, and Tag recognition, aliases, choices, inventory, and availability work remain incomplete.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -643,15 +679,15 @@
 
 ## 7. Next Functional Micro-Slice
 
-Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed. Phase 3 is passed. P3.1 Product Model Baseline, P3.2 Product Form Baseline, P3.3 Product List Baseline, and P3.4 Product Create/Edit Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. Phase 4 is in progress. P4.1 Semantic Recognition Service Contract Baseline is implemented, integrity-audited, and locally verified, with Prompt 5 release pending.
+Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed. Phase 3 is passed. P3.1 Product Model Baseline, P3.2 Product Form Baseline, P3.3 Product List Baseline, and P3.4 Product Create/Edit Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. Phase 4 is in progress. P4.1 Semantic Recognition Service Contract Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. P4.2 Product Type Recognition Baseline is implemented, integrity-audited, and locally verified, with Prompt 5 release pending.
 
 Version 2 workflow remains active: one functional micro-slice closes through the Release step, and successful commit/push/CI does not create a documentation micro-slice.
 
-Next planned functional micro-slice after P4.1 release closes: P4.2 Product Type Recognition Baseline.
+Next planned functional micro-slice after P4.2 release closes: P4.3 Tag Recognition Baseline.
 
 The next functional slice may start only when:
 
-- Prompt 5 commits and pushes P4.1;
+- Prompt 5 commits and pushes P4.2;
 - working tree is clean;
 - `HEAD` and `origin/main` are aligned;
 - latest relevant CI completed successfully.
@@ -678,7 +714,7 @@ Exact current HEAD, origin/main, push state, and latest CI result are read from 
 - Future demo must use synthetic data only.
 - Measurement implementation can easily bloat the first product form unless kept as a separate approved micro-slice.
 - Minor shell mobile navigation clipping is deferred UX refinement, not a P1.5 blocker.
-- Owner observed intermittent navigation active-state visual feedback while route changes still work; this is not caused or repaired by P4.1 because the slice touched no UI, and Account remains an intentionally disabled future placeholder.
+- Owner observed intermittent navigation active-state visual feedback while route changes still work; this is not caused or repaired by P4.1 or P4.2 because these slices touched no UI, and Account remains an intentionally disabled future placeholder.
 - Local PostgreSQL `CREATEDB` is allowed only for this local test-environment role; it is not a production database role policy.
 - Multiple businesses per seller are blocked by the P2.4 resolver until an owner-approved active-business policy or switcher exists.
 
@@ -702,18 +738,19 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P4.1 Semantic Recognition Service Contract Baseline implementation audit and documentation sync.
+- Operation: P4.2 Product Type Recognition Baseline implementation audit and documentation sync.
 - Files changed by the functional slice and audit:
+  - `catalog/models.py`
   - `catalog/recognition.py`
   - `catalog/tests.py`
+  - `catalog/migrations/0002_business_product_type.py`
+  - `BUILD_PLAN.md`
   - `DEVELOPMENT_NOTES.md`
   - `changelog_checkpoint.md`
 - Files intentionally not modified:
-  - `BUILD_PLAN.md`
   - `APP_EXPERIENCE_PLAN.md`
   - `README.md`
   - frozen docs under `docs/`
-  - migrations
   - settings
   - templates
   - static files
@@ -721,8 +758,8 @@ Private local prompt:
   - `codex_prompt_ERP.txt`
   - Git history or remote configuration
 - Source prototype modified: no.
-- Scope audit result: the operation remained limited to the pure recognition service contract and tests plus allowed documentation sync.
-- Result: P4.1 is implemented, integrity-audited, and locally verified; Prompt 5 release is pending. Phase 4 Semantic Recognition and Choice Model remains `IN_PROGRESS`; Gate 3 is not passed.
+- Scope audit result: the operation remained limited to the business-scoped Product Type vocabulary baseline, Product Type candidate recognition helper, focused tests, migration, and allowed documentation sync.
+- Result: P4.2 is implemented, integrity-audited, and locally verified; Prompt 5 release is pending. Phase 4 Semantic Recognition and Choice Model remains `IN_PROGRESS`; Gate 3 is not passed.
 - Post-CI governance closure required: no.
 
 ## 12. Git Checkpoint
@@ -735,8 +772,8 @@ Private local prompt:
 - GitHub repository visibility: public
 - GitHub default branch: `main`
 - Delivery metadata authority: exact current `HEAD`, `origin/main`, actual remote `main`, CI run, and CI conclusion must be read from Git/GitHub.
-- Last released functional milestone: P3.4 Product Create/Edit Baseline is committed, pushed, CI-passed, and `PASSED`; exact commit and CI run are Git/GitHub authority.
-- Pending release milestone: P4.1 Semantic Recognition Service Contract Baseline is locally verified and awaiting Prompt 5 commit, push, remote alignment, and CI verification.
+- Last released functional milestone: P4.1 Semantic Recognition Service Contract Baseline is committed, pushed, CI-passed, and `PASSED`; exact commit and CI run are Git/GitHub authority.
+- Pending release milestone: P4.2 Product Type Recognition Baseline is locally verified and awaiting Prompt 5 commit, push, remote alignment, and CI verification.
 - Post-push documentation rule: no routine post-push documentation sync and no new `.1 Post-Push...` micro-slice ID solely for successful delivery metadata.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
@@ -752,7 +789,7 @@ A new Codex chat must:
 5. confirm P1.1 through P1.6 are `PASSED`;
 6. confirm Gate 1 is passed, Phase 2 is `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
 7. confirm Phase 3 is `PASSED`, Phase 4 is `IN_PROGRESS`, and P3.1 through P3.4 are `PASSED`;
-8. confirm Gate 3 is not passed because P4.1 is unreleased and Product Type recognition, choices, inventory, and availability remain incomplete;
-9. release P4.1 through Prompt 5 before planning P4.2;
+8. confirm Gate 3 is not passed because P4.2 is unreleased and Tag recognition, choices, inventory, and availability remain incomplete;
+9. release P4.2 through Prompt 5 before planning P4.3;
 10. do not create a post-push documentation micro-slice solely to record successful delivery metadata;
-11. after P4.1 commit, push, clean Git/remote alignment, and successful CI, proceed to Prompt 2 for P4.2 Product Type Recognition Baseline.
+11. after P4.2 commit, push, clean Git/remote alignment, and successful CI, proceed to Prompt 2 for P4.3 Tag Recognition Baseline.

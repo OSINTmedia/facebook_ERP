@@ -137,6 +137,33 @@ def recognize_product_description(
     return RecognitionResult(observed_text=observed_text, candidates=candidates)
 
 
+def product_type_terms_for_business(business) -> tuple[RecognitionTerm, ...]:
+    """Return recognition terms for Product Types owned by one Business."""
+    if business is None:
+        return ()
+
+    from catalog.models import BusinessProductType
+
+    return tuple(
+        RecognitionTerm(
+            destination=SemanticDestination.PRODUCT_TYPE,
+            canonical_value=product_type.name,
+        )
+        for product_type in BusinessProductType.objects.filter(business=business)
+    )
+
+
+def recognize_product_types_for_business(
+    description: str | None,
+    business,
+) -> RecognitionResult:
+    """Recognize Product Type candidates from one Business's vocabulary only."""
+    return recognize_product_description(
+        description,
+        terms=product_type_terms_for_business(business),
+    )
+
+
 def _find_phrase_matches(text: str, phrase: str) -> Iterable[re.Match]:
     pattern = rf"(?<!\w){re.escape(phrase)}(?!\w)"
     return re.finditer(pattern, text, flags=re.IGNORECASE)

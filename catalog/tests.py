@@ -9,10 +9,11 @@ from django.urls import reverse
 
 from businesses.models import Business
 from catalog.forms import ProductForm
-from catalog.models import Product
+from catalog.models import BusinessProductType, Product
 from catalog.recognition import (
     RecognitionTerm,
     SemanticDestination,
+    recognize_product_types_for_business,
     recognize_product_description,
 )
 
@@ -144,6 +145,170 @@ class RecognitionServiceContractTests(SimpleTestCase):
         )
 
         self.assertEqual(result.candidates_for(SemanticDestination.MATERIAL), ())
+        self.assertEqual(result.confirmed_facts, ())
+
+
+class BusinessProductTypeModelTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="type-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="type-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+
+    def test_product_type_belongs_to_business(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="შარვალი",
+        )
+
+        self.assertEqual(product_type.business, self.business)
+        self.assertEqual(self.business.product_types.get(), product_type)
+
+    def test_product_type_requires_business(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessProductType.objects.create(name="Ownerless type")
+
+    def test_product_type_requires_non_blank_name(self):
+        for invalid_name in ("   ", None):
+            with self.subTest(name=invalid_name):
+                product_type = BusinessProductType(
+                    business=self.business,
+                    name=invalid_name,
+                )
+
+                with self.assertRaises(ValidationError):
+                    product_type.full_clean()
+
+    def test_product_type_name_is_case_insensitive_unique_per_business(self):
+        BusinessProductType.objects.create(
+            business=self.business,
+            name=" Dress ",
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessProductType.objects.create(
+                    business=self.business,
+                    name="dress",
+                )
+
+    def test_product_type_name_is_stripped_on_save(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="  შარვალი  ",
+        )
+
+        self.assertEqual(product_type.name, "შარვალი")
+
+    def test_same_product_type_name_can_exist_in_another_business(self):
+        owned_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="შარვალი",
+        )
+        other_type = BusinessProductType.objects.create(
+            business=self.other_business,
+            name="შარვალი",
+        )
+
+        self.assertNotEqual(owned_type.business, other_type.business)
+        self.assertEqual(BusinessProductType.objects.count(), 2)
+
+    def test_business_deletion_is_protected_when_product_type_exists(self):
+        BusinessProductType.objects.create(
+            business=self.business,
+            name="შარვალი",
+        )
+
+        with self.assertRaises(ProtectedError):
+            self.business.delete()
+
+    def test_product_type_string_uses_name(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="შარვალი",
+        )
+
+        self.assertEqual(str(product_type), "შარვალი")
+
+
+class ProductTypeRecognitionTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="recognition-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="recognition-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+
+    def test_recognizes_product_type_from_active_business_vocabulary(self):
+        BusinessProductType.objects.create(
+            business=self.business,
+            name="შარვალი",
+        )
+        BusinessProductType.objects.create(
+            business=self.other_business,
+            name="კაბა",
+        )
+
+        result = recognize_product_types_for_business(
+            "კლასიკური კაბა და შარვალი",
+            self.business,
+        )
+
+        product_type_candidates = result.candidates_for(
+            SemanticDestination.PRODUCT_TYPE
+        )
+        self.assertEqual(len(product_type_candidates), 1)
+        self.assertEqual(product_type_candidates[0].canonical_value, "შარვალი")
+        self.assertEqual(product_type_candidates[0].observed_text, "შარვალი")
+        self.assertTrue(product_type_candidates[0].requires_confirmation)
+        self.assertFalse(product_type_candidates[0].is_confirmed)
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_product_type_recognition_does_not_leak_another_business_vocabulary(self):
+        BusinessProductType.objects.create(
+            business=self.other_business,
+            name="კაბა",
+        )
+
+        result = recognize_product_types_for_business("წითელი კაბა", self.business)
+
+        self.assertEqual(
+            result.candidates_for(SemanticDestination.PRODUCT_TYPE),
+            (),
+        )
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_product_type_recognition_without_business_returns_no_candidates(self):
+        result = recognize_product_types_for_business("შარვალი", None)
+
+        self.assertEqual(result.observed_text, "შარვალი")
+        self.assertEqual(result.candidates, ())
         self.assertEqual(result.confirmed_facts, ())
 
 

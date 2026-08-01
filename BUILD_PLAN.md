@@ -468,7 +468,7 @@ Avoid libraries that depend on:
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, candidate meaning, confirmed structured facts, type/tag recognition, business-scoped aliases, material facts, choice rows, minimum valid choice rule, duplicate policy after owner decision, form/formset tests.
 - Expected micro-slices: semantic-recognition service contract, Product Type recognition, Tag recognition, alias normalization, material fact confirmation, size/color-to-choice suggestions, choice model, formset/service validation, create/edit integration, mobile form audit.
-- Current implementation state: Phase 4 is in progress. Next planned functional micro-slice is P4.1 Semantic Recognition Service Contract Baseline, which may start only after the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully as verified from Git/GitHub.
+- Current implementation state: Phase 4 is in progress. The active Phase 4 micro-slice and release gate are tracked in `changelog_checkpoint.md`; the execution order remains the expected micro-slice order above.
 - Separate deferred micro-slice: detailed garment measurements, only after type, value, unit, method, applicable product/choice boundary, category prompts, and buyer-reply wording are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, and buyer replies consume confirmed facts only.
 
