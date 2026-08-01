@@ -38,11 +38,12 @@
 - Environment-Gated Demo Seller Access Bootstrap is `PASSED`.
 - P2.4 Owner-Scoped Query Helper Baseline is `PASSED`.
 - P2.5 Cross-Business Access Test Baseline is `PASSED`.
-- Phase 3 Catalog Core is `IN_PROGRESS`.
+- Phase 3 Catalog Core is `PASSED`.
+- Phase 4 Semantic Recognition and Choice Model is `IN_PROGRESS`.
 - P3.1 Product Model Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P3.2 Product Form Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P3.3 Product List Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
-- P3.4 Product Create/Edit Baseline is implemented, integrity-audited, and locally verified; Prompt 5 release, push, Git/remote alignment, CI success, and Phase 3 governance closure remain pending.
+- P3.4 Product Create/Edit Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - Legacy post-push checkpoint sync slices exist as historical records only; Version 2 removes routine post-push documentation micro-slices.
 - Successful commit, push, Git/remote alignment, and CI success are operational closure for the same functional micro-slice, not a new documentation micro-slice.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
@@ -53,10 +54,10 @@
 
 ## 2. Current Phase
 
-- Phase: Phase 3 - Catalog Core
+- Phase: Phase 4 - Semantic Recognition and Choice Model
 - Status: IN_PROGRESS
-- Current functional micro-slice: P3.4 Product Create/Edit Baseline pending Prompt 5 release
-- Next planned functional micro-slice after P3.4 delivery closure: P4.1 Semantic Recognition Service Contract Baseline
+- Current functional micro-slice: P4.1 Semantic Recognition Service Contract Baseline
+- Next planned functional micro-slice: P4.1 Semantic Recognition Service Contract Baseline
 - Started: 2026-07-27
 - Last updated: 2026-08-01
 
@@ -537,7 +538,7 @@
 
 ### P3.4 verification
 
-- P3.4 Product Create/Edit Baseline implementation exists locally and is pending Prompt 5 release.
+- P3.4 Product Create/Edit Baseline implementation exists and is released.
 - Files created by P3.4:
   - `templates/catalog/product_form.html`
 - Files modified by P3.4:
@@ -566,7 +567,7 @@
   - `.venv/bin/python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
   - `.venv/bin/python manage.py test catalog --settings=config.settings.test -v 2 --noinput` ran 33 tests, passed, and created/destroyed `test_facebook_erp_dev`.
   - `.venv/bin/python manage.py test --settings=config.settings.test -v 2 --noinput` ran 71 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-- Result: P3.4 Product Create/Edit Baseline is implemented, integrity-audited, and locally verified. It is not `PASSED` until Prompt 5 completes commit, push, Git/remote alignment, latest relevant CI success, and required Phase 3 governance closure.
+- Result: P3.4 Product Create/Edit Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`; exact delivery metadata is read from Git/GitHub.
 
 ## 6. Current Blockers
 
@@ -583,15 +584,15 @@
 - No current P3.2.1 blocker remains.
 - No current P3.3 implementation blocker remains.
 - No current P3.4 implementation blocker remains.
-- P3.4 Prompt 5 release remains an operational delivery gate, not a new functional micro-slice.
+- No current Phase 3 blocker remains.
 - The old P2.1 local migration-history blocker is `RESOLVED`.
 - The old P2.1 test database permission blocker is `RESOLVED`.
 - Existing remote initial README commit must remain preserved.
 - No force push is allowed.
 - Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
 - Gate 2 is passed after P2.5 access-control tests, Git checkpoint, push, and CI.
-- Gate 3 is not passed; Phase 3 remains in progress.
-- Do not proceed to the next functional micro-slice until P3.4 is committed, pushed, `HEAD` and `origin/main` are aligned, latest relevant CI succeeds, and required Phase 3 governance closure is completed inside Prompt 5.
+- Phase 3 is passed after P3.4 release, Git/remote alignment, successful CI, and governance closure.
+- Gate 3 is not passed; semantic recognition, choices, inventory, and availability work remain incomplete.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -615,19 +616,17 @@
 
 ## 7. Next Functional Micro-Slice
 
-Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed. Phase 3 is in progress. P3.1 Product Model Baseline, P3.2 Product Form Baseline, and P3.3 Product List Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. P3.4 Product Create/Edit Baseline is implemented, integrity-audited, and locally verified, but not yet released.
+Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed. Phase 3 is passed. P3.1 Product Model Baseline, P3.2 Product Form Baseline, P3.3 Product List Baseline, and P3.4 Product Create/Edit Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. Phase 4 is in progress.
 
-Version 2 workflow is adopted by this documentation-governance correction: one functional micro-slice now closes through the Release step, and successful commit/push/CI does not create a documentation micro-slice.
+Version 2 workflow remains active: one functional micro-slice closes through the Release step, and successful commit/push/CI does not create a documentation micro-slice.
 
-Next planned functional micro-slice after P3.4 delivery closure: P4.1 Semantic Recognition Service Contract Baseline.
+Next planned functional micro-slice: P4.1 Semantic Recognition Service Contract Baseline.
 
 The next functional slice may start only when:
 
-- Prompt 5 commits and pushes P3.4;
 - working tree is clean;
 - `HEAD` and `origin/main` are aligned;
 - latest relevant CI completed successfully.
-- Phase 3 governance closure is completed inside Prompt 5 if CI succeeds.
 
 Exact commit hash and CI run are read from Git/GitHub. Do not create a new `.1 Post-Push...` micro-slice ID solely to record successful delivery metadata.
 
@@ -674,31 +673,28 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P3.4 Product Create/Edit Baseline implementation, integrity audit, and documentation sync.
+- Operation: Phase 3 Catalog Core governance closure after P3.4 verified release.
 - Files modified by this operation:
-  - `catalog/tests.py`
-  - `catalog/urls.py`
-  - `catalog/views.py`
-  - `static/css/app.css`
-  - `templates/base.html`
-  - `templates/catalog/product_list.html`
-  - `templates/catalog/product_form.html`
-  - `DEVELOPMENT_NOTES.md`
-  - `README.md`
   - `changelog_checkpoint.md`
+  - `BUILD_PLAN.md`
+  - `README.md`
 - Files intentionally not modified:
+  - application source
+  - tests
   - migrations
   - settings
+  - templates
+  - static files
   - CI workflow
   - `APP_EXPERIENCE_PLAN.md`
-  - `BUILD_PLAN.md`
+  - `DEVELOPMENT_NOTES.md`
   - frozen docs under `docs/`
   - `codex_prompt_ERP.txt`
   - Git history or remote configuration
 - Source prototype modified: no.
-- Scope audit result: the operation remained limited to Product create/edit baseline behavior and required live documentation updates.
-- Result: P3.4 is locally accepted and pending Prompt 5 Release.
-- Post-CI governance closure required: yes, for Phase 3 Catalog Core. If P3.4 commit/push/CI succeeds, Prompt 5 may update only `changelog_checkpoint.md`, `BUILD_PLAN.md`, and `README.md` to mark Phase 3 `PASSED`, move Phase 4 to the next active phase, and keep Gate 3 not passed until semantic recognition, choices, inventory, and availability work complete.
+- Scope audit result: the operation remained limited to Phase 3 closure state after verified P3.4 release.
+- Result: Phase 3 Catalog Core is `PASSED`; Phase 4 Semantic Recognition and Choice Model is `IN_PROGRESS`; Gate 3 is not passed.
+- Post-CI governance closure required: no.
 
 ## 12. Git Checkpoint
 
@@ -710,8 +706,7 @@ Private local prompt:
 - GitHub repository visibility: public
 - GitHub default branch: `main`
 - Delivery metadata authority: exact current `HEAD`, `origin/main`, actual remote `main`, CI run, and CI conclusion must be read from Git/GitHub.
-- Last released functional milestone: P3.3 Product List Baseline is committed, pushed, CI-passed, and `PASSED`; exact commit and CI run are Git/GitHub authority.
-- Current unreleased functional milestone: P3.4 Product Create/Edit Baseline is locally implemented and verified; Prompt 5 performs the Release step.
+- Last released functional milestone: P3.4 Product Create/Edit Baseline is committed, pushed, CI-passed, and `PASSED`; exact commit and CI run are Git/GitHub authority.
 - Post-push documentation rule: no routine post-push documentation sync and no new `.1 Post-Push...` micro-slice ID solely for successful delivery metadata.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
@@ -726,9 +721,8 @@ A new Codex chat must:
 4. confirm Version 2 workflow is active: Release closes the functional micro-slice, and routine post-push documentation sync is removed;
 5. confirm P1.1 through P1.6 are `PASSED`;
 6. confirm Gate 1 is passed, Phase 2 is `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
-7. confirm Phase 3 is `IN_PROGRESS`, P3.1 through P3.3 are `PASSED`, and P3.4 is locally implemented and pending Release;
-8. if the working tree contains only P3.4 approved source/test/UI/docs changes, proceed only with owner-approved Prompt 5 Release;
-9. after Prompt 5 Release and successful CI, complete the Phase 3 governance closure inside Prompt 5 using only the allowed closure files named above;
-10. after P3.4 release and Phase 3 governance closure, start P4.1 Semantic Recognition Service Contract Baseline only when the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully;
-11. do not create a post-push documentation micro-slice solely to record successful delivery metadata;
-12. do not implement P4.1 until owner approval.
+7. confirm Phase 3 is `PASSED`, Phase 4 is `IN_PROGRESS`, and P3.1 through P3.4 are `PASSED`;
+8. confirm Gate 3 is not passed because semantic recognition, choices, inventory, and availability remain incomplete;
+9. start P4.1 Semantic Recognition Service Contract Baseline only when the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully;
+10. do not create a post-push documentation micro-slice solely to record successful delivery metadata;
+11. do not implement P4.1 until owner approval.

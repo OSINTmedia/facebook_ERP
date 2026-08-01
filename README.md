@@ -32,7 +32,7 @@ This rebuild is intended to demonstrate:
 
 ## Current Status
 
-Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User and Business Ownership is complete. Phase 3 Catalog Core is in progress.
+Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User and Business Ownership is complete. Phase 3 Catalog Core is complete. Phase 4 Semantic Recognition and Choice Model is in progress.
 
 - Product discovery completed from an earlier private prototype.
 - Owner-controlled planning documents are frozen for the Phase 1 starting baseline.

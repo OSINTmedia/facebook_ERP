@@ -155,8 +155,8 @@ Successful commit, push, Git/remote alignment, and CI success are operational cl
 | Phase 0 | Documentation Approval and Repository Foundation | Freeze planning docs and establish honest repository baseline | PASSED | Gate 0 | Frozen docs, honest history, corrective checkpoint before Phase 1 |
 | Phase 1 | Django/PostgreSQL Foundation and CI | Create minimal clean Django project, settings, test harness, and CI | PASSED | Gate 1 | Scaffold commits, CI workflow, reproducible setup |
 | Phase 2 | User and Business Ownership | Implement authentication and business ownership boundary | PASSED | Gate 2 | User/business tests, access-control tests |
-| Phase 3 | Catalog Core | Implement product core facts and lifecycle | IN_PROGRESS | Gate 3 | Product model/forms/views/tests |
-| Phase 4 | Semantic Recognition and Choice Model | Implement description-first recognition for type/tag/material candidates plus stock-bearing choices | NOT_STARTED | Gate 3 | Recognition contract, alias tests, choice validation |
+| Phase 3 | Catalog Core | Implement product core facts and lifecycle | PASSED | Gate 3 | Product model/forms/views/tests |
+| Phase 4 | Semantic Recognition and Choice Model | Implement description-first recognition for type/tag/material candidates plus stock-bearing choices | IN_PROGRESS | Gate 3 | Recognition contract, alias tests, choice validation |
 | Phase 5 | Inventory and Computed Availability | Centralize stock mutations and computed availability | NOT_STARTED | Gate 3 | Inventory service tests and ledger tests |
 | Phase 6 | Operational Product Workspace | Build seller product workspace with compact product cards | NOT_STARTED | Gate 4 | Workspace UI, HTMX stock checks, UX audit notes |
 | Phase 7 | Dashboard and Attention Signals | Build daily attention surface from shared domain truth | NOT_STARTED | Gate 4 | Dashboard signal tests and manual workflow proof |
@@ -459,7 +459,7 @@ Avoid libraries that depend on:
 - Dependency: Phase 2.
 - Scope boundary: product name/description, price policy after owner decision, lifecycle, business ownership, create/list/edit basics.
 - Expected micro-slices: product model, product form, product list, product create/edit, lifecycle tests.
-- Current implementation state: P3.1 Product Model Baseline, P3.2 Product Form Baseline, and P3.3 Product List Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and passed. Earlier legacy post-push checkpoint syncs are historical records only and do not define the Version 2 workflow. Next planned functional micro-slice is P3.4 Product Create/Edit Baseline, which may start only after the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully as verified from Git/GitHub.
+- Current implementation state: P3.1 Product Model Baseline, P3.2 Product Form Baseline, P3.3 Product List Baseline, and P3.4 Product Create/Edit Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and passed. Earlier legacy post-push checkpoint syncs are historical records only and do not define the Version 2 workflow.
 - Stop gate: seller can create and edit a business-owned product and cannot access another business's product.
 
 ### Phase 4: Semantic Recognition and Choice Model
@@ -468,6 +468,7 @@ Avoid libraries that depend on:
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, candidate meaning, confirmed structured facts, type/tag recognition, business-scoped aliases, material facts, choice rows, minimum valid choice rule, duplicate policy after owner decision, form/formset tests.
 - Expected micro-slices: semantic-recognition service contract, Product Type recognition, Tag recognition, alias normalization, material fact confirmation, size/color-to-choice suggestions, choice model, formset/service validation, create/edit integration, mobile form audit.
+- Current implementation state: Phase 4 is in progress. Next planned functional micro-slice is P4.1 Semantic Recognition Service Contract Baseline, which may start only after the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully as verified from Git/GitHub.
 - Separate deferred micro-slice: detailed garment measurements, only after type, value, unit, method, applicable product/choice boundary, category prompts, and buyer-reply wording are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, and buyer replies consume confirmed facts only.
 
