@@ -3,10 +3,10 @@
 ## Document Metadata
 
 - Status: SEMI_FROZEN
-- Version: 1.0
+- Version: 2.0
 - Owner: osMit
 - Source documents: `APP_EXPERIENCE_PLAN.md`, `DEVELOPMENT_NOTES.md`, `docs/Portfolio_MVP_V1.md`, `docs/Technical_Planning_v1.md`, `docs/domain/CLOTHING_DATA_SPEC_V1.md`, `docs/User_Journey_Freeze_v1.md`, `docs/discovery/backend.md`, `docs/discovery/frontend.md`, `docs/discovery/DISCOVERY_REPORT.md`
-- Update rule: update only after an approved planning, implementation, verification, or checkpoint task
+- Update rule: update only when roadmap, dependency, gate, scope, stop condition, or verification strategy changes
 - Roadmap authority: this file controls implementation order; frozen product documents control scope
 - Codex may reorder phases automatically: no
 
@@ -14,7 +14,7 @@
 
 Build a clean Social Commerce Seller Operations Assistant from zero in `/home/giga/Desktop/OSINT/GITHUB_MVP_ERP/`. The source prototype in `/home/giga/Desktop/OSINT/facebook_MVP/` remains read-only discovery evidence and behavior reference, not source code to copy wholesale.
 
-The rebuild must proceed through small, reviewable micro-slices with explicit acceptance criteria, automated verification where possible, manual owner verification where needed, documentation sync, and honest Git history.
+The rebuild must proceed through small, reviewable micro-slices with explicit acceptance criteria, automated verification where possible, manual owner verification where needed, documentation updates only when the matrix requires them, and honest Git history.
 
 ## 2. Portfolio Delivery Objective
 
@@ -105,9 +105,9 @@ Use only these status values:
 - Force push is prohibited.
 - Do not inflate history with empty or meaningless commits.
 - Use one clear intention per commit.
-- Commit only after source changes and documentation state are synchronized.
-- Before commit, record source changes, verification performed, known gaps, and checkpoint update.
-- Push only after owner approval for that checkpoint.
+- Commit only after source changes and any required documentation changes are synchronized.
+- Before commit, summarize source changes, verification performed, and known gaps; update checkpoints only when the documentation matrix requires it.
+- Push only after owner approval for the Release step.
 - Commit messages should describe the delivered slice, for example `docs: add planning baseline` or `feat: add business-owned product model`.
 
 ## 7. Standard Micro-Slice Workflow
@@ -124,16 +124,18 @@ Use only these status values:
    - Run the tests/checks defined for the slice.
 6. Manual owner test
    - Provide exact steps for owner verification when UI or workflow behavior changed.
-7. Integrity audit
+7. Integrity audit and documentation decision
    - Review scope, ownership, state boundaries, security, UX, and regression risks.
-8. Documentation sync
-   - Update checkpoint and any non-frozen planning documents required by the change.
-9. Git checkpoint
-   - Show changed files and verification summary.
-10. Commit/push
-   - Commit and push only after approval.
-11. Checkpoint update
-   - Record last commit, current status, next micro-slice, blockers, and verification.
+   - Decide whether documentation must change under the documentation update matrix.
+8. Release
+   - Review the final diff and verification evidence.
+   - Stage only explicit approved paths.
+   - Commit with one clear intention.
+   - Push after owner approval.
+   - Check Git/remote alignment after push.
+   - Verify the latest relevant CI result.
+
+Successful commit, push, Git/remote alignment, and CI success are operational closure for the same functional micro-slice, not a new micro-slice. Exact `HEAD`, `origin/main`, remote branch state, and CI state must be read from Git and GitHub. Do not create a `.1 Post-Push...` slice solely to record successful delivery metadata.
 
 ## 8. Mandatory Stop Gates
 
@@ -192,7 +194,7 @@ Use only these status values:
 - Exact scope: confirm authenticated identity, preserve local docs, initialize local Git if needed, connect to the existing remote, fetch `origin/main`, adopt the existing remote `main` history, preserve the remote initial README commit, and intentionally keep the local planning README before the baseline commit.
 - Current verified state: local Git is initialized; `main` tracks `origin/main`; remote is `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`; GitHub SSH authentication works through `ssh.github.com` on port `443`; existing remote commit `dce852b Initial commit` is preserved.
 - Explicit exclusions: no force push, no app code, no dependency install, no source copy, no silent README replacement, no remote history deletion.
-- Likely files: Git metadata only plus checkpoint updates after verification.
+- Likely files: Git metadata only plus checkpoint updates only if verification changes project state or exposes divergence.
 - Backend acceptance criteria: none.
 - Frontend/UX acceptance criteria: none.
 - Automated verification: GitHub auth identity is known, remote URL is exact, `origin/main` is fetched, histories are reconciled without unrelated duplicate history, and local docs remain intact.
@@ -265,7 +267,7 @@ Use only these status values:
 - Dependency: P0.4 `PASSED`.
 - Exact scope: push the local branch to `origin/main` preserving the existing remote history.
 - Explicit exclusions: no force push, no fake history, no source prototype import, no unapproved branch or repository creation.
-- Likely files: none locally unless checkpoint is updated after push.
+- Likely files: none locally unless failure, divergence, or public factuality correction requires documentation.
 - Backend acceptance criteria: none.
 - Frontend/UX acceptance criteria: none.
 - Automated verification: remote URL, branch, commit graph, and pushed file list.
@@ -457,7 +459,7 @@ Avoid libraries that depend on:
 - Dependency: Phase 2.
 - Scope boundary: product name/description, price policy after owner decision, lifecycle, business ownership, create/list/edit basics.
 - Expected micro-slices: product model, product form, product list, product create/edit, lifecycle tests.
-- Current implementation state: P3.1 Product Model Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and passed. P3.2 Product Form Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and passed. P3.2.1 Post-Push CI Checkpoint Reality Sync is implemented, integrity-audited, committed, pushed, CI-passed, and passed. P3.3 Product List Baseline is implemented, integrity-audited, locally verified, and passed. Next concrete step is the Git checkpoint for P3.3. Do not proceed to Product create/edit planning or implementation until P3.3 is committed and pushed with `HEAD` and `origin/main` aligned.
+- Current implementation state: P3.1 Product Model Baseline, P3.2 Product Form Baseline, and P3.3 Product List Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and passed. Earlier legacy post-push checkpoint syncs are historical records only and do not define the Version 2 workflow. Next planned functional micro-slice is P3.4 Product Create/Edit Baseline, which may start only after the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully as verified from Git/GitHub.
 - Stop gate: seller can create and edit a business-owned product and cannot access another business's product.
 
 ### Phase 4: Semantic Recognition and Choice Model
@@ -558,16 +560,18 @@ No document may claim tests pass or CI passes until they have actually run.
 
 ## 15. Documentation Update Matrix
 
+Documentation stores stable project truth. Git and GitHub store exact delivery metadata such as commit hashes, remote alignment, CI run IDs, and CI conclusions.
+
 | Change Type | changelog_checkpoint.md | BUILD_PLAN.md | APP_EXPERIENCE_PLAN.md | DEVELOPMENT_NOTES.md | Frozen Docs | README.md |
 |---|---|---|---|---|---|---|
-| Owner scope decision | Update blocker/current phase | Update affected phase or owner decisions | Update only if UX contract changes | Record meaningful trade-off if useful | Update only with owner approval | Usually no |
-| New micro-slice starts | Update current phase and micro-slice | No unless plan changes | No | No | No | No |
-| Feature implemented | Update completed work, verification, next action | Update status if phase/slice passed | Update if UX evidence changes | Record lesson only if meaningful | No automatic edits | Update only if public status changes |
-| UX finding | Update risks/blockers if current | Update gate if needed | Update non-frozen UX plan or add owner decision | Record rejected alternative or lesson if meaningful | No automatic edits | No |
-| Test/CI result | Update verification | Update phase/gate status if relevant | No | Record only if it changes strategy | No | Add only after stable public-facing result |
-| Deployment result | Update online demo status | Update Gate 6 status | Update demo UX verification if needed | Record provider trade-off if meaningful | No automatic edits | Add real URL only after verified |
-| Commit/push | Update Git checkpoint | No unless roadmap status changes | No | No | No | No |
-| Documentation drift | Update blockers | Update if execution order affected | Update if UX contract affected | Record decision if it changes future behavior | Owner-approved amendment only | Fix public factuality if needed |
+| Normal commit/push/CI success | No documentation update by default | No | No | No | No | No |
+| Failure, divergence, or blocker | Update current blocker, recovery state, or handoff | Update only if roadmap, dependency, gate, scope, stop condition, or verification strategy changed | Update only if UX contract changed | Record meaningful trade-off or workaround if useful | No automatic edits | Fix only if public factuality changed |
+| Phase or gate closure | Update current phase/gate state and next functional micro-slice | Update affected phase/gate state | Update only if UX evidence changes | Record lesson only if meaningful | No automatic edits | Update only if public status changed |
+| Deployment, demo, or public release change | Update deployment/demo/release state | Update Gate 6 or Gate 7 state if relevant | Update demo UX verification if needed | Record provider trade-off if meaningful | No automatic edits | Add or correct public facts only after verification |
+| Owner scope or strategy decision | Update blocker/current phase | Update affected phase or owner decisions | Update only if UX contract changes | Record meaningful trade-off if useful | Update only with owner approval | Usually no |
+| Public factuality correction | Update if it affects handoff | Update only if it affects execution strategy | Update only if UX contract changes | Record decision only if it changes future behavior | Owner-approved amendment only | Correct immediately |
+
+Routine successful Release completion must not create a documentation-only post-push cycle. `BUILD_PLAN.md` itself must not be updated for every normal slice completion unless roadmap, dependency, gate, scope, stop condition, or verification strategy changed.
 
 ## 16. Deployment and Demo Phase
 

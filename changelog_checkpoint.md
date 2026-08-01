@@ -7,7 +7,7 @@
 - Project: Social Commerce Seller Operations Assistant
 - Rebuild workspace: `/home/giga/Desktop/OSINT/GITHUB_MVP_ERP/`
 - Source prototype: `/home/giga/Desktop/OSINT/facebook_MVP/`
-- Update rule: after every approved implementation or documentation checkpoint
+- Update rule: Version 2 workflow; update only for failure, divergence, blocker, phase/gate closure, deployment/demo/public-release change, public factuality correction, or scope/strategy change; not after routine successful commit/push/CI delivery metadata
 - Read first in every new Codex chat: yes
 
 ## 1. Current Project State
@@ -40,13 +40,13 @@
 - P2.5 Cross-Business Access Test Baseline is `PASSED`.
 - Phase 3 Catalog Core is `IN_PROGRESS`.
 - P3.1 Product Model Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
-- P3.1.1 Post-Push Checkpoint Reality Sync is implemented, integrity-audited, committed, pushed, CI-passed, and `PASSED`.
 - P3.2 Product Form Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
-- P3.2.1 Post-Push CI Checkpoint Reality Sync is implemented, integrity-audited, committed, pushed, CI-passed, and `PASSED`.
-- P3.3 Product List Baseline is implemented, integrity-audited, locally verified, and `PASSED`; it is not yet committed, pushed, or CI-verified.
+- P3.3 Product List Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
+- Legacy post-push checkpoint sync slices exist as historical records only; Version 2 removes routine post-push documentation micro-slices.
+- Successful commit, push, Git/remote alignment, and CI success are operational closure for the same functional micro-slice, not a new documentation micro-slice.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
 - Local P1.6 verification commands passed.
-- Latest checked GitHub Actions run `30701010790` passed for committed `HEAD` `a4be0c25a4b570c686accb38e67ebeb3ff5b91b5`.
+- Exact current `HEAD`, `origin/main`, remote branch state, CI run, and CI conclusion must be read from Git/GitHub, not hardcoded into this checkpoint.
 - Online demo is not deployed.
 - Private workflow prompt `codex_prompt_ERP.txt` exists locally and is intentionally ignored by Git.
 
@@ -54,8 +54,8 @@
 
 - Phase: Phase 3 - Catalog Core
 - Status: IN_PROGRESS
-- Current micro-slice: P3.3 Product List Baseline (`PASSED`)
-- Next concrete micro-slice: P3.3 Product List Baseline Git checkpoint
+- Current governance correction: Workflow Version 2 adoption (documentation-only, no functional slice ID; Release handled by Prompt 5)
+- Next planned functional micro-slice: P3.4 Product Create/Edit Baseline
 - Started: 2026-07-27
 - Last updated: 2026-08-01
 
@@ -198,11 +198,11 @@
 - Historical docs: archived under `docs/archive/old_docs/` and used as non-canonical context only.
 - Source project unchanged: yes.
 - Source code copied: no.
-- Git status after P3.2.1 commit/push/CI and before a future P3.3 Git checkpoint: initialized on `main`, tracking `origin/main`; committed `HEAD` and `origin/main` are aligned at `a4be0c25a4b570c686accb38e67ebeb3ff5b91b5`; working tree contains uncommitted P3.3 implementation and documentation-sync changes. Exact current `HEAD` and `origin/main` alignment must always be read from Git commands, and Git commands override hardcoded checkpoint hashes.
-- Remote repository status: existing public GitHub repository with preserved initial README commit `dce852b`, pushed baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, demo-access bootstrap commit `bfaacae`, repository handoff checkpoint commit `66a143a`, P2.4 owner-scoped query helper commit `6b88e8b`, P2.4 post-push checkpoint sync commit `41cbd3e`, P2.5 cross-business access baseline commit `2b76de9`, P2.5 post-push checkpoint sync commit `777e18a`, P3.1 product model baseline commit `e912400`, P3.1.1 post-push checkpoint sync commit `8134926`, and P3.2 product form baseline commit `d490bf3`.
+- Git status before this Version 2 migration edit: initialized on `main`, tracking `origin/main`, with committed `HEAD`, local `origin/main`, and actual remote `main` aligned after P3.3 delivery.
+- Remote repository status: existing public GitHub repository with preserved initial README history and normal pushed rebuild history.
 - Local remote status: `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`.
 - GitHub authentication status: SSH authentication works through `ssh.github.com` on port `443`.
-- CI status: configured and passing on latest checked GitHub Actions run `30701010790` for committed `HEAD` `a4be0c25a4b570c686accb38e67ebeb3ff5b91b5`; P3.2.1 has passed integrity audit, commit, push, and CI. P3.3 has passed local verification and integrity audit but has not yet been committed, pushed, or CI-verified.
+- CI status: configured; latest relevant GitHub Actions state for the current branch must be read from GitHub. P3.3 completed local verification, integrity audit, commit, push, and CI before this governance correction.
 - Online demo status: not deployed.
 
 ### P1.4 verification
@@ -532,7 +532,7 @@
   - `.venv/bin/python manage.py test catalog --settings=config.settings.test -v 2 --noinput` ran 18 tests, passed, and created/destroyed `test_facebook_erp_dev`.
   - `.venv/bin/python manage.py test config --settings=config.settings.test -v 2 --noinput` ran 2 tests, passed, and created/destroyed `test_facebook_erp_dev`.
   - `.venv/bin/python manage.py test --settings=config.settings.test -v 2 --noinput` ran 56 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-- Result: P3.3 Product List Baseline is implemented, integrity-audited, locally verified, and `PASSED`; it is not yet committed, pushed, or CI-verified.
+- Result: P3.3 Product List Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`; exact delivery metadata is read from Git/GitHub.
 
 ## 6. Current Blockers
 
@@ -555,7 +555,7 @@
 - Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
 - Gate 2 is passed after P2.5 access-control tests, Git checkpoint, push, and CI.
 - Gate 3 is not passed; Phase 3 remains in progress.
-- Do not proceed to Product create/edit planning or implementation until P3.3 passes Git checkpoint, push, and CI.
+- Do not proceed to Product create/edit planning or implementation until this Version 2 governance correction is released and the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -577,13 +577,21 @@
   - final Georgian terminology;
   - deployment provider and demo access model.
 
-## 7. Next Concrete Micro-Slice
+## 7. Next Functional Micro-Slice
 
-Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed. Phase 3 is in progress. P3.1 Product Model Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. P3.1.1 Post-Push Checkpoint Reality Sync is implemented, integrity-audited, committed, pushed, CI-passed, and `PASSED`. P3.2 Product Form Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. P3.2.1 Post-Push CI Checkpoint Reality Sync is implemented, integrity-audited, committed, pushed, CI-passed, and `PASSED`. P3.3 Product List Baseline is implemented, integrity-audited, locally verified, and `PASSED`.
+Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed. Phase 3 is in progress. P3.1 Product Model Baseline, P3.2 Product Form Baseline, and P3.3 Product List Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 
-Next concrete step: prepare the Git checkpoint for P3.3 Product List Baseline.
+Version 2 workflow is adopted by this documentation-governance correction: one functional micro-slice now closes through the Release step, and successful commit/push/CI does not create a documentation micro-slice.
 
-Do not proceed to Product create/edit planning or implementation until P3.3 passes Git checkpoint, push, and CI.
+Next planned functional micro-slice: P3.4 Product Create/Edit Baseline.
+
+The next functional slice may start only when:
+
+- working tree is clean;
+- `HEAD` and `origin/main` are aligned;
+- latest relevant CI completed successfully.
+
+Exact commit hash and CI run are read from Git/GitHub. Do not create a new `.1 Post-Push...` micro-slice ID solely to record successful delivery metadata.
 
 ## 8. Scope Guardrails
 
@@ -626,82 +634,41 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P3.3 Product List Baseline implementation and integrity audit.
-- Files created by this operation:
-  - `catalog/urls.py`
-  - `catalog/views.py`
-  - `templates/catalog/product_list.html`
+- Operation: Workflow Version 2 delivery-governance migration.
 - Files modified by this operation:
-  - `catalog/tests.py`
-  - `config/urls.py`
-  - `static/css/app.css`
-  - `templates/base.html`
   - `BUILD_PLAN.md`
   - `DEVELOPMENT_NOTES.md`
-  - `README.md`
   - `changelog_checkpoint.md`
 - Files intentionally not modified:
-  - frozen docs under `docs/`
-  - `APP_EXPERIENCE_PLAN.md`
-  - `.github/workflows/django.yml`
-  - `.gitignore`
-  - `manage.py`
-  - `accounts/`
-  - `businesses/`
-  - `catalog/models.py`
-  - `catalog/forms.py`
+  - application source
+  - tests
   - migrations
+  - templates
+  - static files
+  - `APP_EXPERIENCE_PLAN.md`
+  - `README.md`
+  - frozen docs under `docs/`
   - `codex_prompt_ERP.txt`
+  - Git history or remote configuration
 - Source prototype modified: no.
-- Scope audit result: the operation remained limited to a read-only, authenticated, business-scoped Product list baseline; no migration, model change, Product create/edit route, Product Detail, search/filter, final card/workspace behavior, price field, choice/variant model, stock, computed availability, recognition, material fact, measurement, media, HTMX behavior, deployment configuration, public catalog, chatbot, orders, payments, delivery, broad ERP, or AI-truth behavior was added.
-- Verification commands run during P3.3 implementation and integrity audit:
-  - `.venv/bin/python manage.py check` passed with `System check identified no issues (0 silenced).`
-  - `.venv/bin/python manage.py check --settings=config.settings.test` passed with `System check identified no issues (0 silenced).`
-  - `.venv/bin/python manage.py makemigrations --check --dry-run` passed with `No changes detected`.
-  - `.venv/bin/python manage.py makemigrations --check --dry-run --settings=config.settings.test` passed with `No changes detected`.
-  - `.venv/bin/python manage.py test catalog --settings=config.settings.test -v 2 --noinput` ran 18 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-  - `.venv/bin/python manage.py test config --settings=config.settings.test -v 2 --noinput` ran 2 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-  - `.venv/bin/python manage.py test --settings=config.settings.test -v 2 --noinput` ran 56 tests, passed, and created/destroyed `test_facebook_erp_dev`.
-  - `git status --short --branch` reported `## main...origin/main` with uncommitted P3.3 implementation and documentation changes.
-  - `git diff --name-status` and `git diff --stat` reported the current tracked source/documentation changes.
-  - `git rev-parse HEAD` and `git rev-parse origin/main` both resolved to `a4be0c25a4b570c686accb38e67ebeb3ff5b91b5`.
-  - `git log --oneline --decorate -5` showed `a4be0c2 docs: sync checkpoint after p3.2 push` at `HEAD`, `origin/main`, and `origin/HEAD`.
-  - `git check-ignore -v .env codex_prompt_ERP.txt` confirmed both private local files remain ignored.
-- Known issues from this operation:
-  - Online demo is not deployed.
-  - Multiple businesses per seller remain unsupported by the resolver until an owner-approved active-business policy or switcher exists; the Product list returns an explicit unsupported state for that condition.
-  - Product list is read-only and intentionally minimal.
-  - P3.3 is implemented, integrity-audited, and locally verified, but not yet committed, pushed, or CI-verified.
-- Result: Phase 3 is `IN_PROGRESS`; P3.3 Product List Baseline is implemented, integrity-audited, locally verified, and `PASSED`; documentation state is ready for Git checkpoint review.
+- Scope audit result: the operation remained limited to documentation governance. It removes the routine post-push documentation loop and preserves functional scope.
+- Result: Version 2 workflow is adopted by this governance correction; Prompt 5 performs the Release step.
 
 ## 12. Git Checkpoint
 
 - Git repository initialized: yes
 - Current branch: `main`
 - Branch tracking: `main...origin/main`
-- Latest committed milestone before current P3.3 implementation: `a4be0c2 docs: sync checkpoint after p3.2 push`
-- Last known committed `HEAD` before a future P3.3 commit: `a4be0c25a4b570c686accb38e67ebeb3ff5b91b5`
-- Last known `origin/main` before a future P3.3 commit: `a4be0c25a4b570c686accb38e67ebeb3ff5b91b5`
-- Last known actual remote `main` before a future P3.3 commit: `a4be0c25a4b570c686accb38e67ebeb3ff5b91b5`
 - Remote configured locally: yes, `ssh://git@ssh.github.com:443/OSINTmedia/facebook_ERP.git`
 - GitHub repository exists: yes, `https://github.com/OSINTmedia/facebook_ERP`
 - GitHub repository visibility: public
 - GitHub default branch: `main`
-- Remote history: preserved initial README commit `dce852b`; baseline commit `549db75`, clothing scope commit `9f5a5e2`, governance commit `accc24b`, Phase 1 readiness checkpoint commit `0c04cbd`, checkpoint sync commit `1048175`, dependency baseline commit `69e968e`, scaffold commit `4914f2b`, settings commit `a01e246`, PostgreSQL baseline commit `323c268`, P1.4/P1.5 runtime-shell checkpoint commit `dc21677`, P1.6 CI workflow commit `23fb3ca`, P1.6 documentation sync commit `41b6fe4`, P2.1 custom user baseline commit `54d8bfc`, P2.2 business ownership baseline commit `a3d19cc`, P2.3 login flow baseline commit `9f8fb8c`, demo-access bootstrap commit `bfaacae`, repository handoff checkpoint commit `66a143a`, P2.4 owner-scoped query helper commit `6b88e8b`, P2.4 post-push checkpoint sync commit `41cbd3e`, P2.5 cross-business access baseline commit `2b76de9`, P2.5 post-push checkpoint sync commit `777e18a`, P3.1 product model baseline commit `e912400`, P3.1.1 post-push checkpoint sync commit `8134926`, P3.2 product form baseline commit `d490bf3`, and P3.2.1 post-push checkpoint sync commit `a4be0c2` pushed on top.
-- Push status: latest committed documentation checkpoint `a4be0c2` was pushed normally to `origin/main`; no force push was used. P3.3 Product List Baseline is not yet committed or pushed.
-- Current uncommitted P3.3 state:
-  - source changes exist in `catalog/tests.py`, `config/urls.py`, `static/css/app.css`, and `templates/base.html`;
-  - new untracked P3.3 files exist under `catalog/urls.py`, `catalog/views.py`, and `templates/catalog/product_list.html`;
-  - documentation sync changes exist in `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, `README.md`, and `changelog_checkpoint.md`;
-  - current branch is `main`;
-  - committed `HEAD`, `origin/main`, and actual remote `main` are aligned before any future P3.3 commit.
-- Documentation checkpoint state:
-  - P3.3 Product List Baseline is implemented, integrity-audited, locally verified, and marked `PASSED`.
-  - P3.3 Product List Baseline is not yet committed, pushed, or CI-verified.
-  - Exact staged, committed, and pushed state must be read from Git commands.
+- Delivery metadata authority: exact current `HEAD`, `origin/main`, actual remote `main`, CI run, and CI conclusion must be read from Git/GitHub.
+- Last functional milestone: P3.3 Product List Baseline is committed, pushed, CI-passed, and `PASSED`; exact commit and CI run are Git/GitHub authority.
+- Release instruction: Do not stage, commit, or push the Workflow Version 2 governance correction during Prompt 0; Prompt 5 performs the Release step.
+- Post-push documentation rule: no routine post-push documentation sync and no new `.1 Post-Push...` micro-slice ID solely for successful delivery metadata.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
-- Exact current `HEAD` after any future P3.3 commit must be read from Git; do not hardcode a future commit hash into this checkpoint.
 
 ## 13. Handoff Instruction
 
@@ -709,12 +676,12 @@ A new Codex chat must:
 
 1. read this file first;
 2. verify branch, `HEAD`, `origin/main`, and working tree state with Git commands;
-3. confirm P1.1 through P1.6 are `PASSED`;
-4. confirm Gate 1 is passed, Phase 2 is `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
-5. confirm Phase 3 is `IN_PROGRESS`, P3.1 Product Model Baseline is `PASSED`, and P3.1.1 Post-Push Checkpoint Reality Sync is `PASSED`;
-6. confirm P3.2 Product Form Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`;
-7. confirm P3.2.1 Post-Push CI Checkpoint Reality Sync is committed, pushed, CI-passed, and `PASSED`;
-8. confirm P3.3 Product List Baseline is implemented, integrity-audited, locally verified, and `PASSED`, but not yet committed or pushed;
-9. if the working tree contains only the P3.3 implementation and documentation sync described here, proceed only with owner-approved Git checkpoint for P3.3;
-10. after P3.3 is committed and pushed with `HEAD` and `origin/main` aligned, prepare the next-step report for Product create/edit only after owner approval;
+3. verify the latest relevant CI state from GitHub;
+4. confirm Version 2 workflow is active: Release closes the functional micro-slice, and routine post-push documentation sync is removed;
+5. confirm P1.1 through P1.6 are `PASSED`;
+6. confirm Gate 1 is passed, Phase 2 is `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
+7. confirm Phase 3 is `IN_PROGRESS`, and P3.1, P3.2, and P3.3 are `PASSED`;
+8. if the working tree contains only the Version 2 documentation-governance correction in approved files, proceed only with owner-approved Prompt 5 Release;
+9. after Prompt 5 Release, start P3.4 Product Create/Edit Baseline only when the working tree is clean, `HEAD` and `origin/main` are aligned, and the latest relevant CI completed successfully;
+10. do not create a post-push documentation micro-slice solely to record successful delivery metadata;
 11. do not implement Product create/edit until owner approval.

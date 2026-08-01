@@ -251,13 +251,24 @@ Navigation, return paths, first viewport, mobile density, feedback, and page res
 Reason:
 The discovery prototype showed that late UI correction can become a large refactoring effort and may introduce regressions.
 
-### 2026-07-27 - Micro-slice execution workflow
+### 2026-07-27 - Micro-slice execution workflow Version 1
 
 Decision:
-Work proceeds through context load, next-step report, owner approval, implementation, verification, manual test, integrity audit, documentation sync, Git checkpoint, and commit/push approval.
+The original workflow separated delivery into multiple checkpointed stages before Release closure was formalized.
 
 Reason:
 The workflow prevents context loss, scope creep, stale documentation, and unreviewable AI-generated diffs.
+
+Status:
+Superseded by the 2026-08-01 Workflow Version 2 delivery closure decision.
+
+### 2026-08-01 - Workflow Version 2 delivery closure
+
+Decision:
+One functional micro-slice now uses one five-prompt cycle and closes through a single Release step; successful push/CI is not a documentation micro-slice.
+
+Reason:
+Documentation stores stable project truth while Git/GitHub stores exact delivery metadata such as commit hashes, remote alignment, CI runs, and CI conclusions. Post-push documentation is exceptional for failures, divergence, blockers, phase/gate closure, deployment/demo/public-release changes, or public factuality correction, not routine delivery bookkeeping.
 
 ### 2026-07-28 - Private workflow prompt stays local
 
