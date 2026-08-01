@@ -200,6 +200,14 @@ Add Product create/edit routes around the existing ProductForm, assign Business 
 Reason:
 P3.4 introduces the first seller Product mutation path, so it needs stricter ownership behavior than the read-only list while still avoiding later catalog decisions. Price, choices, stock, availability, recognition, material, measurements, media, Product Detail, clone, archive, and HTMX behavior remain separate approved slices because adding them here would turn the baseline Product form into the broad product bundle that the roadmap deliberately defers.
 
+### 2026-08-01 - Recognition service starts as a pure candidate contract
+
+Decision:
+Implement the first semantic recognition boundary as a pure `catalog.recognition` service that preserves observed seller text, returns immutable unconfirmed candidates from caller-supplied terms and aliases, and leaves confirmed facts empty until a later seller-confirmation/persistence slice.
+
+Reason:
+Phase 4 needs executable recognition semantics before Product Type, Tag, material, choice, or form integration models exist. Keeping P4.1 database-free prevents the assistant layer from silently becoming structured truth, avoids unresolved alias/material UI decisions, and gives later slices a tested contract for observed text versus candidate meaning versus confirmed facts.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

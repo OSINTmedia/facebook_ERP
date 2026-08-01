@@ -1,13 +1,150 @@
+from dataclasses import FrozenInstanceError
+
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
-from django.test import TestCase
+from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from businesses.models import Business
 from catalog.forms import ProductForm
 from catalog.models import Product
+from catalog.recognition import (
+    RecognitionTerm,
+    SemanticDestination,
+    recognize_product_description,
+)
+
+
+class RecognitionServiceContractTests(SimpleTestCase):
+    def test_recognition_preserves_observed_text_without_confirming_facts(self):
+        description = "კლასიკური შარვალი, M-ზომა, ბამბა."
+        terms = (
+            RecognitionTerm(
+                destination=SemanticDestination.PRODUCT_TYPE,
+                canonical_value="შარვალი",
+            ),
+            RecognitionTerm(
+                destination=SemanticDestination.MATERIAL,
+                canonical_value="ბამბა",
+            ),
+        )
+
+        result = recognize_product_description(description, terms=terms)
+
+        self.assertEqual(result.observed_text, description)
+        self.assertEqual(result.confirmed_facts, ())
+        self.assertEqual(len(result.candidates), 2)
+        self.assertTrue(
+            all(candidate.requires_confirmation for candidate in result.candidates)
+        )
+        self.assertFalse(any(candidate.is_confirmed for candidate in result.candidates))
+
+    def test_recognition_returns_transient_candidates_from_supplied_terms(self):
+        description = "კლასიკური შარვალი ჯიბეებით, M-ზომა."
+        terms = (
+            RecognitionTerm(
+                destination=SemanticDestination.PRODUCT_TYPE,
+                canonical_value="შარვალი",
+                aliases=("pants",),
+            ),
+            RecognitionTerm(
+                destination=SemanticDestination.TAG,
+                canonical_value="ჯიბეები",
+                aliases=("ჯიბეებით",),
+            ),
+            RecognitionTerm(
+                destination=SemanticDestination.CHOICE_SIZE,
+                canonical_value="M",
+            ),
+        )
+
+        result = recognize_product_description(description, terms=terms)
+
+        self.assertEqual(
+            [
+                (candidate.destination, candidate.canonical_value)
+                for candidate in result.candidates
+            ],
+            [
+                (SemanticDestination.PRODUCT_TYPE, "შარვალი"),
+                (SemanticDestination.TAG, "ჯიბეები"),
+                (SemanticDestination.CHOICE_SIZE, "M"),
+            ],
+        )
+        self.assertEqual(
+            [candidate.observed_text for candidate in result.candidates],
+            ["შარვალი", "ჯიბეებით", "M"],
+        )
+
+    def test_recognition_uses_only_caller_supplied_terms(self):
+        description = "კლასიკური შარვალი"
+
+        result_without_terms = recognize_product_description(description)
+        result_with_terms = recognize_product_description(
+            description,
+            terms=(
+                RecognitionTerm(
+                    destination=SemanticDestination.PRODUCT_TYPE,
+                    canonical_value="შარვალი",
+                ),
+            ),
+        )
+
+        self.assertEqual(result_without_terms.candidates, ())
+        product_type_candidates = result_with_terms.candidates_for(
+            SemanticDestination.PRODUCT_TYPE
+        )
+        self.assertEqual(
+            product_type_candidates[0].canonical_value,
+            "შარვალი",
+        )
+
+    def test_recognition_result_and_candidates_are_immutable(self):
+        result = recognize_product_description(
+            "ბამბა",
+            terms=(
+                RecognitionTerm(
+                    destination=SemanticDestination.MATERIAL,
+                    canonical_value="ბამბა",
+                ),
+            ),
+        )
+
+        with self.assertRaises(FrozenInstanceError):
+            result.observed_text = "changed"
+        with self.assertRaises(FrozenInstanceError):
+            result.candidates[0].canonical_value = "changed"
+
+    def test_empty_description_returns_no_candidates(self):
+        result = recognize_product_description(
+            "   ",
+            terms=(
+                RecognitionTerm(
+                    destination=SemanticDestination.MATERIAL,
+                    canonical_value="ბამბა",
+                ),
+            ),
+        )
+
+        self.assertEqual(result.observed_text, "   ")
+        self.assertEqual(result.candidates, ())
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_negated_material_phrase_does_not_create_positive_candidate(self):
+        result = recognize_product_description(
+            "პოლიესტერი არ აქვს.",
+            terms=(
+                RecognitionTerm(
+                    destination=SemanticDestination.MATERIAL,
+                    canonical_value="პოლიესტერი",
+                ),
+            ),
+        )
+
+        self.assertEqual(result.candidates_for(SemanticDestination.MATERIAL), ())
+        self.assertEqual(result.confirmed_facts, ())
 
 
 class ProductModelTests(TestCase):
