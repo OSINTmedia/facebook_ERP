@@ -168,6 +168,14 @@ Add a small read-side Business selector boundary that filters by authenticated o
 Reason:
 Future seller-owned queries need one reusable ownership boundary before catalog objects exist, but P2.4 should not silently create Business rows or decide the unresolved one-business-versus-switcher policy. Making the unsupported multi-business state explicit keeps later Product, dashboard, and HTMX endpoints from copying prototype-style implicit first-business behavior.
 
+### 2026-08-01 - Product model baseline excludes unresolved catalog behavior
+
+Decision:
+Introduce the first `catalog.Product` model as a business-owned identity and stored-lifecycle baseline only, with `draft` and `active` lifecycle values, and leave price, choices, stock, availability, recognition, media, archive/restore, and Product UI to later approved micro-slices.
+
+Reason:
+Phase 3 needs a concrete Product table before forms and workflows can be built, but the unresolved price policy, choice/variant behavior, archive terminology, recognition scope, and stock service boundaries should not be silently decided by the first model migration. Keeping the baseline small preserves Business ownership isolation while avoiding premature schema commitments.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

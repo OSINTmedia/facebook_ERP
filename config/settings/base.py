@@ -26,6 +26,7 @@ if env_file.exists():
 INSTALLED_APPS = [
     "accounts",
     "businesses",
+    "catalog",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

@@ -153,7 +153,7 @@ Use only these status values:
 | Phase 0 | Documentation Approval and Repository Foundation | Freeze planning docs and establish honest repository baseline | PASSED | Gate 0 | Frozen docs, honest history, corrective checkpoint before Phase 1 |
 | Phase 1 | Django/PostgreSQL Foundation and CI | Create minimal clean Django project, settings, test harness, and CI | PASSED | Gate 1 | Scaffold commits, CI workflow, reproducible setup |
 | Phase 2 | User and Business Ownership | Implement authentication and business ownership boundary | PASSED | Gate 2 | User/business tests, access-control tests |
-| Phase 3 | Catalog Core | Implement product core facts and lifecycle | NOT_STARTED | Gate 3 | Product model/forms/views/tests |
+| Phase 3 | Catalog Core | Implement product core facts and lifecycle | IN_PROGRESS | Gate 3 | Product model/forms/views/tests |
 | Phase 4 | Semantic Recognition and Choice Model | Implement description-first recognition for type/tag/material candidates plus stock-bearing choices | NOT_STARTED | Gate 3 | Recognition contract, alias tests, choice validation |
 | Phase 5 | Inventory and Computed Availability | Centralize stock mutations and computed availability | NOT_STARTED | Gate 3 | Inventory service tests and ledger tests |
 | Phase 6 | Operational Product Workspace | Build seller product workspace with compact product cards | NOT_STARTED | Gate 4 | Workspace UI, HTMX stock checks, UX audit notes |
@@ -448,7 +448,7 @@ Avoid libraries that depend on:
 - Dependency: Gate 1.
 - Scope boundary: User, Business, login/logout, active business policy, access tests.
 - Expected micro-slices: auth model, business model, login flow, owner-scoped query helper, cross-business access tests.
-- Current dependency state: Gate 1 is passed; P2.1 Accounts App and Custom Seller User Model Baseline, P2.2 Business Model and Ownership Boundary Baseline, P2.3 Login Flow Baseline, Environment-Gated Demo Seller Access Bootstrap, P2.4 Owner-Scoped Query Helper Baseline, and P2.5 Cross-Business Access Test Baseline are passed, committed, pushed, and CI-passed. Gate 2 is passed. Next concrete step is the next-step report for P3.1 Product Model Baseline. Do not implement P3.1 until owner approval.
+- Current dependency state: Gate 1 is passed; P2.1 Accounts App and Custom Seller User Model Baseline, P2.2 Business Model and Ownership Boundary Baseline, P2.3 Login Flow Baseline, Environment-Gated Demo Seller Access Bootstrap, P2.4 Owner-Scoped Query Helper Baseline, and P2.5 Cross-Business Access Test Baseline are passed, committed, pushed, and CI-passed. Gate 2 is passed. Phase 3 is now in progress after P3.1 Product Model Baseline was implemented, integrity-audited, and locally verified.
 - Stop gate: every seller-owned object created later has a business boundary and test pattern.
 
 ### Phase 3: Catalog Core
@@ -457,6 +457,7 @@ Avoid libraries that depend on:
 - Dependency: Phase 2.
 - Scope boundary: product name/description, price policy after owner decision, lifecycle, business ownership, create/list/edit basics.
 - Expected micro-slices: product model, product form, product list, product create/edit, lifecycle tests.
+- Current implementation state: P3.1 Product Model Baseline is implemented, integrity-audited, locally verified, and passed locally. Next concrete step is the next-step report for P3.2 Product Form Baseline. Do not implement P3.2 until owner approval.
 - Stop gate: seller can create and edit a business-owned product and cannot access another business's product.
 
 ### Phase 4: Semantic Recognition and Choice Model
