@@ -23,7 +23,13 @@
           >
             Dashboard
           </a>
-          <span class="nav-link nav-link--disabled" aria-disabled="true">Products</span>
+          <a
+            class="nav-link{% if current_nav == 'products' %} nav-link--active{% endif %}"
+            href="{% url 'catalog:product_list' %}"
+            {% if current_nav == 'products' %}aria-current="page"{% endif %}
+          >
+            Products
+          </a>
           <span class="nav-link nav-link--disabled" aria-disabled="true">Add product</span>
           <span class="nav-link nav-link--disabled" aria-disabled="true">Account</span>
           <form class="nav-form" method="post" action="{% url 'accounts:logout' %}">

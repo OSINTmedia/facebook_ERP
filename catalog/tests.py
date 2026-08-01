@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models.deletion import ProtectedError
 from django.test import TestCase
+from django.urls import reverse
 
 from businesses.models import Business
 from catalog.forms import ProductForm
@@ -197,3 +198,118 @@ class ProductFormTests(TestCase):
         self.assertEqual(product.description, "Classic black trousers.")
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
         self.assertEqual(Product.objects.count(), 1)
+
+
+class ProductListViewTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="list-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="list-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+        self.url = reverse("catalog:product_list")
+
+    def test_product_list_requires_authentication(self):
+        response = self.client.get(self.url)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self.url}",
+        )
+
+    def test_product_list_renders_only_active_business_products(self):
+        owned_product = Product.objects.create(
+            business=self.business,
+            name="Black trousers",
+            description="Classic black trousers.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        Product.objects.create(
+            business=self.other_business,
+            name="Red dress",
+            description="Red dress from another business.",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/product_list.html")
+        self.assertContains(response, "Products")
+        self.assertContains(response, owned_product.name)
+        self.assertContains(response, owned_product.description)
+        self.assertContains(response, "Active")
+        self.assertContains(response, 'aria-current="page"')
+        self.assertNotContains(response, "Red dress")
+        self.assertEqual(list(response.context["products"]), [owned_product])
+
+    def test_product_list_without_business_shows_empty_state_without_creating_business(
+        self,
+    ):
+        seller_without_business = get_user_model().objects.create_user(
+            email="no-business@example.com",
+            password="test-password",
+        )
+        Product.objects.create(
+            business=self.other_business,
+            name="Other product",
+            description="Other owner's product.",
+        )
+        self.client.force_login(seller_without_business)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No business workspace yet.")
+        self.assertNotContains(response, "Other product")
+        self.assertFalse(
+            Business.objects.filter(owner=seller_without_business).exists()
+        )
+
+    def test_product_list_with_business_but_no_products_shows_empty_state(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "No products yet.")
+
+    def test_product_list_refuses_multiple_businesses_without_switcher(self):
+        second_business = Business.objects.create(
+            owner=self.owner,
+            name="Second Studio",
+        )
+        Product.objects.create(
+            business=self.business,
+            name="First business product",
+            description="Should not be selected implicitly.",
+        )
+        Product.objects.create(
+            business=second_business,
+            name="Second business product",
+            description="Should not be selected implicitly.",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 409)
+        self.assertContains(
+            response,
+            "Multiple business workspaces need an approved switcher",
+            status_code=409,
+        )
+        self.assertNotContains(response, "First business product", status_code=409)
+        self.assertNotContains(response, "Second business product", status_code=409)

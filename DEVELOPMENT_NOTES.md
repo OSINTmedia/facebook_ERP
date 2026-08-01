@@ -184,6 +184,14 @@ Expose only `name`, `description`, and stored `lifecycle` through the baseline `
 Reason:
 A seller-submitted Product form must not be able to choose or spoof the Business ownership boundary. Keeping the first form aligned to the existing Product model baseline provides reusable server-side validation without silently resolving later catalog policy decisions.
 
+### 2026-08-01 - First Product list is read-only and policy-limited
+
+Decision:
+Make the first Product UI route a read-only, authenticated list scoped through the active Business resolver, and return an explicit unsupported state when a seller owns multiple Businesses.
+
+Reason:
+P3.3 needs to expose existing Product records without expanding into create/edit, stock, recognition, search, or final workspace-card behavior. Reusing the existing Business resolver keeps cross-business isolation centralized and avoids silently deciding the unresolved one-business-versus-switcher policy.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

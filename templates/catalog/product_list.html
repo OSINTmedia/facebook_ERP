@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Products | Seller Workspace{% endblock %}
+
+{% block content %}
+  <section class="shell-page" aria-labelledby="products-title">
+    <div class="shell-heading">
+      <p class="eyebrow">Seller workspace</p>
+      <h1 id="products-title">Products</h1>
+    </div>
+
+    {% if business_policy_blocked %}
+      <div class="empty-state empty-state--warning" role="alert">
+        <p>Multiple business workspaces need an approved switcher before products can be shown.</p>
+      </div>
+    {% elif not active_business %}
+      <div class="empty-state" role="status">
+        <p>No business workspace yet.</p>
+      </div>
+    {% elif products %}
+      <ul class="product-list" aria-label="Products">
+        {% for product in products %}
+          <li class="product-list__item">
+            <article class="product-summary">
+              <div>
+                <h2>{{ product.name }}</h2>
+                <p>{{ product.description }}</p>
+              </div>
+              <span class="status-pill">{{ product.get_lifecycle_display }}</span>
+            </article>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state" role="status">
+        <p>No products yet.</p>
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}
