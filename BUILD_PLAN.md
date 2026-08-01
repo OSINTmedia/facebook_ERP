@@ -457,7 +457,7 @@ Avoid libraries that depend on:
 - Dependency: Phase 2.
 - Scope boundary: product name/description, price policy after owner decision, lifecycle, business ownership, create/list/edit basics.
 - Expected micro-slices: product model, product form, product list, product create/edit, lifecycle tests.
-- Current implementation state: P3.1 Product Model Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and passed. Next concrete step is the next-step report for P3.2 Product Form Baseline. Do not implement P3.2 until owner approval.
+- Current implementation state: P3.1 Product Model Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and passed. P3.2 Product Form Baseline is implemented, integrity-audited, locally verified, and passed. Next concrete step is the Git checkpoint for P3.2. Do not proceed to P3.3 planning or implementation until P3.2 is committed, pushed, and CI-verified.
 - Stop gate: seller can create and edit a business-owned product and cannot access another business's product.
 
 ### Phase 4: Semantic Recognition and Choice Model

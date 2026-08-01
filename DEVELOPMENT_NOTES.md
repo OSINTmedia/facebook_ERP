@@ -176,6 +176,14 @@ Introduce the first `catalog.Product` model as a business-owned identity and sto
 Reason:
 Phase 3 needs a concrete Product table before forms and workflows can be built, but the unresolved price policy, choice/variant behavior, archive terminology, recognition scope, and stock service boundaries should not be silently decided by the first model migration. Keeping the baseline small preserves Business ownership isolation while avoiding premature schema commitments.
 
+### 2026-08-01 - Product form keeps ownership server-assigned
+
+Decision:
+Expose only `name`, `description`, and stored `lifecycle` through the baseline `ProductForm`; keep `business` assignment outside the form and leave price, choices, stock, availability, recognition, material facts, measurements, media, and Product UI to later approved slices.
+
+Reason:
+A seller-submitted Product form must not be able to choose or spoof the Business ownership boundary. Keeping the first form aligned to the existing Product model baseline provides reusable server-side validation without silently resolving later catalog policy decisions.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:
