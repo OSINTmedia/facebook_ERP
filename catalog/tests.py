@@ -9,7 +9,13 @@ from django.urls import reverse
 
 from businesses.models import Business
 from catalog.forms import ProductForm
-from catalog.models import BusinessProductType, BusinessTag, Product
+from catalog.models import (
+    BusinessProductType,
+    BusinessProductTypeAlias,
+    BusinessTag,
+    BusinessTagAlias,
+    Product,
+)
 from catalog.recognition import (
     RecognitionTerm,
     SemanticDestination,
@@ -343,6 +349,348 @@ class BusinessTagModelTests(TestCase):
         self.assertEqual(str(tag), "ჯიბეები")
 
 
+class BusinessProductTypeAliasModelTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="type-alias-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="type-alias-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+        self.product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="შარვალი",
+        )
+        self.other_product_type = BusinessProductType.objects.create(
+            business=self.other_business,
+            name="კაბა",
+        )
+
+    def test_product_type_alias_belongs_to_business_and_product_type(self):
+        alias = BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=self.product_type,
+            alias="pants",
+        )
+
+        self.assertEqual(alias.business, self.business)
+        self.assertEqual(alias.product_type, self.product_type)
+        self.assertEqual(self.business.product_type_aliases.get(), alias)
+        self.assertEqual(self.product_type.aliases.get(), alias)
+
+    def test_product_type_alias_requires_business_and_product_type(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessProductTypeAlias.objects.create(
+                    product_type=self.product_type,
+                    alias="pants",
+                )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessProductTypeAlias.objects.create(
+                    business=self.business,
+                    alias="pants",
+                )
+
+    def test_product_type_alias_requires_non_blank_alias(self):
+        for invalid_alias in ("   ", None):
+            with self.subTest(alias=invalid_alias):
+                alias = BusinessProductTypeAlias(
+                    business=self.business,
+                    product_type=self.product_type,
+                    alias=invalid_alias,
+                )
+
+                with self.assertRaises(ValidationError):
+                    alias.full_clean()
+
+    def test_product_type_alias_is_case_insensitive_unique_per_business(self):
+        BusinessProductType.objects.create(
+            business=self.business,
+            name="კაბა",
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=self.product_type,
+            alias=" Pants ",
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessProductTypeAlias.objects.create(
+                    business=self.business,
+                    product_type=self.product_type,
+                    alias="pants",
+                )
+
+    def test_product_type_alias_is_stripped_on_save(self):
+        alias = BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=self.product_type,
+            alias="  pants  ",
+        )
+
+        self.assertEqual(alias.alias, "pants")
+
+    def test_same_product_type_alias_can_exist_in_another_business(self):
+        owned_alias = BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=self.product_type,
+            alias="pants",
+        )
+        other_alias = BusinessProductTypeAlias.objects.create(
+            business=self.other_business,
+            product_type=self.other_product_type,
+            alias="pants",
+        )
+
+        self.assertNotEqual(owned_alias.business, other_alias.business)
+        self.assertEqual(BusinessProductTypeAlias.objects.count(), 2)
+
+    def test_product_type_alias_requires_matching_business(self):
+        alias = BusinessProductTypeAlias(
+            business=self.business,
+            product_type=self.other_product_type,
+            alias="dress",
+        )
+
+        with self.assertRaises(ValidationError):
+            alias.full_clean()
+        with self.assertRaises(ValidationError):
+            alias.save()
+
+    def test_product_type_alias_cannot_match_canonical_type_name(self):
+        BusinessProductType.objects.create(
+            business=self.business,
+            name="კაბა",
+        )
+        alias = BusinessProductTypeAlias(
+            business=self.business,
+            product_type=self.product_type,
+            alias="კაბა",
+        )
+
+        with self.assertRaises(ValidationError):
+            alias.full_clean()
+        with self.assertRaises(ValidationError):
+            alias.save()
+
+    def test_product_type_name_cannot_match_existing_alias(self):
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=self.product_type,
+            alias="dress",
+        )
+
+        with self.assertRaises(ValidationError):
+            BusinessProductType.objects.create(
+                business=self.business,
+                name="Dress",
+            )
+
+    def test_business_deletion_is_protected_when_product_type_alias_exists(self):
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=self.product_type,
+            alias="pants",
+        )
+
+        with self.assertRaises(ProtectedError):
+            self.business.delete()
+
+    def test_product_type_alias_string_uses_alias(self):
+        alias = BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=self.product_type,
+            alias="pants",
+        )
+
+        self.assertEqual(str(alias), "pants")
+
+
+class BusinessTagAliasModelTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="tag-alias-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="tag-alias-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+        self.tag = BusinessTag.objects.create(
+            business=self.business,
+            name="ჯიბეები",
+        )
+        self.other_tag = BusinessTag.objects.create(
+            business=self.other_business,
+            name="კლასიკური",
+        )
+
+    def test_tag_alias_belongs_to_business_and_tag(self):
+        alias = BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=self.tag,
+            alias="pockets",
+        )
+
+        self.assertEqual(alias.business, self.business)
+        self.assertEqual(alias.tag, self.tag)
+        self.assertEqual(self.business.tag_aliases.get(), alias)
+        self.assertEqual(self.tag.aliases.get(), alias)
+
+    def test_tag_alias_requires_business_and_tag(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessTagAlias.objects.create(
+                    tag=self.tag,
+                    alias="pockets",
+                )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessTagAlias.objects.create(
+                    business=self.business,
+                    alias="pockets",
+                )
+
+    def test_tag_alias_requires_non_blank_alias(self):
+        for invalid_alias in ("   ", None):
+            with self.subTest(alias=invalid_alias):
+                alias = BusinessTagAlias(
+                    business=self.business,
+                    tag=self.tag,
+                    alias=invalid_alias,
+                )
+
+                with self.assertRaises(ValidationError):
+                    alias.full_clean()
+
+    def test_tag_alias_is_case_insensitive_unique_per_business(self):
+        BusinessTag.objects.create(
+            business=self.business,
+            name="კლასიკური",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=self.tag,
+            alias=" Pockets ",
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessTagAlias.objects.create(
+                    business=self.business,
+                    tag=self.tag,
+                    alias="pockets",
+                )
+
+    def test_tag_alias_is_stripped_on_save(self):
+        alias = BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=self.tag,
+            alias="  pockets  ",
+        )
+
+        self.assertEqual(alias.alias, "pockets")
+
+    def test_same_tag_alias_can_exist_in_another_business(self):
+        owned_alias = BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=self.tag,
+            alias="pockets",
+        )
+        other_alias = BusinessTagAlias.objects.create(
+            business=self.other_business,
+            tag=self.other_tag,
+            alias="pockets",
+        )
+
+        self.assertNotEqual(owned_alias.business, other_alias.business)
+        self.assertEqual(BusinessTagAlias.objects.count(), 2)
+
+    def test_tag_alias_requires_matching_business(self):
+        alias = BusinessTagAlias(
+            business=self.business,
+            tag=self.other_tag,
+            alias="classic",
+        )
+
+        with self.assertRaises(ValidationError):
+            alias.full_clean()
+        with self.assertRaises(ValidationError):
+            alias.save()
+
+    def test_tag_alias_cannot_match_canonical_tag_name(self):
+        BusinessTag.objects.create(
+            business=self.business,
+            name="კლასიკური",
+        )
+        alias = BusinessTagAlias(
+            business=self.business,
+            tag=self.tag,
+            alias="კლასიკური",
+        )
+
+        with self.assertRaises(ValidationError):
+            alias.full_clean()
+        with self.assertRaises(ValidationError):
+            alias.save()
+
+    def test_tag_name_cannot_match_existing_alias(self):
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=self.tag,
+            alias="classic",
+        )
+
+        with self.assertRaises(ValidationError):
+            BusinessTag.objects.create(
+                business=self.business,
+                name="Classic",
+            )
+
+    def test_business_deletion_is_protected_when_tag_alias_exists(self):
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=self.tag,
+            alias="pockets",
+        )
+
+        with self.assertRaises(ProtectedError):
+            self.business.delete()
+
+    def test_tag_alias_string_uses_alias(self):
+        alias = BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=self.tag,
+            alias="pockets",
+        )
+
+        self.assertEqual(str(alias), "pockets")
+
+
 class ProductTypeRecognitionTests(TestCase):
     def setUp(self):
         user_model = get_user_model()
@@ -386,6 +734,51 @@ class ProductTypeRecognitionTests(TestCase):
         self.assertEqual(product_type_candidates[0].observed_text, "შარვალი")
         self.assertTrue(product_type_candidates[0].requires_confirmation)
         self.assertFalse(product_type_candidates[0].is_confirmed)
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_recognizes_product_type_alias_as_canonical_candidate(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="შარვალი",
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=product_type,
+            alias="pants",
+        )
+
+        result = recognize_product_types_for_business(
+            "classic pants",
+            self.business,
+        )
+
+        product_type_candidates = result.candidates_for(
+            SemanticDestination.PRODUCT_TYPE
+        )
+        self.assertEqual(len(product_type_candidates), 1)
+        self.assertEqual(product_type_candidates[0].canonical_value, "შარვალი")
+        self.assertEqual(product_type_candidates[0].observed_text, "pants")
+        self.assertTrue(product_type_candidates[0].requires_confirmation)
+        self.assertFalse(product_type_candidates[0].is_confirmed)
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_product_type_alias_recognition_does_not_leak_other_business_aliases(self):
+        other_type = BusinessProductType.objects.create(
+            business=self.other_business,
+            name="კაბა",
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.other_business,
+            product_type=other_type,
+            alias="dress",
+        )
+
+        result = recognize_product_types_for_business("red dress", self.business)
+
+        self.assertEqual(
+            result.candidates_for(SemanticDestination.PRODUCT_TYPE),
+            (),
+        )
         self.assertEqual(result.confirmed_facts, ())
 
     def test_product_type_recognition_does_not_leak_another_business_vocabulary(self):
@@ -451,6 +844,49 @@ class TagRecognitionTests(TestCase):
         self.assertEqual(tag_candidates[0].observed_text, "ჯიბეები")
         self.assertTrue(tag_candidates[0].requires_confirmation)
         self.assertFalse(tag_candidates[0].is_confirmed)
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_recognizes_tag_alias_as_canonical_candidate(self):
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="ჯიბეები",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=tag,
+            alias="pockets",
+        )
+
+        result = recognize_tags_for_business(
+            "black trousers with pockets",
+            self.business,
+        )
+
+        tag_candidates = result.candidates_for(SemanticDestination.TAG)
+        self.assertEqual(len(tag_candidates), 1)
+        self.assertEqual(tag_candidates[0].canonical_value, "ჯიბეები")
+        self.assertEqual(tag_candidates[0].observed_text, "pockets")
+        self.assertTrue(tag_candidates[0].requires_confirmation)
+        self.assertFalse(tag_candidates[0].is_confirmed)
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_tag_alias_recognition_does_not_leak_other_business_aliases(self):
+        other_tag = BusinessTag.objects.create(
+            business=self.other_business,
+            name="კლასიკური",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.other_business,
+            tag=other_tag,
+            alias="classic",
+        )
+
+        result = recognize_tags_for_business("classic trousers", self.business)
+
+        self.assertEqual(
+            result.candidates_for(SemanticDestination.TAG),
+            (),
+        )
         self.assertEqual(result.confirmed_facts, ())
 
     def test_tag_recognition_does_not_leak_another_business_vocabulary(self):

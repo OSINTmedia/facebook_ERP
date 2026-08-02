@@ -224,6 +224,14 @@ Introduce `catalog.BusinessTag` as the business-owned canonical Tag vocabulary a
 Reason:
 Tags are useful as reusable seller vocabulary, but a recognized tag candidate is still not a confirmed Product tag and must not affect readiness or buyer replies before explicit confirmation behavior exists. Scoping the vocabulary through Business prevents cross-seller leakage while preserving the unresolved owner decision about whether tags affect readiness or only organization/search.
 
+### 2026-08-02 - Aliases normalize vocabulary without becoming product truth
+
+Decision:
+Represent Product Type and Tag aliases as separate business-owned vocabulary rows, validate that each alias points to a canonical value in the same Business, prevent per-destination alias/name collisions, and feed aliases into recognition while returning canonical unconfirmed candidates.
+
+Reason:
+Seller wording should normalize over time without leaking across Businesses or turning a matched alias into a confirmed Product fact. Keeping aliases separate from Product assignment, confirmation UI, material alias policy, and management screens preserves the observed/candidate/confirmed boundary and keeps unresolved owner decisions out of the baseline schema.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

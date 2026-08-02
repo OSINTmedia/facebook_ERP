@@ -148,8 +148,11 @@ def product_type_terms_for_business(business) -> tuple[RecognitionTerm, ...]:
         RecognitionTerm(
             destination=SemanticDestination.PRODUCT_TYPE,
             canonical_value=product_type.name,
+            aliases=tuple(alias.alias for alias in product_type.aliases.all()),
         )
-        for product_type in BusinessProductType.objects.filter(business=business)
+        for product_type in BusinessProductType.objects.filter(
+            business=business
+        ).prefetch_related("aliases")
     )
 
 
@@ -175,8 +178,11 @@ def tag_terms_for_business(business) -> tuple[RecognitionTerm, ...]:
         RecognitionTerm(
             destination=SemanticDestination.TAG,
             canonical_value=tag.name,
+            aliases=tuple(alias.alias for alias in tag.aliases.all()),
         )
-        for tag in BusinessTag.objects.filter(business=business)
+        for tag in BusinessTag.objects.filter(business=business).prefetch_related(
+            "aliases"
+        )
     )
 
 
