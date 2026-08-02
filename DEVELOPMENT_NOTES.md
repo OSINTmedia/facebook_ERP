@@ -216,6 +216,14 @@ Introduce `catalog.BusinessProductType` as the business-owned canonical Product 
 Reason:
 Existing Product Type recognition needs a persisted vocabulary source, but a recognized type candidate is still not a confirmed Product fact. Scoping the vocabulary through Business prevents cross-seller leakage while avoiding unresolved decisions about how sellers create, manage, alias, and confirm Product Types in the UI.
 
+### 2026-08-02 - Tag vocabulary is business-scoped before Product tagging
+
+Decision:
+Introduce `catalog.BusinessTag` as the business-owned canonical Tag vocabulary and feed Tag recognition only from the supplied Business. Leave Product tag assignment, tag confirmation UI, aliases, management screens, and readiness impact to later approved slices.
+
+Reason:
+Tags are useful as reusable seller vocabulary, but a recognized tag candidate is still not a confirmed Product tag and must not affect readiness or buyer replies before explicit confirmation behavior exists. Scoping the vocabulary through Business prevents cross-seller leakage while preserving the unresolved owner decision about whether tags affect readiness or only organization/search.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

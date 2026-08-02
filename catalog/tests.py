@@ -9,10 +9,11 @@ from django.urls import reverse
 
 from businesses.models import Business
 from catalog.forms import ProductForm
-from catalog.models import BusinessProductType, Product
+from catalog.models import BusinessProductType, BusinessTag, Product
 from catalog.recognition import (
     RecognitionTerm,
     SemanticDestination,
+    recognize_tags_for_business,
     recognize_product_types_for_business,
     recognize_product_description,
 )
@@ -245,6 +246,103 @@ class BusinessProductTypeModelTests(TestCase):
         self.assertEqual(str(product_type), "შარვალი")
 
 
+class BusinessTagModelTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="tag-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="tag-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+
+    def test_tag_belongs_to_business(self):
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="ჯიბეები",
+        )
+
+        self.assertEqual(tag.business, self.business)
+        self.assertEqual(self.business.tags.get(), tag)
+
+    def test_tag_requires_business(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessTag.objects.create(name="Ownerless tag")
+
+    def test_tag_requires_non_blank_name(self):
+        for invalid_name in ("   ", None):
+            with self.subTest(name=invalid_name):
+                tag = BusinessTag(
+                    business=self.business,
+                    name=invalid_name,
+                )
+
+                with self.assertRaises(ValidationError):
+                    tag.full_clean()
+
+    def test_tag_name_is_case_insensitive_unique_per_business(self):
+        BusinessTag.objects.create(
+            business=self.business,
+            name=" Classic ",
+        )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessTag.objects.create(
+                    business=self.business,
+                    name="classic",
+                )
+
+    def test_tag_name_is_stripped_on_save(self):
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="  ჯიბეები  ",
+        )
+
+        self.assertEqual(tag.name, "ჯიბეები")
+
+    def test_same_tag_name_can_exist_in_another_business(self):
+        owned_tag = BusinessTag.objects.create(
+            business=self.business,
+            name="ჯიბეები",
+        )
+        other_tag = BusinessTag.objects.create(
+            business=self.other_business,
+            name="ჯიბეები",
+        )
+
+        self.assertNotEqual(owned_tag.business, other_tag.business)
+        self.assertEqual(BusinessTag.objects.count(), 2)
+
+    def test_business_deletion_is_protected_when_tag_exists(self):
+        BusinessTag.objects.create(
+            business=self.business,
+            name="ჯიბეები",
+        )
+
+        with self.assertRaises(ProtectedError):
+            self.business.delete()
+
+    def test_tag_string_uses_name(self):
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="ჯიბეები",
+        )
+
+        self.assertEqual(str(tag), "ჯიბეები")
+
+
 class ProductTypeRecognitionTests(TestCase):
     def setUp(self):
         user_model = get_user_model()
@@ -308,6 +406,71 @@ class ProductTypeRecognitionTests(TestCase):
         result = recognize_product_types_for_business("შარვალი", None)
 
         self.assertEqual(result.observed_text, "შარვალი")
+        self.assertEqual(result.candidates, ())
+        self.assertEqual(result.confirmed_facts, ())
+
+
+class TagRecognitionTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="tag-recognition-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="tag-recognition-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+
+    def test_recognizes_tag_from_active_business_vocabulary(self):
+        BusinessTag.objects.create(
+            business=self.business,
+            name="ჯიბეები",
+        )
+        BusinessTag.objects.create(
+            business=self.other_business,
+            name="კლასიკური",
+        )
+
+        result = recognize_tags_for_business(
+            "კლასიკური შარვალი ჯიბეები",
+            self.business,
+        )
+
+        tag_candidates = result.candidates_for(SemanticDestination.TAG)
+        self.assertEqual(len(tag_candidates), 1)
+        self.assertEqual(tag_candidates[0].canonical_value, "ჯიბეები")
+        self.assertEqual(tag_candidates[0].observed_text, "ჯიბეები")
+        self.assertTrue(tag_candidates[0].requires_confirmation)
+        self.assertFalse(tag_candidates[0].is_confirmed)
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_tag_recognition_does_not_leak_another_business_vocabulary(self):
+        BusinessTag.objects.create(
+            business=self.other_business,
+            name="კლასიკური",
+        )
+
+        result = recognize_tags_for_business("კლასიკური შარვალი", self.business)
+
+        self.assertEqual(
+            result.candidates_for(SemanticDestination.TAG),
+            (),
+        )
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_tag_recognition_without_business_returns_no_candidates(self):
+        result = recognize_tags_for_business("ჯიბეები", None)
+
+        self.assertEqual(result.observed_text, "ჯიბეები")
         self.assertEqual(result.candidates, ())
         self.assertEqual(result.confirmed_facts, ())
 

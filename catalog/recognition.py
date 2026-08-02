@@ -164,6 +164,33 @@ def recognize_product_types_for_business(
     )
 
 
+def tag_terms_for_business(business) -> tuple[RecognitionTerm, ...]:
+    """Return recognition terms for Tags owned by one Business."""
+    if business is None:
+        return ()
+
+    from catalog.models import BusinessTag
+
+    return tuple(
+        RecognitionTerm(
+            destination=SemanticDestination.TAG,
+            canonical_value=tag.name,
+        )
+        for tag in BusinessTag.objects.filter(business=business)
+    )
+
+
+def recognize_tags_for_business(
+    description: str | None,
+    business,
+) -> RecognitionResult:
+    """Recognize Tag candidates from one Business's vocabulary only."""
+    return recognize_product_description(
+        description,
+        terms=tag_terms_for_business(business),
+    )
+
+
 def _find_phrase_matches(text: str, phrase: str) -> Iterable[re.Match]:
     pattern = rf"(?<!\w){re.escape(phrase)}(?!\w)"
     return re.finditer(pattern, text, flags=re.IGNORECASE)
