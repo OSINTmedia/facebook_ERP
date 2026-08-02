@@ -20,6 +20,8 @@ from catalog.models import (
 from catalog.recognition import (
     RecognitionTerm,
     SemanticDestination,
+    material_terms_for_business,
+    recognize_materials_for_business,
     recognize_tags_for_business,
     recognize_product_types_for_business,
     recognize_product_description,
@@ -911,6 +913,143 @@ class ProductMaterialFactModelTests(TestCase):
         )
 
         self.assertEqual(str(fact), "ბამბა")
+
+
+class MaterialRecognitionTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="material-recognition-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="material-recognition-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="შარვალი",
+            description="100% ბამბა",
+        )
+        self.second_product = Product.objects.create(
+            business=self.business,
+            name="ქურთუკი",
+            description="Cotton lining",
+        )
+        self.other_product = Product.objects.create(
+            business=self.other_business,
+            name="კაბა",
+            description="ატლასი",
+        )
+
+    def test_recognizes_material_from_business_confirmed_facts(self):
+        self._create_material_fact(
+            business=self.business,
+            product=self.product,
+            canonical_material="ბამბა",
+            original_text="100% ბამბა",
+        )
+        self._create_material_fact(
+            business=self.other_business,
+            product=self.other_product,
+            canonical_material="ატლასი",
+        )
+        material_fact_count = ProductMaterialFact.objects.count()
+
+        result = recognize_materials_for_business(
+            "100% ბამბა და ატლასი",
+            self.business,
+        )
+
+        material_candidates = result.candidates_for(SemanticDestination.MATERIAL)
+        self.assertEqual(len(material_candidates), 1)
+        self.assertEqual(material_candidates[0].canonical_value, "ბამბა")
+        self.assertEqual(material_candidates[0].observed_text, "ბამბა")
+        self.assertTrue(material_candidates[0].requires_confirmation)
+        self.assertFalse(material_candidates[0].is_confirmed)
+        self.assertEqual(result.confirmed_facts, ())
+        self.assertEqual(ProductMaterialFact.objects.count(), material_fact_count)
+
+    def test_material_recognition_does_not_leak_another_business_facts(self):
+        self._create_material_fact(
+            business=self.other_business,
+            product=self.other_product,
+            canonical_material="ატლასი",
+        )
+
+        result = recognize_materials_for_business("ატლასი", self.business)
+
+        self.assertEqual(result.candidates_for(SemanticDestination.MATERIAL), ())
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_material_recognition_without_business_returns_no_candidates(self):
+        self._create_material_fact(
+            business=self.business,
+            product=self.product,
+            canonical_material="ბამბა",
+        )
+
+        result = recognize_materials_for_business("ბამბა", None)
+
+        self.assertEqual(result.observed_text, "ბამბა")
+        self.assertEqual(result.candidates, ())
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_material_terms_deduplicate_canonical_materials_case_insensitively(self):
+        self._create_material_fact(
+            business=self.business,
+            product=self.product,
+            canonical_material="  Cotton  ",
+        )
+        self._create_material_fact(
+            business=self.business,
+            product=self.second_product,
+            canonical_material="cotton",
+        )
+
+        terms = material_terms_for_business(self.business)
+
+        self.assertEqual(len(terms), 1)
+        self.assertEqual(terms[0].destination, SemanticDestination.MATERIAL)
+        self.assertEqual(terms[0].canonical_value.casefold(), "cotton")
+
+    def test_material_recognition_preserves_negation_boundary(self):
+        self._create_material_fact(
+            business=self.business,
+            product=self.product,
+            canonical_material="პოლიესტერი",
+        )
+
+        result = recognize_materials_for_business(
+            "პოლიესტერი არ აქვს.",
+            self.business,
+        )
+
+        self.assertEqual(result.candidates_for(SemanticDestination.MATERIAL), ())
+        self.assertEqual(result.confirmed_facts, ())
+
+    def _create_material_fact(
+        self,
+        business,
+        product,
+        canonical_material,
+        original_text=None,
+    ):
+        return ProductMaterialFact.objects.create(
+            business=business,
+            product=product,
+            canonical_material=canonical_material,
+            original_text=original_text or canonical_material,
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
 
 
 class ProductTypeRecognitionTests(TestCase):

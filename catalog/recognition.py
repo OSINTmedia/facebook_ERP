@@ -197,6 +197,52 @@ def recognize_tags_for_business(
     )
 
 
+def material_terms_for_business(business) -> tuple[RecognitionTerm, ...]:
+    """Return material recognition terms from confirmed facts owned by one Business."""
+    if business is None:
+        return ()
+
+    from catalog.models import ProductMaterialFact
+
+    terms = []
+    seen_materials = set()
+
+    material_values = (
+        ProductMaterialFact.objects.filter(
+            business=business,
+            confirmation_state=ProductMaterialFact.ConfirmationState.CONFIRMED,
+        )
+        .order_by("canonical_material", "id")
+        .values_list("canonical_material", flat=True)
+    )
+    for material in material_values:
+        canonical_material = material.strip()
+        key = canonical_material.casefold()
+        if not canonical_material or key in seen_materials:
+            continue
+
+        seen_materials.add(key)
+        terms.append(
+            RecognitionTerm(
+                destination=SemanticDestination.MATERIAL,
+                canonical_value=canonical_material,
+            )
+        )
+
+    return tuple(terms)
+
+
+def recognize_materials_for_business(
+    description: str | None,
+    business,
+) -> RecognitionResult:
+    """Recognize Material candidates from one Business's confirmed facts only."""
+    return recognize_product_description(
+        description,
+        terms=material_terms_for_business(business),
+    )
+
+
 def _find_phrase_matches(text: str, phrase: str) -> Iterable[re.Match]:
     pattern = rf"(?<!\w){re.escape(phrase)}(?!\w)"
     return re.finditer(pattern, text, flags=re.IGNORECASE)

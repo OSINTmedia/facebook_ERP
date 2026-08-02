@@ -240,6 +240,14 @@ Store material as a Product-owned, Business-scoped confirmed fact with canonical
 Reason:
 Material can affect buyer answers, but it must not become buyer-facing truth from description recognition alone. Persisting only confirmed facts gives later recognition, confirmation UI, readiness, and deterministic reply slices a durable backend boundary without deciding the unresolved material UI or alias policy early.
 
+### 2026-08-02 - Material recognition reads confirmed seller facts before alias policy
+
+Decision:
+Derive material recognition candidates from a Business's confirmed `ProductMaterialFact` canonical material values, returning transient unconfirmed candidates only. Do not introduce material aliases, a global textile dictionary, Product form integration, readiness, or buyer replies in this baseline.
+
+Reason:
+This lets recognition reuse seller-confirmed material truth without promoting observed description text into buyer-facing fact. Keeping material aliases and confirmation UX out of the helper preserves Business isolation and avoids silently resolving the unresolved material UI and alias policy.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:
