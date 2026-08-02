@@ -232,6 +232,14 @@ Represent Product Type and Tag aliases as separate business-owned vocabulary row
 Reason:
 Seller wording should normalize over time without leaking across Businesses or turning a matched alias into a confirmed Product fact. Keeping aliases separate from Product assignment, confirmation UI, material alias policy, and management screens preserves the observed/candidate/confirmed boundary and keeps unresolved owner decisions out of the baseline schema.
 
+### 2026-08-02 - Material facts persist only after confirmation
+
+Decision:
+Store material as a Product-owned, Business-scoped confirmed fact with canonical material, optional percentage, original seller wording, source, and confirmed-only state. Keep material recognition candidates, material aliases, Product form integration, readiness, and buyer replies outside the first material persistence slice.
+
+Reason:
+Material can affect buyer answers, but it must not become buyer-facing truth from description recognition alone. Persisting only confirmed facts gives later recognition, confirmation UI, readiness, and deterministic reply slices a durable backend boundary without deciding the unresolved material UI or alias policy early.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

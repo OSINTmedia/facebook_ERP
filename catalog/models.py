@@ -236,6 +236,124 @@ class Product(models.Model):
         return self.name
 
 
+class ProductMaterialFact(models.Model):
+    class Source(models.TextChoices):
+        DESCRIPTION = "description", "Description"
+        MANUAL = "manual", "Manual"
+
+    class ConfirmationState(models.TextChoices):
+        CONFIRMED = "confirmed", "Confirmed"
+
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.PROTECT,
+        related_name="product_material_facts",
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name="material_facts",
+    )
+    canonical_material = models.CharField(max_length=80)
+    percentage = models.PositiveSmallIntegerField(null=True, blank=True)
+    original_text = models.CharField(max_length=160)
+    source = models.CharField(max_length=20, choices=Source.choices)
+    confirmation_state = models.CharField(
+        max_length=20,
+        choices=ConfirmationState.choices,
+        default=ConfirmationState.CONFIRMED,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["product_id", "canonical_material", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(canonical_material__regex=r"\S"),
+                name="material_canonical_not_blank",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(original_text__regex=r"\S"),
+                name="material_original_text_not_blank",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(percentage__isnull=True)
+                    | (models.Q(percentage__gte=1) & models.Q(percentage__lte=100))
+                ),
+                name="material_percentage_1_to_100_or_null",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(source__in=["description", "manual"]),
+                name="material_source_known",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(confirmation_state="confirmed"),
+                name="material_confirmation_state_confirmed",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        self._normalize_fields()
+        self._validate_business_scope()
+        self._validate_percentage()
+        self._validate_source()
+        self._validate_confirmation_state()
+
+    def save(self, *args, **kwargs):
+        self._normalize_fields()
+        self._validate_business_scope()
+        self._validate_percentage()
+        self._validate_source()
+        self._validate_confirmation_state()
+        super().save(*args, **kwargs)
+
+    def _normalize_fields(self):
+        self.canonical_material = _normalized_required_text(
+            self.canonical_material,
+            "canonical_material",
+            "Canonical material is required.",
+        )
+        self.original_text = _normalized_required_text(
+            self.original_text,
+            "original_text",
+            "Original material wording is required.",
+        )
+        self.source = (self.source or "").strip()
+        self.confirmation_state = (self.confirmation_state or "").strip()
+
+    def _validate_business_scope(self):
+        if (
+            self.business_id
+            and self.product_id
+            and self.product.business_id != self.business_id
+        ):
+            raise ValidationError(
+                {"product": "Product must belong to the same Business."}
+            )
+
+    def _validate_percentage(self):
+        if self.percentage is not None and not 1 <= self.percentage <= 100:
+            raise ValidationError(
+                {"percentage": "Material percentage must be between 1 and 100."}
+            )
+
+    def _validate_source(self):
+        if self.source not in self.Source.values:
+            raise ValidationError({"source": "Material source is required."})
+
+    def _validate_confirmation_state(self):
+        if self.confirmation_state != self.ConfirmationState.CONFIRMED:
+            raise ValidationError(
+                {"confirmation_state": "Material fact must be confirmed."}
+            )
+
+    def __str__(self):
+        return self.canonical_material
+
+
 def _normalized_alias(value, message):
     normalized = (value or "").strip()
     if not normalized:
@@ -252,6 +370,13 @@ def _normalized_text_exists(queryset, field_name, value):
         .filter(normalized_value=normalized)
         .exists()
     )
+
+
+def _normalized_required_text(value, field_name, message):
+    normalized = (value or "").strip()
+    if not normalized:
+        raise ValidationError({field_name: message})
+    return normalized
 
 
 def _product_type_name_exists(business_id, value):

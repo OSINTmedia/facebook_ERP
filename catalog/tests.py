@@ -15,6 +15,7 @@ from catalog.models import (
     BusinessTag,
     BusinessTagAlias,
     Product,
+    ProductMaterialFact,
 )
 from catalog.recognition import (
     RecognitionTerm,
@@ -689,6 +690,227 @@ class BusinessTagAliasModelTests(TestCase):
         )
 
         self.assertEqual(str(alias), "pockets")
+
+
+class ProductMaterialFactModelTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="material-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="material-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="შარვალი",
+            description="100% ბამბა",
+        )
+        self.other_product = Product.objects.create(
+            business=self.other_business,
+            name="კაბა",
+            description="ატლასი",
+        )
+
+    def test_material_fact_belongs_to_business_and_product(self):
+        fact = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=self.product,
+            canonical_material="ბამბა",
+            percentage=100,
+            original_text="100% ბამბა",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+
+        self.assertEqual(fact.business, self.business)
+        self.assertEqual(fact.product, self.product)
+        self.assertEqual(
+            fact.confirmation_state,
+            ProductMaterialFact.ConfirmationState.CONFIRMED,
+        )
+        self.assertEqual(self.business.product_material_facts.get(), fact)
+        self.assertEqual(self.product.material_facts.get(), fact)
+
+    def test_material_fact_requires_business_and_product(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                ProductMaterialFact.objects.create(
+                    product=self.product,
+                    canonical_material="ბამბა",
+                    original_text="ბამბა",
+                    source=ProductMaterialFact.Source.DESCRIPTION,
+                )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                ProductMaterialFact.objects.create(
+                    business=self.business,
+                    canonical_material="ბამბა",
+                    original_text="ბამბა",
+                    source=ProductMaterialFact.Source.DESCRIPTION,
+                )
+
+    def test_material_fact_requires_non_blank_material_and_original_text(self):
+        for field_name in ("canonical_material", "original_text"):
+            with self.subTest(field_name=field_name):
+                fact = ProductMaterialFact(
+                    business=self.business,
+                    product=self.product,
+                    canonical_material="ბამბა",
+                    original_text="ბამბა",
+                    source=ProductMaterialFact.Source.DESCRIPTION,
+                )
+                setattr(fact, field_name, "   ")
+
+                with self.assertRaises(ValidationError):
+                    fact.full_clean()
+                with self.assertRaises(ValidationError):
+                    fact.save()
+
+    def test_material_fact_strips_material_and_original_text_on_save(self):
+        fact = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=self.product,
+            canonical_material="  ბამბა  ",
+            original_text="  100% ბამბა  ",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+
+        self.assertEqual(fact.canonical_material, "ბამბა")
+        self.assertEqual(fact.original_text, "100% ბამბა")
+
+    def test_material_fact_percentage_is_optional(self):
+        fact = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=self.product,
+            canonical_material="ატლასი",
+            original_text="ატლასი",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+
+        self.assertIsNone(fact.percentage)
+
+    def test_material_fact_rejects_invalid_percentage(self):
+        for invalid_percentage in (0, 101):
+            with self.subTest(percentage=invalid_percentage):
+                fact = ProductMaterialFact(
+                    business=self.business,
+                    product=self.product,
+                    canonical_material="ბამბა",
+                    percentage=invalid_percentage,
+                    original_text="ბამბა",
+                    source=ProductMaterialFact.Source.DESCRIPTION,
+                )
+
+                with self.assertRaises(ValidationError):
+                    fact.full_clean()
+                with self.assertRaises(ValidationError):
+                    fact.save()
+
+    def test_material_fact_requires_known_source(self):
+        for invalid_source in ("", "label_photo"):
+            with self.subTest(source=invalid_source):
+                fact = ProductMaterialFact(
+                    business=self.business,
+                    product=self.product,
+                    canonical_material="ბამბა",
+                    original_text="ბამბა",
+                    source=invalid_source,
+                )
+
+                with self.assertRaises(ValidationError):
+                    fact.full_clean()
+                with self.assertRaises(ValidationError):
+                    fact.save()
+
+    def test_material_fact_requires_confirmed_state(self):
+        fact = ProductMaterialFact(
+            business=self.business,
+            product=self.product,
+            canonical_material="ბამბა",
+            original_text="ბამბა",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+            confirmation_state="candidate",
+        )
+
+        with self.assertRaises(ValidationError):
+            fact.full_clean()
+        with self.assertRaises(ValidationError):
+            fact.save()
+
+    def test_material_fact_requires_matching_product_business(self):
+        fact = ProductMaterialFact(
+            business=self.business,
+            product=self.other_product,
+            canonical_material="ატლასი",
+            original_text="ატლასი",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+
+        with self.assertRaises(ValidationError):
+            fact.full_clean()
+        with self.assertRaises(ValidationError):
+            fact.save()
+
+    def test_product_deletion_is_protected_when_material_fact_exists(self):
+        ProductMaterialFact.objects.create(
+            business=self.business,
+            product=self.product,
+            canonical_material="ბამბა",
+            original_text="ბამბა",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+
+        with self.assertRaises(ProtectedError):
+            self.product.delete()
+
+    def test_business_deletion_is_protected_when_material_fact_exists(self):
+        ProductMaterialFact.objects.create(
+            business=self.business,
+            product=self.product,
+            canonical_material="ბამბა",
+            original_text="ბამბა",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+
+        with self.assertRaises(ProtectedError):
+            self.business.delete()
+
+    def test_material_candidate_does_not_create_confirmed_fact(self):
+        result = recognize_product_description(
+            "ბამბა",
+            terms=(
+                RecognitionTerm(
+                    destination=SemanticDestination.MATERIAL,
+                    canonical_value="ბამბა",
+                ),
+            ),
+        )
+
+        self.assertEqual(len(result.candidates_for(SemanticDestination.MATERIAL)), 1)
+        self.assertEqual(result.confirmed_facts, ())
+        self.assertEqual(ProductMaterialFact.objects.count(), 0)
+
+    def test_material_fact_string_uses_canonical_material(self):
+        fact = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=self.product,
+            canonical_material="ბამბა",
+            original_text="ბამბა",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+
+        self.assertEqual(str(fact), "ბამბა")
 
 
 class ProductTypeRecognitionTests(TestCase):
