@@ -248,6 +248,14 @@ Derive material recognition candidates from a Business's confirmed `ProductMater
 Reason:
 This lets recognition reuse seller-confirmed material truth without promoting observed description text into buyer-facing fact. Keeping material aliases and confirmation UX out of the helper preserves Business isolation and avoids silently resolving the unresolved material UI and alias policy.
 
+### 2026-08-02 - Size/color recognition stays suggestion-only before choice rows
+
+Decision:
+Recognize caller-supplied size and color values as transient `CHOICE_SIZE` and `CHOICE_COLOR` candidates only. Do not introduce a global size/color dictionary, `ProductChoice` persistence, duplicate-choice policy, Product form integration, stock, availability, readiness, or buyer replies in this baseline.
+
+Reason:
+Size and color are eventual stock-bearing choice truth, so description recognition must not silently create confirmed variants. Keeping P4.6 suggestion-only lets later form and choice-model slices reuse the recognition boundary without resolving the owner-required duplicate size/color policy early.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

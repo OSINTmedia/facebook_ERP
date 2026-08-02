@@ -20,7 +20,9 @@ from catalog.models import (
 from catalog.recognition import (
     RecognitionTerm,
     SemanticDestination,
+    choice_suggestion_terms,
     material_terms_for_business,
+    recognize_choice_suggestions,
     recognize_materials_for_business,
     recognize_tags_for_business,
     recognize_product_types_for_business,
@@ -155,6 +157,82 @@ class RecognitionServiceContractTests(SimpleTestCase):
         )
 
         self.assertEqual(result.candidates_for(SemanticDestination.MATERIAL), ())
+        self.assertEqual(result.confirmed_facts, ())
+
+
+class ChoiceSuggestionRecognitionTests(SimpleTestCase):
+    def test_recognizes_supplied_size_and_color_as_choice_candidates(self):
+        description = "M-ზომა, შავი ფერი."
+
+        result = recognize_choice_suggestions(
+            description,
+            size_values=("M",),
+            color_values=("შავი",),
+        )
+
+        self.assertEqual(result.observed_text, description)
+        self.assertEqual(
+            [
+                (
+                    candidate.destination,
+                    candidate.canonical_value,
+                    candidate.observed_text,
+                )
+                for candidate in result.candidates
+            ],
+            [
+                (SemanticDestination.CHOICE_SIZE, "M", "M"),
+                (SemanticDestination.CHOICE_COLOR, "შავი", "შავი"),
+            ],
+        )
+        self.assertTrue(
+            all(candidate.requires_confirmation for candidate in result.candidates)
+        )
+        self.assertFalse(any(candidate.is_confirmed for candidate in result.candidates))
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_choice_suggestions_without_supplied_values_returns_no_candidates(self):
+        result = recognize_choice_suggestions("M-ზომა, შავი ფერი.")
+
+        self.assertEqual(result.observed_text, "M-ზომა, შავი ფერი.")
+        self.assertEqual(result.candidates, ())
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_choice_suggestion_terms_strip_and_dedupe_values(self):
+        terms = choice_suggestion_terms(
+            size_values=(" M ", "m", ""),
+            color_values=(" შავი ", "შავი", " "),
+        )
+
+        self.assertEqual(
+            [(term.destination, term.canonical_value) for term in terms],
+            [
+                (SemanticDestination.CHOICE_SIZE, "M"),
+                (SemanticDestination.CHOICE_COLOR, "შავი"),
+            ],
+        )
+
+    def test_choice_suggestions_are_not_generic_tags(self):
+        result = recognize_choice_suggestions(
+            "M ზომა და შავი ფერი",
+            size_values=("M",),
+            color_values=("შავი",),
+        )
+
+        self.assertEqual(result.candidates_for(SemanticDestination.TAG), ())
+        self.assertEqual(len(result.candidates_for(SemanticDestination.CHOICE_SIZE)), 1)
+        self.assertEqual(len(result.candidates_for(SemanticDestination.CHOICE_COLOR)), 1)
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_choice_suggestions_preserve_negation_boundary(self):
+        result = recognize_choice_suggestions(
+            "M არ აქვს.",
+            size_values=("M",),
+            color_values=("შავი",),
+        )
+
+        self.assertEqual(result.candidates_for(SemanticDestination.CHOICE_SIZE), ())
+        self.assertEqual(result.candidates_for(SemanticDestination.CHOICE_COLOR), ())
         self.assertEqual(result.confirmed_facts, ())
 
 

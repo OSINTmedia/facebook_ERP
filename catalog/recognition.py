@@ -243,9 +243,71 @@ def recognize_materials_for_business(
     )
 
 
+def choice_suggestion_terms(
+    size_values: Iterable[str] | None = None,
+    color_values: Iterable[str] | None = None,
+) -> tuple[RecognitionTerm, ...]:
+    """Return caller-supplied size/color terms for choice suggestions."""
+    terms = []
+    terms.extend(
+        _terms_from_values(
+            destination=SemanticDestination.CHOICE_SIZE,
+            values=size_values,
+        )
+    )
+    terms.extend(
+        _terms_from_values(
+            destination=SemanticDestination.CHOICE_COLOR,
+            values=color_values,
+        )
+    )
+    return tuple(terms)
+
+
+def recognize_choice_suggestions(
+    description: str | None,
+    size_values: Iterable[str] | None = None,
+    color_values: Iterable[str] | None = None,
+) -> RecognitionResult:
+    """Recognize transient size/color candidates for later choice creation."""
+    return recognize_product_description(
+        description,
+        terms=choice_suggestion_terms(
+            size_values=size_values,
+            color_values=color_values,
+        ),
+    )
+
+
 def _find_phrase_matches(text: str, phrase: str) -> Iterable[re.Match]:
     pattern = rf"(?<!\w){re.escape(phrase)}(?!\w)"
     return re.finditer(pattern, text, flags=re.IGNORECASE)
+
+
+def _terms_from_values(
+    destination: SemanticDestination,
+    values: Iterable[str] | None,
+) -> tuple[RecognitionTerm, ...]:
+    if not values:
+        return ()
+
+    terms = []
+    seen_values = set()
+    for value in values:
+        canonical_value = value.strip()
+        key = canonical_value.casefold()
+        if not canonical_value or key in seen_values:
+            continue
+
+        seen_values.add(key)
+        terms.append(
+            RecognitionTerm(
+                destination=destination,
+                canonical_value=canonical_value,
+            )
+        )
+
+    return tuple(terms)
 
 
 def _is_negated_match(text: str, start: int, end: int) -> bool:
