@@ -51,7 +51,7 @@
 - P4.5a Confirmed Material Fact Model Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P4.5b Material Recognition Candidate Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P4.6 Size/Color-to-Choice Suggestion Baseline is implemented, integrity-audited, locally verified, committed, pushed, remote-aligned, CI-passed, and `PASSED`.
-- P4.7 Product Choice Model Baseline is implemented, integrity-audited, and locally verified; Prompt 5 commit/push and successful CI remain before release closure.
+- P4.7 Product Choice Model Baseline was released and CI-passed, but a post-release audit found that its normalized duplicate-blocking policy contradicted the corrected owner policy. The forward-only duplicate-policy correction is implemented and locally verified; owner-approved commit/push/CI remain.
 - Legacy post-push checkpoint sync slices exist as historical records only; Version 2 removes routine post-push documentation micro-slices.
 - Successful commit, push, Git/remote alignment, and CI success are operational closure for the same functional micro-slice, not a new documentation micro-slice.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
@@ -64,8 +64,8 @@
 
 - Phase: Phase 4 - Semantic Recognition and Choice Model
 - Status: IN_PROGRESS
-- Current functional micro-slice: P4.7 Product Choice Model Baseline, `IN_PROGRESS` pending Prompt 5 release
-- Next planned functional micro-slice: P4.8 Product Choice Form/Formset and Bundle Validation Baseline after P4.7 release closure
+- Current functional micro-slice: P4.7 Duplicate-Policy Correction, `IN_PROGRESS` pending owner-approved release
+- Next planned functional micro-slice: P4.8 Product Choice Form/Formset and Bundle Validation Baseline after the correction is released
 - Started: 2026-07-27
 - Last updated: 2026-08-14
 
@@ -799,30 +799,32 @@
   - GitHub Actions run `30756695849` completed successfully for `0bf4c37efe9e98ec6279935a69a952c9f5d0091d`.
 - Result: P4.6 Size/Color-to-Choice Suggestion Baseline is implemented, integrity-audited, locally verified, committed, pushed, remote-aligned, CI-passed, and `PASSED`.
 
-### P4.7 verification
+### P4.7 released baseline and duplicate-policy correction
 
-- P4.7 Product Choice Model Baseline is implemented, integrity-audited, and locally verified.
-- Files created by P4.7:
-  - `catalog/migrations/0006_product_choice.py`
-- Files modified by P4.7:
+- Released P4.7 created `catalog.ProductChoice` and migration `0006_product_choice.py`, then passed local and remote CI verification.
+- A post-release audit found one real policy defect: the released model, migration, tests, and live documents blocked case-insensitive, trim-normalized duplicate size/color rows for one Product, while the corrected owner policy allows them as distinct sellable rows.
+- Corrective files:
   - `catalog/models.py`
+  - `catalog/migrations/0007_remove_unique_product_choice_per_product.py`
   - `catalog/tests.py`
-- Scope audit result:
-  - `catalog.ProductChoice` owns confirmed size, color, nonnegative quantity, and explicit active/inactive state for one Product and Business.
-  - Size and color are required and stripped before save.
-  - Case-insensitive, trim-normalized size/color duplicates are blocked per Product across active and inactive rows; the same combination is allowed on another Product.
-  - Choice/Product Business mismatches are rejected; Product and Business deletion are protected while choices exist.
-  - Recognition candidates remain transient and create no `ProductChoice` rows.
-  - Aggregate Product-plus-choice validation and the minimum active-choice rule remain P4.8 responsibilities.
-  - No forms, views, templates, static assets, inventory service, availability, readiness, replies, measurements, public catalog, chatbot, orders, payments, delivery, broad ERP, or LLM-owned truth were added.
-- Verification commands:
-  - `.venv/bin/python manage.py check` passed with no issues.
-  - `.venv/bin/python manage.py check --settings=config.settings.test` passed with no issues.
-  - Local and test migration dry-run checks passed with `No changes detected`.
-  - `.venv/bin/python manage.py test catalog --settings=config.settings.test -v 2 --noinput` ran 123 tests and passed.
-  - `.venv/bin/python manage.py test --settings=config.settings.test -v 2 --noinput` ran 161 tests and passed.
-  - `git diff --check` passed with no whitespace errors.
-- Result: local acceptance passed; release remains pending Prompt 5 commit/push, Git alignment, and successful CI.
+  - `APP_EXPERIENCE_PLAN.md`
+  - `BUILD_PLAN.md`
+  - `DEVELOPMENT_NOTES.md`
+  - `changelog_checkpoint.md`
+- Corrected behavior:
+  - migration `0006_product_choice.py` and the released commit remain unchanged;
+  - forward migration `0007` removes `unique_product_choice_per_product`;
+  - duplicate same-Product size/color rows, including case-insensitive trim-normalized matches, persist with distinct primary keys, quantities, and active states;
+  - rows are not merged automatically, and future inventory mutations must target a specific `ProductChoice` row;
+  - nonblank size/color, nonnegative quantity, Product/Business matching, and active/inactive state remain enforced;
+  - aggregation, buyer-facing wording, UI disambiguation, Product form integration, inventory, availability, readiness, replies, measurements, and broader commerce behavior remain deferred.
+- Local corrective verification:
+  - `.venv/bin/python manage.py check` passed with no issues;
+  - migration dry-run checks before and after migrate returned `No changes detected`;
+  - `.venv/bin/python manage.py migrate` applied `catalog.0007_remove_unique_product_choice_per_product` successfully;
+  - `.venv/bin/python manage.py test --settings=config.settings.test -v 2 --noinput` ran 161 tests and passed;
+  - the focused duplicate test proves two normalized-equivalent rows persist as distinct choices.
+- Result: corrective local acceptance passed; commit/push/CI remain pending owner approval.
 
 ## 6. Current Blockers
 
@@ -847,7 +849,7 @@
 - No current P4.5a blocker remains.
 - No current P4.5b blocker remains.
 - No current P4.6 blocker remains.
-- No P4.7 implementation or owner-policy blocker remains; release is pending Prompt 5 commit/push and successful CI.
+- No P4.7 correction implementation blocker remains; corrective release is pending owner approval, commit/push, and successful CI.
 - The old P2.1 local migration-history blocker is `RESOLVED`.
 - The old P2.1 test database permission blocker is `RESOLVED`.
 - Existing remote initial README commit must remain preserved.
@@ -855,7 +857,7 @@
 - Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
 - Gate 2 is passed after P2.5 access-control tests, Git checkpoint, push, and CI.
 - Phase 3 is passed after P3.4 release, Git/remote alignment, successful CI, and governance closure.
-- Gate 3 is not passed; P4.7 release, Product/choice bundle validation, inventory, and availability work remain incomplete.
+- Gate 3 is not passed; the P4.7 duplicate-policy correction, Product/choice bundle validation, inventory, and availability work remain incomplete.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -882,13 +884,13 @@ Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access B
 
 Version 2 workflow remains active: one functional micro-slice closes through the Release step, and successful commit/push/CI does not create a documentation micro-slice.
 
-P4.7 Product Choice Model Baseline has passed local implementation and integrity acceptance. It remains the current functional micro-slice until Prompt 5 commits and pushes the approved release set and the latest relevant CI succeeds.
+The released P4.7 Product Choice Model Baseline passed CI, but its duplicate-blocking policy failed the subsequent owner-policy audit. The P4.7 Duplicate-Policy Correction has passed local implementation and verification and remains the current functional micro-slice until owner-approved commit/push and successful CI.
 
-After P4.7 release closure, the next planned functional micro-slice is P4.8 Product Choice Form/Formset and Bundle Validation Baseline.
+After the corrective release closes, the next planned functional micro-slice is P4.8 Product Choice Form/Formset and Bundle Validation Baseline.
 
 P4.8 may start only when:
 
-- Prompt 5 has committed and pushed P4.7;
+- Prompt 5 has committed and pushed the P4.7 correction;
 - working tree is clean;
 - `HEAD` and `origin/main` are aligned;
 - latest relevant CI completed successfully.
@@ -941,10 +943,10 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P4.7 Product Choice Model Baseline integrity audit, local acceptance, and one-time documentation synchronization.
+- Operation: P4.7 duplicate-policy correction after the released baseline audit.
 - Functional files changed:
   - `catalog/models.py`
-  - `catalog/migrations/0006_product_choice.py`
+  - `catalog/migrations/0007_remove_unique_product_choice_per_product.py`
   - `catalog/tests.py`
 - Documentation files changed:
   - `APP_EXPERIENCE_PLAN.md`
@@ -961,8 +963,9 @@ Private local prompt:
   - `codex_prompt_ERP.txt`
   - Git history or remote configuration
 - Source prototype modified: no.
-- Scope audit result: P4.7 remained limited to backend choice persistence, individual row integrity, Business/Product isolation, normalized duplicate prevention, and focused tests. Aggregate bundle validation remains P4.8.
-- Result: P4.7 is implemented, integrity-audited, and locally verified; release is pending Prompt 5. Phase 4 remains `IN_PROGRESS`; Gate 3 is not passed. P4.8 is the next functional micro-slice after P4.7 release closure.
+- Released migration `catalog/migrations/0006_product_choice.py` modified: no.
+- Scope audit result: the correction only removes normalized duplicate blocking, proves duplicate rows remain distinct, and synchronizes the affected live policy documents. All row validation and later feature boundaries remain intact.
+- Result: the P4.7 duplicate-policy correction is implemented and locally verified; owner-approved release remains pending. Phase 4 remains `IN_PROGRESS`; Gate 3 is not passed. P4.8 is next after corrective release closure.
 - Post-CI governance closure required: no.
 
 ## 12. Git Checkpoint
@@ -975,9 +978,9 @@ Private local prompt:
 - GitHub repository visibility: public
 - GitHub default branch: `main`
 - Delivery metadata authority: exact current `HEAD`, `origin/main`, actual remote `main`, CI run, and CI conclusion must be read from Git/GitHub.
-- Last released functional milestone: P4.6 Size/Color-to-Choice Suggestion Baseline is committed, pushed, remote-aligned, CI-passed, and `PASSED`; audited release commit `0bf4c37efe9e98ec6279935a69a952c9f5d0091d`, GitHub Actions run `30756695849`.
-- Pending release milestone: P4.7 Product Choice Model Baseline; local acceptance passed and Prompt 5 commit/push plus successful CI remain.
-- Next planned functional milestone: P4.8 Product Choice Form/Formset and Bundle Validation Baseline after P4.7 release closure.
+- Last released functional milestone: P4.7 Product Choice Model Baseline is committed, pushed, remote-aligned, and CI-passed, but its post-release policy audit requires the duplicate-policy correction. Exact release metadata remains Git/GitHub authority.
+- Pending release milestone: P4.7 Duplicate-Policy Correction; local acceptance passed and owner-approved Prompt 5 commit/push plus successful CI remain.
+- Next planned functional milestone: P4.8 Product Choice Form/Formset and Bundle Validation Baseline after corrective release closure.
 - Post-push documentation rule: no routine post-push documentation sync and no new `.1 Post-Push...` micro-slice ID solely for successful delivery metadata.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
@@ -992,8 +995,8 @@ A new Codex chat must:
 4. confirm Version 2 workflow is active: Release closes the functional micro-slice, and routine post-push documentation sync is removed;
 5. confirm P1.1 through P1.6 are `PASSED`;
 6. confirm Gate 1 is passed, Phase 2 is `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
-7. confirm Phase 3 is `PASSED`, Phase 4 is `IN_PROGRESS`, P3.1 through P3.4 and P4.1 through P4.6 are `PASSED`, and P4.7 has passed local acceptance but is pending release;
-8. confirm Gate 3 is not passed because P4.7 release, bundle validation, inventory, and availability remain incomplete;
-9. complete Prompt 5 for P4.7 before planning P4.8;
+7. confirm Phase 3 is `PASSED`, Phase 4 is `IN_PROGRESS`, P3.1 through P3.4 and P4.1 through P4.6 are `PASSED`, and the released P4.7 baseline requires its locally verified duplicate-policy correction;
+8. confirm Gate 3 is not passed because the P4.7 correction, bundle validation, inventory, and availability remain incomplete;
+9. obtain owner approval and complete Prompt 5 for the P4.7 correction before planning P4.8;
 10. do not create a post-push documentation micro-slice solely to record successful delivery metadata;
-11. after a clean push, Git alignment, and successful CI, treat P4.7 as closed and use Prompt 2 for P4.8.
+11. after a clean corrective push, Git alignment, and successful CI, treat the correction as closed and use Prompt 2 for P4.8.

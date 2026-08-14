@@ -134,7 +134,7 @@ OWNER_DECISION_REQUIRED: whether relations are excluded from V1 edit form.
 - RECOMMENDED_FROM_EVIDENCE: Add/remove behavior must be robust and testable.
 - RECOMMENDED_FROM_EVIDENCE: Removing the last valid choice is blocked or clearly changes product into a draft-only state if owner approves.
 - RECOMMENDED_FROM_EVIDENCE: Quantity cannot be negative.
-- OWNER_PROVIDED_DIRECTION: Case-insensitive, trim-normalized duplicate size/color combinations are blocked within one Product across active and inactive rows; the existing choice is updated or reactivated instead of creating a second stock-bearing row.
+- OWNER_PROVIDED_DIRECTION: Duplicate size/color combinations are allowed within one Product, including case-insensitive, trim-normalized matches. Each `ProductChoice` row remains a distinct sellable choice and is never merged automatically; future stock mutations must target a specific row. Aggregation, buyer-facing wording, and UI disambiguation for similar choices remain deferred to later approved slices.
 
 ## 11. Search and Filter Experience Contract
 

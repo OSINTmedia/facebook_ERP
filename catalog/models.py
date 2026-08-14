@@ -257,12 +257,6 @@ class ProductChoice(models.Model):
     class Meta:
         ordering = ["product_id", "size", "color", "id"]
         constraints = [
-            models.UniqueConstraint(
-                "product",
-                Lower(Trim("size")),
-                Lower(Trim("color")),
-                name="unique_product_choice_per_product",
-            ),
             models.CheckConstraint(
                 condition=models.Q(size__regex=r"\S"),
                 name="product_choice_size_not_blank",

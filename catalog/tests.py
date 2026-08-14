@@ -1610,26 +1610,34 @@ class ProductChoiceModelTests(TestCase):
         with self.assertRaises(ValidationError):
             choice.save()
 
-    def test_choice_duplicate_is_blocked_after_case_and_trim_normalization(self):
-        ProductChoice.objects.create(
+    def test_duplicate_choices_are_allowed_after_case_and_trim_normalization(self):
+        first_choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
             size="M",
             color="Black",
+            quantity=1,
             is_active=False,
         )
-        duplicate = ProductChoice(
+        second_choice = ProductChoice(
             business=self.business,
             product=self.product,
             size=" m ",
             color=" black ",
+            quantity=3,
         )
 
-        with self.assertRaises(ValidationError):
-            duplicate.full_clean()
-        with self.assertRaises(IntegrityError):
-            with transaction.atomic():
-                duplicate.save()
+        second_choice.full_clean()
+        second_choice.save()
+
+        self.assertNotEqual(first_choice.pk, second_choice.pk)
+        self.assertEqual(ProductChoice.objects.filter(product=self.product).count(), 2)
+        self.assertEqual(second_choice.size, "m")
+        self.assertEqual(second_choice.color, "black")
+        self.assertEqual(first_choice.quantity, 1)
+        self.assertEqual(second_choice.quantity, 3)
+        self.assertFalse(first_choice.is_active)
+        self.assertTrue(second_choice.is_active)
 
     def test_same_size_color_combination_is_allowed_on_another_product(self):
         ProductChoice.objects.create(
