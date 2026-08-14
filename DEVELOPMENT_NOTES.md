@@ -256,6 +256,14 @@ Recognize caller-supplied size and color values as transient `CHOICE_SIZE` and `
 Reason:
 Size and color are eventual stock-bearing choice truth, so description recognition must not silently create confirmed variants. Keeping P4.6 suggestion-only lets later form and choice-model slices reuse the recognition boundary without resolving the owner-required duplicate size/color policy early.
 
+### 2026-08-14 - Preserve released Phase 4 numbering
+
+Decision:
+Keep the historical P4.1 through P4.6 slice numbering already present in Git and CI history, and require owner approval for the duplicate size/color choice policy before implementing `ProductChoice`.
+
+Reason:
+Renaming released slices after they are committed, pushed, and CI-passed would make the documentation harder to reconcile with repository history. Persisted choice behavior depends on a policy decision, while P4.6 remains suggestion-only recognition.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

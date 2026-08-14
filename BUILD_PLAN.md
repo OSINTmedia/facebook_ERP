@@ -464,13 +464,210 @@ Avoid libraries that depend on:
 
 ### Phase 4: Semantic Recognition and Choice Model
 
-- Objective: add the description-first assistant layer that recognizes existing Product Types, Tags, material aliases, and size/color candidates while preserving choice-level stock truth.
+- Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
-- Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, candidate meaning, confirmed structured facts, type/tag recognition, business-scoped aliases, material facts, choice rows, minimum valid choice rule, duplicate policy after owner decision, form/formset tests.
-- Expected micro-slices: semantic-recognition service contract, Product Type recognition, Tag recognition, alias normalization, material fact confirmation, size/color-to-choice suggestions, choice model, formset/service validation, create/edit integration, mobile form audit.
-- Current implementation state: Phase 4 is in progress. The active Phase 4 micro-slice and release gate are tracked in `changelog_checkpoint.md`; the execution order remains the expected micro-slice order above.
-- Separate deferred micro-slice: detailed garment measurements, only after type, value, unit, method, applicable product/choice boundary, category prompts, and buyer-reply wording are owner-approved.
-- Stop gate: product bundle save cannot persist partial invalid choice state, and buyer replies consume confirmed facts only.
+- Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, stock-bearing choices, minimum valid choice rule, duplicate size/color policy after owner decision, compact create/edit integration, and product bundle validation.
+- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.6 are implemented, released, aligned with remote, CI-passed, and `PASSED`; exact delivery metadata remains Git/GitHub authority. ProductChoice rows, bundle validation, inventory, availability, readiness, buyer replies, and Product form recognition integration do not exist yet.
+- Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category prompts, buyer-reply wording, and seller UI are owner-approved.
+- Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
+
+#### P4.1 Semantic Recognition Service Contract Baseline
+
+- Objective: create the pure recognition contract that keeps seller description text separate from candidate meaning and confirmed facts.
+- Dependency: Phase 3 passed.
+- Exact scope: recognition result contract; observed text, candidate meaning, and confirmed fact boundary; semantic destination enum or equivalent; immutable transient candidates; pure service boundary.
+- Explicit exclusions: database migrations, UI integration, product form changes, choice model changes, material model implementation, buyer replies, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
+- Likely files: `catalog/recognition.py`, focused recognition tests, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
+- Backend acceptance criteria: recognition preserves raw observed text; candidates require confirmation; confirmed facts are empty unless supplied by later confirmed persistence; semantic destinations distinguish type, tag, material, choice size, choice color, measurement, and search-token concepts; negative material phrases are not converted into positive candidates.
+- Frontend/UX acceptance criteria where relevant: none; backend service only.
+- Automated verification: Django system check, migration dry-run check, focused recognition tests, full Django test suite, `git diff --check`.
+- Manual user verification where UI changes: none.
+- Failure cases: recognition confirms facts automatically; candidate text overwrites observed text; global vocabulary or LLM extraction becomes source of truth; negation creates a positive material candidate.
+- Documentation updates: update live checkpoint and development notes only when the implementation changes state, strategy, blocker, or meaningful decision; do not touch frozen docs without owner approval.
+- Proposed commit message: `feat: add semantic recognition service contract`.
+- Rollback/recovery note: revert the pure service and focused tests if the contract fails the observed/candidate/confirmed boundary; do not patch around it in forms or templates.
+- Stop gate relation: required foundation for all later Phase 4 recognition work.
+- Status: PASSED.
+
+#### P4.2 Product Type Recognition Baseline
+
+- Objective: add business-scoped Product Type vocabulary and recognition from product descriptions without making recognized type a Product fact automatically.
+- Dependency: P4.1 `PASSED`.
+- Exact scope: business-scoped product type vocabulary; Product Type recognition from description; canonical candidate output; negative/no-match cases; cross-business isolation tests.
+- Explicit exclusions: tag recognition, aliases, material recognition, size/color choice suggestions, Product type assignment to Product, UI integration, type-management screens, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
+- Likely files: `catalog/models.py`, `catalog/recognition.py`, `catalog/tests.py`, catalog migration files when schema changes, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
+- Backend acceptance criteria: Product Type vocabulary is owned by Business; names are stripped, nonblank, and unique per Business after case-insensitive normalization; recognition reads only the supplied Business vocabulary and returns unconfirmed Product Type candidates.
+- Frontend/UX acceptance criteria where relevant: none for backend-only vocabulary/recognition; no seller UI may imply confirmed type assignment until a later integration slice.
+- Automated verification: Django system check, migration dry-run check, focused Product Type model/recognition tests, full Django test suite, `git diff --check`.
+- Manual user verification where UI changes: none unless an approved UI is added in a later slice.
+- Failure cases: cross-business vocabulary leak; recognized Product Type becomes confirmed Product truth; blank or duplicate canonical names persist; Product form grows to include unmanaged type UI.
+- Documentation updates: update live checkpoint and development notes only when required by the documentation matrix; do not update README or frozen docs for backend-only completion.
+- Proposed commit message: `feat: add product type recognition`.
+- Rollback/recovery note: revert the Product Type vocabulary, migration, and recognition changes together if the Business boundary or candidate contract fails.
+- Stop gate relation: required before Product Type candidates can be shown or confirmed in create/edit flows.
+- Status: PASSED.
+
+#### P4.3 Tag Recognition Baseline
+
+- Objective: add business-scoped generic/feature Tag vocabulary and recognition from product descriptions without creating buyer-facing truth claims.
+- Dependency: P4.1 `PASSED`; P4.2 Product Type recognition boundaries understood.
+- Exact scope: business-scoped generic/feature tags; Tag recognition from description; duplicate prevention; normalization tests; cross-business isolation tests.
+- Explicit exclusions: aliases, material facts, size/color choices, Product tag assignment, tag readiness policy, buyer-facing truth claims, tag-management UI, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
+- Likely files: `catalog/models.py`, `catalog/recognition.py`, `catalog/tests.py`, catalog migration files when schema changes, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
+- Backend acceptance criteria: Tag vocabulary is owned by Business; tag names are stripped, nonblank, and unique per Business after case-insensitive normalization; recognition reads only the supplied Business vocabulary and returns unconfirmed Tag candidates.
+- Frontend/UX acceptance criteria where relevant: none for backend-only vocabulary/recognition; tags must not appear as confirmed Product facts or readiness requirements until owner-approved behavior exists.
+- Automated verification: Django system check, migration dry-run check, focused Tag model/recognition tests, full Django test suite, `git diff --check`.
+- Manual user verification where UI changes: none unless an approved UI is added in a later slice.
+- Failure cases: cross-business tag leak; duplicate/casefold collision persists; recognized tag affects readiness or buyer replies before confirmation; material or choice size/color is stored as a generic tag.
+- Documentation updates: update live checkpoint and development notes only when required by the documentation matrix; do not update README or frozen docs for backend-only completion.
+- Proposed commit message: `feat: add tag recognition`.
+- Rollback/recovery note: revert Tag vocabulary, migration, and recognition changes together if normalization or Business isolation fails.
+- Stop gate relation: required before Tag candidates can be shown or confirmed in create/edit flows.
+- Status: PASSED.
+
+#### P4.4 Business-Scoped Alias Normalization Baseline
+
+- Objective: add business-scoped aliases for existing Product Type and Tag vocabulary without turning matched aliases into confirmed Product truth.
+- Dependency: P4.2 and P4.3 `PASSED`.
+- Exact scope: business-owned Product Type aliases; business-owned Tag aliases; alias stripping, nonblank validation, case-insensitive uniqueness, canonical-name collision prevention, same-Business validation, and recognition through aliases.
+- Explicit exclusions: alias-management UI, automatic alias learning, Product type/tag assignment, confirmation UI, material alias policy, material fact persistence, size/color choices, stock, availability, buyer replies, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
+- Likely files: `catalog/models.py`, `catalog/recognition.py`, `catalog/tests.py`, catalog migration files when schema changes, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
+- Backend acceptance criteria: aliases are scoped to one Business; aliases point only to canonical Product Types or Tags in the same Business; aliases and canonical names cannot collide in the same destination; recognition returns canonical unconfirmed candidates.
+- Frontend/UX acceptance criteria where relevant: none for backend-only vocabulary/recognition.
+- Automated verification: Django system check, migration dry-run check, focused alias model/recognition tests, full Django test suite, `git diff --check`.
+- Manual user verification where UI changes: none unless an approved UI is added in a later slice.
+- Failure cases: cross-business alias leak; alias/name collision persists; alias recognition confirms Product truth; material aliases are silently introduced without owner-approved policy.
+- Documentation updates: update live checkpoint and development notes only when required by the documentation matrix.
+- Proposed commit message: `feat: add business scoped alias recognition`.
+- Rollback/recovery note: revert alias models, migration, recognition, and tests together if normalization or Business isolation fails.
+- Stop gate relation: required before aliases can support create/edit recognition feedback.
+- Status: PASSED.
+
+#### P4.5a Confirmed Material Fact Model Baseline
+
+- Objective: persist material as a typed confirmed Product fact without using ordinary Tags or unconfirmed description text as buyer-facing truth.
+- Dependency: P4.1 `PASSED`; Product and Business ownership boundaries exist.
+- Exact scope: confirmed material fact model; canonical material; optional percentage; original seller wording; source; confirmed-only state; Product/Business scoping; nonblank, percentage, source, confirmation, and deletion-protection tests.
+- Explicit exclusions: material recognition from confirmed facts, material confirmation UI, material aliases, Product form integration, readiness, buyer replies, search, size/color choices, stock, availability, measurements, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
+- Likely files: `catalog/models.py`, `catalog/tests.py`, catalog migration files when schema changes, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
+- Backend acceptance criteria: confirmed material facts are scoped to Business and Product; material fields are normalized and validated; percentages are optional and bounded; source and confirmation state are explicit; material facts validate same-Business Product ownership.
+- Frontend/UX acceptance criteria where relevant: none for backend-only persistence.
+- Automated verification: Django system check, migration dry-run check, focused material model tests, full Django test suite, `git diff --check`.
+- Manual user verification where UI changes: none.
+- Failure cases: material is implemented as an ordinary Tag; unconfirmed material candidates drive replies; percentage accepts invalid values; cross-business Product/material joins are allowed.
+- Documentation updates: update live checkpoint and development notes only when required by the documentation matrix; keep frozen clothing spec unchanged unless owner explicitly approves a domain amendment.
+- Proposed commit message: `feat: add confirmed material fact baseline`.
+- Rollback/recovery note: revert material model, migration, and tests together if confirmation, Business scoping, or validation boundaries fail.
+- Stop gate relation: required before confirmed material can contribute to buyer-question coverage or deterministic replies in later phases.
+- Status: PASSED.
+
+#### P4.5b Material Recognition Candidate Baseline
+
+- Objective: recognize material candidates from the seller's already confirmed material facts without creating or updating confirmed material truth.
+- Dependency: P4.5a `PASSED`.
+- Exact scope: derive material recognition terms from confirmed `ProductMaterialFact` rows for one Business; return transient unconfirmed `MATERIAL` candidates; preserve negation and cross-business isolation; prove recognition is read-only.
+- Explicit exclusions: material confirmation UI, material aliases, global textile dictionary, Product form integration, readiness, buyer replies, search UI, size/color choices, stock, availability, measurements, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
+- Likely files: `catalog/recognition.py`, `catalog/tests.py`, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
+- Backend acceptance criteria: material recognition reads only confirmed material facts for the supplied Business; duplicate material terms are normalized case-insensitively; recognition returns no confirmed facts and creates no database rows.
+- Frontend/UX acceptance criteria where relevant: none for backend-only recognition behavior.
+- Automated verification: Django system check, migration dry-run check, focused material recognition tests, full Django test suite, `git diff --check`.
+- Manual user verification where UI changes: none.
+- Failure cases: cross-business material facts leak; unconfirmed description text becomes material truth; material aliases or global vocabulary are silently introduced.
+- Documentation updates: update live checkpoint and development notes only when required by the documentation matrix.
+- Proposed commit message: `feat: recognize material candidates from confirmed facts`.
+- Rollback/recovery note: revert material recognition helpers and tests if they cross the candidate/confirmed fact boundary.
+- Stop gate relation: required before material candidates can be surfaced for seller confirmation in create/edit integration.
+- Status: PASSED.
+
+#### P4.6 Size/Color-to-Choice Suggestion Baseline
+
+- Objective: recognize caller-supplied size/color candidates from product descriptions without automatically creating confirmed choice truth.
+- Dependency: P4.1 `PASSED`; `docs/domain/CLOTHING_DATA_SPEC_V1.md` choice truth boundary.
+- Exact scope: caller-supplied size and color recognition terms; transient `CHOICE_SIZE` and `CHOICE_COLOR` candidates; stripping and case-insensitive deduplication; candidate versus confirmed choice boundary; tests proving description size/color is not persisted as Tag or ProductChoice truth automatically.
+- Explicit exclusions: `ProductChoice` model, migrations, duplicate-choice policy, automatic confirmed choice creation, Product form integration, inventory behavior, stock mutation service, UI polish, measurements, public catalog, orders, reservations, payments, delivery, broad ERP, and LLM-owned truth.
+- Likely files: `catalog/recognition.py`, `catalog/tests.py`, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
+- Backend acceptance criteria: supplied size/color values become transient unconfirmed candidates with preserved observed text and canonical value; candidate output never creates Product choices, Tags, stock, or confirmed facts automatically; negation boundaries are preserved.
+- Frontend/UX acceptance criteria where relevant: none for backend-only recognition behavior.
+- Automated verification: Django system check, migration dry-run check, focused choice-suggestion recognition tests, full Django test suite, `git diff --check`.
+- Manual user verification where UI changes: none.
+- Failure cases: description size/color becomes generic Tag truth; candidate creates confirmed choice rows without seller action; duplicate choice policy is bypassed; UI implies buyer-facing availability before a confirmed choice and quantity exist.
+- Documentation updates: update live checkpoint and development notes only when required by the documentation matrix; do not update README or frozen docs for backend-only suggestion work.
+- Proposed commit message: `feat: add size color choice suggestions`.
+- Rollback/recovery note: revert suggestion helpers and tests if they cross the candidate/confirmed choice boundary.
+- Stop gate relation: supports compact create/edit flow but does not satisfy choice persistence or inventory requirements by itself.
+- Status: PASSED.
+
+#### P4.7 Product Choice Model Baseline
+
+- Objective: add the stock-bearing Product choice/variant model that owns confirmed size, color, quantity, and active state.
+- Dependency: P4.6 `PASSED`; Phase 3 Product model exists; duplicate size/color choice policy is owner-approved before implementation.
+- Exact scope: stock-bearing product choices or variants; size; color; quantity; active/inactive state; minimum valid choice rule; choice validation tests; Business/Product ownership isolation.
+- Explicit exclusions: inventory ledger, stock mutation service, computed availability beyond this phase requirement, Product create/edit UI integration beyond the approved slice, public catalog, orders, reservations, payments, delivery, broad ERP, detailed measurements, and LLM-owned truth.
+- Likely files: `catalog/models.py`, `catalog/tests.py`, catalog migration files, forms or services only if needed for model/formset validation, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
+- Backend acceptance criteria: each choice belongs to one Product and Business boundary; size and color are persisted on the choice, not as generic tags; quantity is nonnegative; active/inactive state is explicit; minimum valid choice rule is enforced according to owner-approved draft/active behavior; duplicate size/color combinations follow owner-approved policy.
+- Frontend/UX acceptance criteria where relevant: none for backend-only model baseline; seller-facing terminology should prefer choice/`არჩევანი` when UI is later added.
+- Automated verification: Django system check, migration dry-run check, focused choice model/validation tests, full Django test suite, `git diff --check`.
+- Manual user verification where UI changes: none unless visible choice behavior is added.
+- Failure cases: quantity is stored on Product; size/color is stored only as generic tags; negative quantity persists; duplicate policy is silently inferred; deleting/removing all valid active choices leaves an invalid active product state; cross-business Product/choice joins are allowed.
+- Documentation updates: update live checkpoint and development notes only when required by the documentation matrix; record owner duplicate-choice policy if decided.
+- Proposed commit message: `feat: add size color choice model`.
+- Rollback/recovery note: revert model, migration, validation, and tests together if the choice source-of-truth or duplicate policy boundary is wrong.
+- Stop gate relation: required before product bundle validation, inventory, availability, workspace cards, and truthful size/color replies.
+- Status: NEEDS_OWNER_REVIEW.
+
+#### P4.8 Product Choice Form/Formset and Bundle Validation Baseline
+
+- Objective: validate Product plus choice rows as one safe seller product bundle without partial invalid choice state.
+- Dependency: P4.7 Product Choice Model Baseline exists.
+- Exact scope: Product + choices validation; form or formset boundary for size, color, quantity, and active state; minimum valid choice behavior; prevention of partial invalid choice persistence; cross-business Product/choice safety; validation-error preservation.
+- Explicit exclusions: inventory ledger, stock mutation service, computed availability, public catalog, buyer replies, measurements, orders, payments, delivery, broad ERP, and LLM-owned truth.
+- Likely files: `catalog/forms.py`, `catalog/tests.py`, service module if introduced for bundle validation, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
+- Backend acceptance criteria: invalid Product/choice combinations do not partially persist; active choice rows validate size, color, quantity, duplicate policy, and Business/Product ownership; missing valid choice behavior follows the owner-approved draft/active rule.
+- Frontend/UX acceptance criteria where relevant: none unless visible form rows are added; visible row errors must stay compact and preserve seller input if UI is touched.
+- Automated verification: Django system check, migration dry-run check, focused form/formset/service tests, transaction or persistence failure tests where feasible, full Django test suite, `git diff --check`.
+- Manual user verification where UI changes: required only if visible choice rows or validation UI are added.
+- Failure cases: Product persists without required valid choices when not allowed; partial choices persist after invalid submission; duplicate policy is bypassed; cross-business Product/choice joins are allowed; validation errors appear only as generic page failures.
+- Documentation updates: update live checkpoint and development notes when validation strategy changes; update BUILD_PLAN only if stop criteria or phase dependencies change.
+- Proposed commit message: `feat: validate product choice bundles`.
+- Rollback/recovery note: revert bundle validation changes if atomicity or error recovery is not provable; preserve earlier valid recognition services and choice model when valid.
+- Stop gate relation: required before Product create/edit integration can safely save choice truth.
+- Status: NOT_STARTED.
+
+#### P4.9 Product Create/Edit Recognition and Choice Integration
+
+- Objective: connect released recognition candidates and the ProductChoice model into the seller create/edit workflow while keeping the form compact.
+- Dependency: P4.1 through P4.8 completed or explicitly scoped for the integration path; owner decisions resolved for any confirmation behavior introduced here.
+- Exact scope: integrate Product Type, Tag, material, and size/color candidate feedback into create/edit context; allow seller confirmation/correction only through approved persisted fields/models; connect accepted size/color candidates to choice rows; preserve safe return paths and existing ownership assignment.
+- Explicit exclusions: large clothing forms, measurement UI, buyer reply UI, dashboard/workspace work, inventory behavior, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
+- Likely files: `catalog/forms.py`, `catalog/views.py`, `catalog/recognition.py`, `catalog/tests.py`, `templates/catalog/product_form.html`, static CSS only if needed for compact feedback, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
+- Backend acceptance criteria: create/edit recognition is scoped to the active Business; unconfirmed candidates do not update Product facts; confirmed values are persisted only through approved fields/models; cross-business vocabulary cannot be attached; validation preserves typed input and candidate context on errors.
+- Frontend/UX acceptance criteria where relevant: recognition feedback is lightweight, visible near the relevant description/form section, accessible, mobile-readable, and does not hide critical errors or create one giant clothing form.
+- Automated verification: Django system check, migration dry-run check, focused form/view recognition integration tests, ownership/access tests, full Django test suite, `git diff --check`.
+- Manual user verification where UI changes: owner/browser review of create/edit flow, validation recovery, compactness, mobile first viewport, and return links.
+- Failure cases: candidate chips imply confirmed facts; form becomes overloaded; unsafe `next` handling regresses; seller can attach another Business's vocabulary; validation loses recognition context; measurements or buyer replies appear without approval.
+- Documentation updates: update live checkpoint and development notes when UI/integration behavior changes; update APP experience only if the UX contract changes; do not update README or frozen docs unless public factuality or owner-approved scope changes require it.
+- Proposed commit message: `feat: integrate recognition and choices into product forms`.
+- Rollback/recovery note: revert integration templates/views/forms together if candidate confirmation or compact form behavior fails; keep backend recognition services intact when valid.
+- Stop gate relation: required before Phase 4 can claim the description-first seller workflow is usable.
+- Status: NOT_STARTED.
+
+#### P4.10 Phase 4 Audit and Gate 3 Closure
+
+- Objective: audit Phase 4 against `BUILD_PLAN.md` and `docs/domain/CLOTHING_DATA_SPEC_V1.md` before closing the semantic recognition and choice model phase.
+- Dependency: P4.1 through P4.9 complete, released, aligned with remote, and latest relevant CI successful.
+- Exact scope: audit Phase 4 against the refined roadmap and clothing spec; verify no measurement subsystem slipped in; verify no LLM truth, public catalog, orders, reservations, payments, delivery, or broad ERP scope; verify tests/checks/CI evidence; update `changelog_checkpoint.md` for phase closure only if criteria pass.
+- Explicit exclusions: new feature implementation, model changes, migrations, UI changes, README changes unless public factuality requires it, frozen-doc changes without owner approval, deployment work, and post-push documentation-only slice creation for routine CI success.
+- Likely files: `changelog_checkpoint.md` only if phase/gate closure criteria pass; `DEVELOPMENT_NOTES.md` only if a meaningful audit decision or workaround is recorded; `BUILD_PLAN.md` only if roadmap or gate criteria change.
+- Backend acceptance criteria: all Phase 4 tests/checks pass; choice truth, material truth, Product Type/Tag vocabulary, alias scoping, and confirmed-fact boundaries match the clothing spec; no unresolved Phase 4 blocker remains; buyer replies consume no unconfirmed candidates.
+- Frontend/UX acceptance criteria where relevant: create/edit recognition and choice validation remain compact, mobile-reviewable, accessible at baseline, and do not create a giant clothing form.
+- Automated verification: Django system check, migration dry-run check, focused Phase 4 tests, full Django test suite, `git diff --check`, Git branch/remote alignment check, latest relevant GitHub Actions result.
+- Manual user verification where UI changes: owner confirms create/edit recognition flow, compactness, validation recovery, and no unapproved measurement or buyer-reply UI if those surfaces changed.
+- Failure cases: tests fail; CI fails or is pending; working tree is dirty; Phase 4 scope includes measurements, public catalog, chatbot, orders, reservations, payments, delivery, broad ERP, or LLM truth; buyer replies consume unconfirmed candidates; choice bundle validation permits partial invalid state.
+- Documentation updates: update `changelog_checkpoint.md` for Phase 4 and Gate 3 closure only when closure criteria pass; no routine post-push documentation sync; no new `.1 Post-Push...` micro-slice.
+- Proposed commit message: `chore: audit phase 4 semantic recognition`.
+- Rollback/recovery note: if audit fails, record the real blocker and recovery requirement instead of marking Phase 4 passed.
+- Stop gate relation: closes Phase 4 and Gate 3 only after all criteria pass.
+- Status: NOT_STARTED.
 
 ### Phase 5: Inventory and Computed Availability
 

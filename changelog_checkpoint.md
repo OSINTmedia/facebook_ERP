@@ -50,7 +50,8 @@
 - P4.4 Business-Scoped Alias Normalization Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P4.5a Confirmed Material Fact Model Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P4.5b Material Recognition Candidate Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
-- P4.6 Size/Color-to-Choice Suggestion Baseline is implemented, integrity-audited, locally verified, and pending Prompt 5 release before it can be marked `PASSED`.
+- P4.6 Size/Color-to-Choice Suggestion Baseline is implemented, integrity-audited, locally verified, committed, pushed, remote-aligned, CI-passed, and `PASSED`.
+- P4.7 Product Choice Model Baseline is the next planned functional micro-slice and is gated by the owner decision for duplicate size/color choice policy before persisted choice behavior is implemented.
 - Legacy post-push checkpoint sync slices exist as historical records only; Version 2 removes routine post-push documentation micro-slices.
 - Successful commit, push, Git/remote alignment, and CI success are operational closure for the same functional micro-slice, not a new documentation micro-slice.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
@@ -63,10 +64,10 @@
 
 - Phase: Phase 4 - Semantic Recognition and Choice Model
 - Status: IN_PROGRESS
-- Current functional micro-slice: P4.6 Size/Color-to-Choice Suggestion Baseline, pending release
-- Next planned functional micro-slice: P4.7 Product Choice Model Baseline, after P4.6 release gate passes
+- Current functional micro-slice: P4.7 Product Choice Model Baseline, `NEEDS_OWNER_REVIEW` until the duplicate size/color choice policy is decided
+- Next planned functional micro-slice: P4.7 Product Choice Model Baseline; after release, P4.8 Product Choice Form/Formset and Bundle Validation Baseline
 - Started: 2026-07-27
-- Last updated: 2026-08-02
+- Last updated: 2026-08-14
 
 ## 3. Completed Work
 
@@ -766,7 +767,7 @@
 
 ### P4.6 verification
 
-- P4.6 Size/Color-to-Choice Suggestion Baseline implementation exists locally and is pending Prompt 5 release.
+- P4.6 Size/Color-to-Choice Suggestion Baseline implementation exists and is released.
 - Files created by P4.6:
   - none
 - Files modified by P4.6:
@@ -793,7 +794,10 @@
   - `.venv/bin/python manage.py test catalog --settings=config.settings.test -v 2 --noinput` ran 110 tests, passed, and created/destroyed `test_facebook_erp_dev`.
   - `.venv/bin/python manage.py test --settings=config.settings.test -v 2 --noinput` ran 148 tests, passed, and created/destroyed `test_facebook_erp_dev`.
   - `git diff --check` passed with no whitespace errors.
-- Result: P4.6 Size/Color-to-Choice Suggestion Baseline is implemented, integrity-audited, and locally verified. It remains pending Prompt 5 commit, push, clean Git/remote alignment, and successful CI before it can be marked `PASSED`.
+- Release verification from the Phase 4 documentation reality audit:
+  - `HEAD`, local `origin/main`, and remote `main` are aligned at `0bf4c37efe9e98ec6279935a69a952c9f5d0091d`.
+  - GitHub Actions run `30756695849` completed successfully for `0bf4c37efe9e98ec6279935a69a952c9f5d0091d`.
+- Result: P4.6 Size/Color-to-Choice Suggestion Baseline is implemented, integrity-audited, locally verified, committed, pushed, remote-aligned, CI-passed, and `PASSED`.
 
 ## 6. Current Blockers
 
@@ -817,7 +821,8 @@
 - No current P4.4 blocker remains.
 - No current P4.5a blocker remains.
 - No current P4.5b blocker remains.
-- No current P4.6 local implementation or audit verification blocker remains; Prompt 5 release is pending.
+- No current P4.6 blocker remains.
+- P4.7 Product Choice Model Baseline implementation is gated by the owner decision for duplicate size/color choice policy.
 - The old P2.1 local migration-history blocker is `RESOLVED`.
 - The old P2.1 test database permission blocker is `RESOLVED`.
 - Existing remote initial README commit must remain preserved.
@@ -825,7 +830,7 @@
 - Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
 - Gate 2 is passed after P2.5 access-control tests, Git checkpoint, push, and CI.
 - Phase 3 is passed after P3.4 release, Git/remote alignment, successful CI, and governance closure.
-- Gate 3 is not passed; P4.6 is locally verified but unreleased, and persisted choice rows, inventory, and availability work remain incomplete.
+- Gate 3 is not passed; persisted `ProductChoice` rows, bundle validation, inventory, and availability work remain incomplete.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -849,15 +854,15 @@
 
 ## 7. Next Functional Micro-Slice
 
-Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed. Phase 3 is passed. P3.1 Product Model Baseline, P3.2 Product Form Baseline, P3.3 Product List Baseline, and P3.4 Product Create/Edit Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. Phase 4 is in progress. P4.1 Semantic Recognition Service Contract Baseline, P4.2 Product Type Recognition Baseline, P4.3 Tag Recognition Baseline, P4.4 Business-Scoped Alias Normalization Baseline, P4.5a Confirmed Material Fact Model Baseline, and P4.5b Material Recognition Candidate Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. P4.6 Size/Color-to-Choice Suggestion Baseline is implemented, integrity-audited, locally verified, and pending Prompt 5 release before it can be marked `PASSED`.
+Phase 2 has passed. P2.1, P2.2, P2.3, the Environment-Gated Demo Seller Access Bootstrap, P2.4, and P2.5 have passed. Phase 3 is passed. P3.1 Product Model Baseline, P3.2 Product Form Baseline, P3.3 Product List Baseline, and P3.4 Product Create/Edit Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`. Phase 4 is in progress. P4.1 Semantic Recognition Service Contract Baseline, P4.2 Product Type Recognition Baseline, P4.3 Tag Recognition Baseline, P4.4 Business-Scoped Alias Normalization Baseline, P4.5a Confirmed Material Fact Model Baseline, P4.5b Material Recognition Candidate Baseline, and P4.6 Size/Color-to-Choice Suggestion Baseline are implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 
 Version 2 workflow remains active: one functional micro-slice closes through the Release step, and successful commit/push/CI does not create a documentation micro-slice.
 
-No next feature slice may start while P4.6 is unreleased. After P4.6 release closes, the next planned functional micro-slice is P4.7 Product Choice Model Baseline. Prompt 2 must validate the unresolved duplicate size/color choice policy before implementing any persisted choice behavior.
+The next planned functional micro-slice is P4.7 Product Choice Model Baseline. P4.7 must validate the unresolved duplicate size/color choice policy before implementing any persisted choice behavior.
 
 The next functional slice may start only when:
 
-- Prompt 5 commits and pushes P4.6;
+- duplicate size/color choice policy is owner-approved;
 - working tree is clean;
 - `HEAD` and `origin/main` are aligned;
 - latest relevant CI completed successfully.
@@ -910,19 +915,17 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P4.6 Size/Color-to-Choice Suggestion Baseline implementation audit and documentation sync.
-- Files changed by the functional slice and audit:
-  - `catalog/recognition.py`
-  - `catalog/tests.py`
+- Operation: Phase 4 documentation reality sync after P4.6 release verification.
+- Files changed by this documentation sync:
+  - `BUILD_PLAN.md`
   - `DEVELOPMENT_NOTES.md`
   - `changelog_checkpoint.md`
 - Files intentionally not modified:
-  - `BUILD_PLAN.md`
   - `APP_EXPERIENCE_PLAN.md`
   - `README.md`
   - frozen docs under `docs/`
+  - source code
   - migrations
-  - models
   - settings
   - templates
   - static files
@@ -930,8 +933,8 @@ Private local prompt:
   - `codex_prompt_ERP.txt`
   - Git history or remote configuration
 - Source prototype modified: no.
-- Scope audit result: the operation remained limited to caller-supplied size/color choice suggestions, candidate-to-confirmed boundary tests, no-write recognition behavior, and allowed documentation sync.
-- Result: P4.6 is implemented, integrity-audited, and locally verified; Prompt 5 release is pending. Phase 4 Semantic Recognition and Choice Model remains `IN_PROGRESS`; Gate 3 is not passed.
+- Scope audit result: the operation remained limited to synchronizing Phase 4 roadmap/status language with code, Git, and GitHub Actions reality.
+- Result: P4.6 is implemented, integrity-audited, locally verified, committed, pushed, remote-aligned, CI-passed, and `PASSED`. Phase 4 Semantic Recognition and Choice Model remains `IN_PROGRESS`; Gate 3 is not passed. P4.7 Product Choice Model Baseline is next and is gated by the owner decision for duplicate size/color choice policy.
 - Post-CI governance closure required: no.
 
 ## 12. Git Checkpoint
@@ -944,8 +947,9 @@ Private local prompt:
 - GitHub repository visibility: public
 - GitHub default branch: `main`
 - Delivery metadata authority: exact current `HEAD`, `origin/main`, actual remote `main`, CI run, and CI conclusion must be read from Git/GitHub.
-- Last released functional milestone: P4.5b Material Recognition Candidate Baseline is committed, pushed, CI-passed, and `PASSED`; exact commit and CI run are Git/GitHub authority.
-- Pending release milestone: P4.6 Size/Color-to-Choice Suggestion Baseline is locally verified and awaiting Prompt 5 commit, push, remote alignment, and CI verification.
+- Last released functional milestone: P4.6 Size/Color-to-Choice Suggestion Baseline is committed, pushed, remote-aligned, CI-passed, and `PASSED`; audited release commit `0bf4c37efe9e98ec6279935a69a952c9f5d0091d`, GitHub Actions run `30756695849`.
+- Pending release milestone: none.
+- Next planned functional milestone: P4.7 Product Choice Model Baseline, gated by owner-approved duplicate size/color choice policy before implementation.
 - Post-push documentation rule: no routine post-push documentation sync and no new `.1 Post-Push...` micro-slice ID solely for successful delivery metadata.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
@@ -960,8 +964,8 @@ A new Codex chat must:
 4. confirm Version 2 workflow is active: Release closes the functional micro-slice, and routine post-push documentation sync is removed;
 5. confirm P1.1 through P1.6 are `PASSED`;
 6. confirm Gate 1 is passed, Phase 2 is `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
-7. confirm Phase 3 is `PASSED`, Phase 4 is `IN_PROGRESS`, and P3.1 through P3.4 are `PASSED`;
-8. confirm Gate 3 is not passed because P4.6 is unreleased and persisted choice rows, inventory, and availability remain incomplete;
-9. release P4.6 through Prompt 5 before planning P4.7;
+7. confirm Phase 3 is `PASSED`, Phase 4 is `IN_PROGRESS`, P3.1 through P3.4 are `PASSED`, and P4.1 through P4.6 are `PASSED`;
+8. confirm Gate 3 is not passed because persisted `ProductChoice` rows, bundle validation, inventory, and availability remain incomplete;
+9. confirm P4.7 Product Choice Model Baseline is next and requires owner-approved duplicate size/color choice policy before implementation;
 10. do not create a post-push documentation micro-slice solely to record successful delivery metadata;
-11. after P4.6 commit, push, clean Git/remote alignment, and successful CI, proceed to Prompt 2 for P4.7 Product Choice Model Baseline.
+11. proceed to P4.7 only after branch/remote alignment, latest relevant CI success, a clean working tree, and the duplicate size/color choice policy decision are verified.
