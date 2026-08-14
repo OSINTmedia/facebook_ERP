@@ -450,7 +450,7 @@ Avoid libraries that depend on:
 - Dependency: Gate 1.
 - Scope boundary: User, Business, login/logout, active business policy, access tests.
 - Expected micro-slices: auth model, business model, login flow, owner-scoped query helper, cross-business access tests.
-- Current dependency state: Gate 1 is passed; P2.1 Accounts App and Custom Seller User Model Baseline, P2.2 Business Model and Ownership Boundary Baseline, P2.3 Login Flow Baseline, Environment-Gated Demo Seller Access Bootstrap, P2.4 Owner-Scoped Query Helper Baseline, and P2.5 Cross-Business Access Test Baseline are passed, committed, pushed, and CI-passed. Gate 2 is passed. Phase 3 is now in progress after P3.1 Product Model Baseline was implemented, integrity-audited, locally verified, committed, pushed, and CI-passed.
+- Current dependency state: Gate 1 and Gate 2 are passed. P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are released and `PASSED`. Phase 3 is `PASSED`; Phase 4 is `IN_PROGRESS`.
 - Stop gate: every seller-owned object created later has a business boundary and test pattern.
 
 ### Phase 3: Catalog Core
@@ -466,8 +466,8 @@ Avoid libraries that depend on:
 
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
-- Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, stock-bearing choices, minimum valid choice rule, duplicate size/color policy after owner decision, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.6 are implemented, released, aligned with remote, CI-passed, and `PASSED`; exact delivery metadata remains Git/GitHub authority. ProductChoice rows, bundle validation, inventory, availability, readiness, buyer replies, and Product form recognition integration do not exist yet.
+- Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, stock-bearing choices, owner-approved normalized duplicate prevention, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
+- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.6 are implemented, released, aligned with remote, CI-passed, and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.7 Product Choice Model Baseline is implemented, integrity-audited, and locally verified, with release pending Prompt 5. Bundle validation, inventory, availability, readiness, buyer replies, and Product form recognition integration do not exist yet.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category prompts, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -600,20 +600,20 @@ Avoid libraries that depend on:
 #### P4.7 Product Choice Model Baseline
 
 - Objective: add the stock-bearing Product choice/variant model that owns confirmed size, color, quantity, and active state.
-- Dependency: P4.6 `PASSED`; Phase 3 Product model exists; duplicate size/color choice policy is owner-approved before implementation.
-- Exact scope: stock-bearing product choices or variants; size; color; quantity; active/inactive state; minimum valid choice rule; choice validation tests; Business/Product ownership isolation.
+- Dependency: P4.6 `PASSED`; Phase 3 Product model exists; owner-approved duplicate policy blocks case-insensitive, trim-normalized size/color duplicates per Product across active and inactive rows.
+- Exact scope: stock-bearing product choices or variants; required size and color; nonnegative quantity; active/inactive state; individual choice-row validation; normalized duplicate prevention; Business/Product ownership isolation. Aggregate Product-plus-choice validation remains P4.8.
 - Explicit exclusions: inventory ledger, stock mutation service, computed availability beyond this phase requirement, Product create/edit UI integration beyond the approved slice, public catalog, orders, reservations, payments, delivery, broad ERP, detailed measurements, and LLM-owned truth.
 - Likely files: `catalog/models.py`, `catalog/tests.py`, catalog migration files, forms or services only if needed for model/formset validation, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
-- Backend acceptance criteria: each choice belongs to one Product and Business boundary; size and color are persisted on the choice, not as generic tags; quantity is nonnegative; active/inactive state is explicit; minimum valid choice rule is enforced according to owner-approved draft/active behavior; duplicate size/color combinations follow owner-approved policy.
+- Backend acceptance criteria: each choice belongs to one Product and Business boundary; size and color are persisted on the choice, not as generic tags; quantity is nonnegative; active/inactive state is explicit; normalized duplicate size/color combinations are blocked per Product across active and inactive rows; the same combination remains valid on another Product; recognition candidates create no choice rows automatically.
 - Frontend/UX acceptance criteria where relevant: none for backend-only model baseline; seller-facing terminology should prefer choice/`არჩევანი` when UI is later added.
 - Automated verification: Django system check, migration dry-run check, focused choice model/validation tests, full Django test suite, `git diff --check`.
 - Manual user verification where UI changes: none unless visible choice behavior is added.
-- Failure cases: quantity is stored on Product; size/color is stored only as generic tags; negative quantity persists; duplicate policy is silently inferred; deleting/removing all valid active choices leaves an invalid active product state; cross-business Product/choice joins are allowed.
+- Failure cases: quantity is stored on Product; size/color is stored only as generic tags; negative quantity persists; normalized duplicates bypass the database constraint; recognition creates choice rows automatically; cross-business Product/choice joins are allowed; aggregate bundle rules are implemented prematurely outside P4.8.
 - Documentation updates: update live checkpoint and development notes only when required by the documentation matrix; record owner duplicate-choice policy if decided.
 - Proposed commit message: `feat: add size color choice model`.
 - Rollback/recovery note: revert model, migration, validation, and tests together if the choice source-of-truth or duplicate policy boundary is wrong.
 - Stop gate relation: required before product bundle validation, inventory, availability, workspace cards, and truthful size/color replies.
-- Status: NEEDS_OWNER_REVIEW.
+- Status: IN_PROGRESS pending Prompt 5 release.
 
 #### P4.8 Product Choice Form/Formset and Bundle Validation Baseline
 
@@ -622,7 +622,7 @@ Avoid libraries that depend on:
 - Exact scope: Product + choices validation; form or formset boundary for size, color, quantity, and active state; minimum valid choice behavior; prevention of partial invalid choice persistence; cross-business Product/choice safety; validation-error preservation.
 - Explicit exclusions: inventory ledger, stock mutation service, computed availability, public catalog, buyer replies, measurements, orders, payments, delivery, broad ERP, and LLM-owned truth.
 - Likely files: `catalog/forms.py`, `catalog/tests.py`, service module if introduced for bundle validation, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
-- Backend acceptance criteria: invalid Product/choice combinations do not partially persist; active choice rows validate size, color, quantity, duplicate policy, and Business/Product ownership; missing valid choice behavior follows the owner-approved draft/active rule.
+- Backend acceptance criteria: invalid Product/choice combinations do not partially persist; active choice rows validate size, color, quantity, duplicate policy, and Business/Product ownership; an active Product requires at least one valid active choice, while draft Product behavior remains compatible with incomplete product capture.
 - Frontend/UX acceptance criteria where relevant: none unless visible form rows are added; visible row errors must stay compact and preserve seller input if UI is touched.
 - Automated verification: Django system check, migration dry-run check, focused form/formset/service tests, transaction or persistence failure tests where feasible, full Django test suite, `git diff --check`.
 - Manual user verification where UI changes: required only if visible choice rows or validation UI are added.
@@ -855,7 +855,6 @@ Do not choose a provider or claim a demo URL before owner approval and verificat
 - Whether type/tag management pages are V1 or mostly inline.
 - Whether tags affect readiness or only organization/search.
 - Price policy for zero, null, missing, and free products.
-- Duplicate size/color choice policy.
 - Direct stock set placement.
 - Dashboard first-viewport priority.
 - Ready reply placement.

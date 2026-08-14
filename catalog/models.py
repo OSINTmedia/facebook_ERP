@@ -236,6 +236,91 @@ class Product(models.Model):
         return self.name
 
 
+class ProductChoice(models.Model):
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.PROTECT,
+        related_name="product_choices",
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name="choices",
+    )
+    size = models.CharField(max_length=40)
+    color = models.CharField(max_length=80)
+    quantity = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["product_id", "size", "color", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                "product",
+                Lower(Trim("size")),
+                Lower(Trim("color")),
+                name="unique_product_choice_per_product",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(size__regex=r"\S"),
+                name="product_choice_size_not_blank",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(color__regex=r"\S"),
+                name="product_choice_color_not_blank",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(quantity__gte=0),
+                name="product_choice_quantity_nonnegative",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        self._normalize_fields()
+        self._validate_business_scope()
+        self._validate_quantity()
+
+    def save(self, *args, **kwargs):
+        self._normalize_fields()
+        self._validate_business_scope()
+        self._validate_quantity()
+        super().save(*args, **kwargs)
+
+    def _normalize_fields(self):
+        self.size = _normalized_required_text(
+            self.size,
+            "size",
+            "Choice size is required.",
+        )
+        self.color = _normalized_required_text(
+            self.color,
+            "color",
+            "Choice color is required.",
+        )
+
+    def _validate_business_scope(self):
+        if (
+            self.business_id
+            and self.product_id
+            and self.product.business_id != self.business_id
+        ):
+            raise ValidationError(
+                {"product": "Product must belong to the same Business."}
+            )
+
+    def _validate_quantity(self):
+        if self.quantity is None or self.quantity < 0:
+            raise ValidationError(
+                {"quantity": "Choice quantity cannot be negative."}
+            )
+
+    def __str__(self):
+        return f"{self.product}: {self.size} / {self.color}"
+
+
 class ProductMaterialFact(models.Model):
     class Source(models.TextChoices):
         DESCRIPTION = "description", "Description"

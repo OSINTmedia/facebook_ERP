@@ -264,6 +264,14 @@ Keep the historical P4.1 through P4.6 slice numbering already present in Git and
 Reason:
 Renaming released slices after they are committed, pushed, and CI-passed would make the documentation harder to reconcile with repository history. Persisted choice behavior depends on a policy decision, while P4.6 remains suggestion-only recognition.
 
+### 2026-08-14 - Product choice identity and bundle validation stay separate
+
+Decision:
+Block case-insensitive, trim-normalized duplicate size/color combinations within one Product across active and inactive rows. Reuse or reactivate the existing choice instead of creating a second stock-bearing row; allow the same normalized combination on another Product. P4.7 owns individual choice-row persistence and integrity, while P4.8 owns atomic Product-plus-choice validation and the rule that an active Product requires at least one valid active choice.
+
+Reason:
+One normalized row per sellable combination prevents split stock truth and ambiguous reactivation. Keeping aggregate validation in P4.8 avoids breaking the current Product create/edit flow before a choice formset and atomic bundle-save boundary exist.
+
 ### 2026-07-27 - Variant-level stock
 
 Decision:

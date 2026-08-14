@@ -15,6 +15,7 @@ from catalog.models import (
     BusinessTag,
     BusinessTagAlias,
     Product,
+    ProductChoice,
     ProductMaterialFact,
 )
 from catalog.recognition import (
@@ -1465,6 +1466,238 @@ class ProductModelTests(TestCase):
         )
 
         self.assertEqual(str(product), "Black trousers")
+
+
+class ProductChoiceModelTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="choice-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="choice-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="Black trousers",
+            description="Classic black trousers.",
+        )
+        self.second_product = Product.objects.create(
+            business=self.business,
+            name="Black blouse",
+            description="Classic black blouse.",
+        )
+        self.other_product = Product.objects.create(
+            business=self.other_business,
+            name="Black dress",
+            description="Black dress from another Business.",
+        )
+
+    def test_choice_belongs_to_business_and_product(self):
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+            quantity=2,
+        )
+
+        self.assertEqual(choice.business, self.business)
+        self.assertEqual(choice.product, self.product)
+        self.assertEqual(choice.quantity, 2)
+        self.assertTrue(choice.is_active)
+        self.assertEqual(self.business.product_choices.get(), choice)
+        self.assertEqual(self.product.choices.get(), choice)
+
+    def test_choice_requires_business_and_product(self):
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                ProductChoice.objects.create(
+                    product=self.product,
+                    size="M",
+                    color="Black",
+                )
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                ProductChoice.objects.create(
+                    business=self.business,
+                    size="M",
+                    color="Black",
+                )
+
+    def test_choice_requires_non_blank_size_and_color(self):
+        for field_name in ("size", "color"):
+            with self.subTest(field_name=field_name):
+                choice = ProductChoice(
+                    business=self.business,
+                    product=self.product,
+                    size="M",
+                    color="Black",
+                )
+                setattr(choice, field_name, "   ")
+
+                with self.assertRaises(ValidationError):
+                    choice.full_clean()
+                with self.assertRaises(ValidationError):
+                    choice.save()
+
+    def test_choice_strips_size_and_color_on_save(self):
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="  M  ",
+            color="  Black  ",
+        )
+
+        self.assertEqual(choice.size, "M")
+        self.assertEqual(choice.color, "Black")
+
+    def test_choice_quantity_accepts_zero_and_rejects_negative_values(self):
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+            quantity=0,
+        )
+
+        self.assertEqual(choice.quantity, 0)
+
+        invalid_choice = ProductChoice(
+            business=self.business,
+            product=self.product,
+            size="L",
+            color="Black",
+            quantity=-1,
+        )
+        with self.assertRaises(ValidationError):
+            invalid_choice.full_clean()
+        with self.assertRaises(ValidationError):
+            invalid_choice.save()
+
+    def test_choice_active_state_is_explicit(self):
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+            is_active=False,
+        )
+
+        self.assertFalse(choice.is_active)
+
+    def test_choice_requires_matching_product_business(self):
+        choice = ProductChoice(
+            business=self.business,
+            product=self.other_product,
+            size="M",
+            color="Black",
+        )
+
+        with self.assertRaises(ValidationError):
+            choice.full_clean()
+        with self.assertRaises(ValidationError):
+            choice.save()
+
+    def test_choice_duplicate_is_blocked_after_case_and_trim_normalization(self):
+        ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+            is_active=False,
+        )
+        duplicate = ProductChoice(
+            business=self.business,
+            product=self.product,
+            size=" m ",
+            color=" black ",
+        )
+
+        with self.assertRaises(ValidationError):
+            duplicate.full_clean()
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                duplicate.save()
+
+    def test_same_size_color_combination_is_allowed_on_another_product(self):
+        ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+        )
+
+        same_business_choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.second_product,
+            size="m",
+            color="black",
+        )
+        other_business_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=self.other_product,
+            size="M",
+            color="Black",
+        )
+
+        self.assertEqual(ProductChoice.objects.count(), 3)
+        self.assertEqual(same_business_choice.product, self.second_product)
+        self.assertEqual(other_business_choice.business, self.other_business)
+
+    def test_product_deletion_is_protected_when_choice_exists(self):
+        ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+        )
+
+        with self.assertRaises(ProtectedError):
+            self.product.delete()
+
+    def test_business_deletion_is_protected_when_choice_exists(self):
+        ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+        )
+
+        with self.assertRaises(ProtectedError):
+            self.business.delete()
+
+    def test_choice_suggestion_does_not_create_product_choice(self):
+        result = recognize_choice_suggestions(
+            "M size and Black color",
+            size_values=("M",),
+            color_values=("Black",),
+        )
+
+        self.assertEqual(len(result.candidates), 2)
+        self.assertEqual(result.confirmed_facts, ())
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_choice_string_uses_product_size_and_color(self):
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+        )
+
+        self.assertEqual(str(choice), "Black trousers: M / Black")
 
 
 class ProductFormTests(TestCase):
