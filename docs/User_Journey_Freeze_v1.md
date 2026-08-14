@@ -100,7 +100,7 @@ Acceptance criteria:
 - Acceptance criteria:
   - RECOMMENDED_FROM_EVIDENCE: quantity cannot be negative.
   - RECOMMENDED_FROM_EVIDENCE: active product availability uses active choices only.
-  - OWNER_DECISION_REQUIRED: whether duplicate size/color choices are blocked in V1.
+  - OWNER_PROVIDED_DIRECTION: duplicate `ProductChoice` rows with the same case-insensitive, trim-normalized size and color are allowed in V1 as distinct sellable choices. They are not merged automatically; later inventory changes must target a specific row. Aggregation, buyer-facing wording, and UI disambiguation for visually similar choices remain deferred to later approved slices.
 - Explicit exclusions: matrix generator, SKU system, warehouse bins, supplier stock.
 
 ## 7. Update Stock

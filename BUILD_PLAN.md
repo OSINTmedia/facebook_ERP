@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.6 are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. The released P4.7 Product Choice Model Baseline audit identified an incorrect duplicate-blocking constraint. Its corrective slice is implemented and locally verified, with owner-approved commit/push/CI release pending. Bundle validation, inventory, availability, readiness, buyer replies, and Product form recognition integration do not exist yet.
+- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.6 are released and `PASSED`. P4.7 Product Choice Model Baseline and its forward duplicate-policy correction are released, remote-aligned, CI-passed, and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.8 Product Choice Form/Formset and Bundle Validation Baseline is the next functional micro-slice. Bundle validation, inventory, availability, readiness, buyer replies, and Product form recognition integration do not exist yet.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category prompts, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -613,7 +613,7 @@ Avoid libraries that depend on:
 - Proposed commit message: `feat: add size color choice model`.
 - Rollback/recovery note: preserve released migration history; correct a released constraint with a forward migration rather than rewriting migration `0006`.
 - Stop gate relation: required before product bundle validation, inventory, availability, workspace cards, and truthful size/color replies.
-- Status: RELEASED_WITH_CORRECTION_IN_PROGRESS; duplicate-policy correction is locally verified and pending owner-approved release.
+- Status: PASSED; the baseline and forward duplicate-policy correction are released, remote-aligned, and CI-passed.
 
 #### P4.8 Product Choice Form/Formset and Bundle Validation Baseline
 
