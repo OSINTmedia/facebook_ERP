@@ -9,6 +9,20 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = ["name", "description", "lifecycle"]
+        widgets = {
+            "description": forms.Textarea(
+                attrs={
+                    "hx-post": ".",
+                    "hx-trigger": "input changed delay:600ms",
+                    "hx-target": "#recognition-preview-region",
+                    "hx-swap": "outerHTML",
+                    "hx-include": "closest form",
+                    "hx-vals": '{"intent": "preview_recognition"}',
+                    "hx-indicator": "#recognition-preview-loading",
+                    "hx-sync": "closest form:replace",
+                }
+            )
+        }
 
 
 class ProductChoiceForm(forms.ModelForm):

@@ -26,36 +26,46 @@
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ return_url }}">
 
-        {% if form.non_field_errors %}
-          <div class="form-errors" role="alert">
-            {% for error in form.non_field_errors %}
-              <p>{{ error }}</p>
-            {% endfor %}
-          </div>
+        {% if show_form_errors %}
+          {% if form.non_field_errors %}
+            <div class="form-errors" role="alert">
+              {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
         {% endif %}
 
         <div class="form-field">
           <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
           {{ form.name }}
-          {% for error in form.name.errors %}
-            <p class="field-error">{{ error }}</p>
-          {% endfor %}
+          {% if show_form_errors %}
+            {% for error in form.name.errors %}
+              <p class="field-error">{{ error }}</p>
+            {% endfor %}
+          {% endif %}
         </div>
 
         <div class="form-field">
           <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
           {{ form.description }}
-          {% for error in form.description.errors %}
-            <p class="field-error">{{ error }}</p>
-          {% endfor %}
+          {% if show_form_errors %}
+            {% for error in form.description.errors %}
+              <p class="field-error">{{ error }}</p>
+            {% endfor %}
+          {% endif %}
         </div>
+
+        {% include "catalog/_recognition_preview.html" %}
 
         <div class="form-field">
           <label for="{{ form.lifecycle.id_for_label }}">{{ form.lifecycle.label }}</label>
           {{ form.lifecycle }}
-          {% for error in form.lifecycle.errors %}
-            <p class="field-error">{{ error }}</p>
-          {% endfor %}
+          {% if show_form_errors %}
+            {% for error in form.lifecycle.errors %}
+              <p class="field-error">{{ error }}</p>
+            {% endfor %}
+          {% endif %}
         </div>
 
         <section class="choice-section" aria-labelledby="choice-section-title">
@@ -66,12 +76,14 @@
 
           {{ choice_formset.management_form }}
 
-          {% if choice_formset.non_form_errors %}
-            <div class="form-errors" role="alert">
-              {% for error in choice_formset.non_form_errors %}
-                <p>{{ error }}</p>
-              {% endfor %}
-            </div>
+          {% if show_form_errors %}
+            {% if choice_formset.non_form_errors %}
+              <div class="form-errors" role="alert">
+                {% for error in choice_formset.non_form_errors %}
+                  <p>{{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
           {% endif %}
 
           <div class="choice-list">
@@ -81,42 +93,52 @@
 
                 {% for hidden_field in choice_form.hidden_fields %}
                   {{ hidden_field }}
-                  {% for error in hidden_field.errors %}
-                    <p class="field-error" role="alert">{{ error }}</p>
-                  {% endfor %}
+                  {% if show_form_errors %}
+                    {% for error in hidden_field.errors %}
+                      <p class="field-error" role="alert">{{ error }}</p>
+                    {% endfor %}
+                  {% endif %}
                 {% endfor %}
 
-                {% if choice_form.non_field_errors %}
-                  <div class="form-errors" role="alert">
-                    {% for error in choice_form.non_field_errors %}
-                      <p>{{ error }}</p>
-                    {% endfor %}
-                  </div>
+                {% if show_form_errors %}
+                  {% if choice_form.non_field_errors %}
+                    <div class="form-errors" role="alert">
+                      {% for error in choice_form.non_field_errors %}
+                        <p>{{ error }}</p>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
                 {% endif %}
 
                 <div class="choice-row__grid">
                   <div class="form-field">
                     <label for="{{ choice_form.size.id_for_label }}">Size</label>
                     {{ choice_form.size }}
-                    {% for error in choice_form.size.errors %}
-                      <p class="field-error">{{ error }}</p>
-                    {% endfor %}
+                    {% if show_form_errors %}
+                      {% for error in choice_form.size.errors %}
+                        <p class="field-error">{{ error }}</p>
+                      {% endfor %}
+                    {% endif %}
                   </div>
 
                   <div class="form-field">
                     <label for="{{ choice_form.color.id_for_label }}">Color</label>
                     {{ choice_form.color }}
-                    {% for error in choice_form.color.errors %}
-                      <p class="field-error">{{ error }}</p>
-                    {% endfor %}
+                    {% if show_form_errors %}
+                      {% for error in choice_form.color.errors %}
+                        <p class="field-error">{{ error }}</p>
+                      {% endfor %}
+                    {% endif %}
                   </div>
 
                   <div class="form-field">
                     <label for="{{ choice_form.quantity.id_for_label }}">Quantity</label>
                     {{ choice_form.quantity }}
-                    {% for error in choice_form.quantity.errors %}
-                      <p class="field-error">{{ error }}</p>
-                    {% endfor %}
+                    {% if show_form_errors %}
+                      {% for error in choice_form.quantity.errors %}
+                        <p class="field-error">{{ error }}</p>
+                      {% endfor %}
+                    {% endif %}
                   </div>
                 </div>
 
@@ -125,18 +147,22 @@
                     {{ choice_form.is_active }}
                     <label for="{{ choice_form.is_active.id_for_label }}">Active choice</label>
                   </div>
-                  {% for error in choice_form.is_active.errors %}
-                    <p class="field-error">{{ error }}</p>
-                  {% endfor %}
+                  {% if show_form_errors %}
+                    {% for error in choice_form.is_active.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  {% endif %}
 
                   {% if choice_form.instance.pk %}
                     <div class="choice-option choice-option--remove">
                       {{ choice_form.DELETE }}
                       <label for="{{ choice_form.DELETE.id_for_label }}">Remove choice</label>
                     </div>
-                    {% for error in choice_form.DELETE.errors %}
-                      <p class="field-error">{{ error }}</p>
-                    {% endfor %}
+                    {% if show_form_errors %}
+                      {% for error in choice_form.DELETE.errors %}
+                        <p class="field-error">{{ error }}</p>
+                      {% endfor %}
+                    {% endif %}
                   {% endif %}
                 </div>
               </fieldset>

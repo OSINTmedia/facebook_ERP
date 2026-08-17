@@ -280,6 +280,14 @@ Keep `ProductForm` and `ProductChoiceForm` field-restricted, use a custom inline
 Reason:
 Product and choice rows form one seller mutation even though their field validation belongs in separate forms. A transaction-scoped coordinator prevents partial persistence, keeps ownership input server-controlled, and lets later views remain thin without moving inventory or availability behavior into the formset.
 
+### 2026-08-17 - Automatic preview stays transient before controlled Size/Color vocabulary
+
+Decision:
+Show Product Type, Tag, material, size, and color recognition candidates automatically beside the description through a debounced HTMX request with a full-page fallback. Keep the preview read-only: Product Type/Tag vocabulary and aliases, confirmed material facts, and current confirmed ProductChoice size/color values provide Business-scoped terms, but no candidate is confirmed or persisted. Treat raw ProductChoice-derived size/color terms as a temporary baseline. Before candidate transfer, add seller-managed Business-scoped canonical Size/Color vocabularies, multilingual aliases, dropdown-only selection, contextual value creation, and a safe forward migration for existing choices.
+
+Reason:
+P4.9b can prove the observed/candidate/confirmed and automatic-assistant interaction without silently adding schema or writes. The owner rejected unrestricted open-text size/color as the final workflow because typos can become repeated suggestions. A dedicated forward slice preserves honest history, aligns the frozen `Select size` / `Select color` journey with Georgian-first multilingual normalization, and avoids turning every description word into a dictionary entry.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:

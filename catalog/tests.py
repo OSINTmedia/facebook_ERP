@@ -27,6 +27,7 @@ from catalog.recognition import (
     material_terms_for_business,
     recognize_choice_suggestions,
     recognize_materials_for_business,
+    recognize_product_preview_for_business,
     recognize_tags_for_business,
     recognize_product_types_for_business,
     recognize_product_description,
@@ -236,6 +237,185 @@ class ChoiceSuggestionRecognitionTests(SimpleTestCase):
 
         self.assertEqual(result.candidates_for(SemanticDestination.CHOICE_SIZE), ())
         self.assertEqual(result.candidates_for(SemanticDestination.CHOICE_COLOR), ())
+        self.assertEqual(result.confirmed_facts, ())
+
+
+class ProductRecognitionPreviewTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="preview-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="preview-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+
+    def seed_vocabulary(
+        self,
+        business,
+        *,
+        product_type_name,
+        product_type_alias,
+        tag_name,
+        material,
+        size,
+        color,
+    ):
+        product_type = BusinessProductType.objects.create(
+            business=business,
+            name=product_type_name,
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=business,
+            product_type=product_type,
+            alias=product_type_alias,
+        )
+        BusinessTag.objects.create(
+            business=business,
+            name=tag_name,
+        )
+        source_product = Product.objects.create(
+            business=business,
+            name=f"{product_type_name} vocabulary source",
+            description="Stored vocabulary source.",
+        )
+        ProductMaterialFact.objects.create(
+            business=business,
+            product=source_product,
+            canonical_material=material,
+            original_text=material,
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+        ProductChoice.objects.create(
+            business=business,
+            product=source_product,
+            size=size,
+            color=color,
+        )
+        return source_product
+
+    def test_preview_composes_all_business_scoped_candidate_destinations(self):
+        self.seed_vocabulary(
+            self.business,
+            product_type_name="Trousers",
+            product_type_alias="pants",
+            tag_name="Classic",
+            material="Cotton",
+            size="M",
+            color="Black",
+        )
+        counts_before = (
+            Product.objects.count(),
+            ProductChoice.objects.count(),
+            ProductMaterialFact.objects.count(),
+        )
+
+        result = recognize_product_preview_for_business(
+            "pants Classic Cotton M Black",
+            self.business,
+        )
+
+        self.assertEqual(
+            [
+                (
+                    candidate.destination,
+                    candidate.canonical_value,
+                    candidate.observed_text,
+                )
+                for candidate in result.candidates
+            ],
+            [
+                (SemanticDestination.PRODUCT_TYPE, "Trousers", "pants"),
+                (SemanticDestination.TAG, "Classic", "Classic"),
+                (SemanticDestination.MATERIAL, "Cotton", "Cotton"),
+                (SemanticDestination.CHOICE_SIZE, "M", "M"),
+                (SemanticDestination.CHOICE_COLOR, "Black", "Black"),
+            ],
+        )
+        self.assertTrue(
+            all(candidate.requires_confirmation for candidate in result.candidates)
+        )
+        self.assertEqual(result.confirmed_facts, ())
+        self.assertEqual(
+            (
+                Product.objects.count(),
+                ProductChoice.objects.count(),
+                ProductMaterialFact.objects.count(),
+            ),
+            counts_before,
+        )
+
+    def test_preview_excludes_other_business_and_negated_candidates(self):
+        self.seed_vocabulary(
+            self.business,
+            product_type_name="Trousers",
+            product_type_alias="pants",
+            tag_name="Classic",
+            material="Cotton",
+            size="M",
+            color="Black",
+        )
+        self.seed_vocabulary(
+            self.other_business,
+            product_type_name="Dress",
+            product_type_alias="gown",
+            tag_name="Private",
+            material="Silk",
+            size="L",
+            color="Red",
+        )
+
+        result = recognize_product_preview_for_business(
+            "Dress Private Silk L Red, no Cotton, without Black.",
+            self.business,
+        )
+
+        self.assertEqual(result.candidates, ())
+        self.assertEqual(result.confirmed_facts, ())
+
+    def test_preview_deduplicates_repeated_choice_vocabulary(self):
+        source_product = self.seed_vocabulary(
+            self.business,
+            product_type_name="Trousers",
+            product_type_alias="pants",
+            tag_name="Classic",
+            material="Cotton",
+            size="M",
+            color="Black",
+        )
+        ProductChoice.objects.create(
+            business=self.business,
+            product=source_product,
+            size="m",
+            color="black",
+        )
+
+        result = recognize_product_preview_for_business("M Black", self.business)
+
+        self.assertEqual(
+            len(result.candidates_for(SemanticDestination.CHOICE_SIZE)),
+            1,
+        )
+        self.assertEqual(
+            len(result.candidates_for(SemanticDestination.CHOICE_COLOR)),
+            1,
+        )
+
+    def test_preview_without_business_has_no_candidates(self):
+        result = recognize_product_preview_for_business("pants M Black", None)
+
+        self.assertEqual(result.observed_text, "pants M Black")
+        self.assertEqual(result.candidates, ())
         self.assertEqual(result.confirmed_facts, ())
 
 
@@ -2425,6 +2605,50 @@ class ProductBundleViewTestMixin:
         row.update(overrides)
         return row
 
+    def seed_preview_vocabulary(
+        self,
+        business,
+        *,
+        product_type_name="Trousers",
+        product_type_alias="pants",
+        tag_name="Classic",
+        material="Cotton",
+        size="M",
+        color="Black",
+    ):
+        product_type = BusinessProductType.objects.create(
+            business=business,
+            name=product_type_name,
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=business,
+            product_type=product_type,
+            alias=product_type_alias,
+        )
+        BusinessTag.objects.create(
+            business=business,
+            name=tag_name,
+        )
+        source_product = Product.objects.create(
+            business=business,
+            name=f"{product_type_name} preview source",
+            description="Stored preview vocabulary.",
+        )
+        ProductMaterialFact.objects.create(
+            business=business,
+            product=source_product,
+            canonical_material=material,
+            original_text=material,
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+        ProductChoice.objects.create(
+            business=business,
+            product=source_product,
+            size=size,
+            color=color,
+        )
+        return source_product
+
 
 class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
     def setUp(self):
@@ -2473,8 +2697,153 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, 'name="choices-0-color"')
         self.assertContains(response, 'name="choices-0-quantity"')
         self.assertContains(response, 'name="choices-0-is_active"')
+        self.assertContains(response, 'hx-post="."')
+        self.assertContains(response, 'hx-trigger="input changed delay:600ms"')
+        self.assertContains(response, 'hx-target="#recognition-preview-region"')
+        self.assertContains(response, 'hx-include="closest form"')
+        self.assertContains(response, "Known candidates appear automatically")
+        self.assertContains(response, "django_htmx/htmx-2.min.js")
+        self.assertNotContains(response, "Preview recognition")
         self.assertContains(response, "Create product")
         self.assertNotContains(response, 'name="business"')
+
+    def test_product_create_htmx_previews_candidates_without_saving(self):
+        self.seed_preview_vocabulary(self.business)
+        self.seed_preview_vocabulary(
+            self.other_business,
+            product_type_name="Dress",
+            product_type_alias="gown",
+            tag_name="Private",
+            material="Silk",
+            size="L",
+            color="Red",
+        )
+        counts_before = (
+            Product.objects.count(),
+            ProductChoice.objects.count(),
+            ProductMaterialFact.objects.count(),
+        )
+        data = self.bundle_post_data(
+            [self.active_choice_row()],
+            name="Unsaved preview product",
+            description="pants Classic Cotton M Black Dress Private Silk L Red",
+        )
+        data["intent"] = "preview_recognition"
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            data,
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_recognition_preview.html")
+        self.assertNotContains(response, "<form")
+        self.assertContains(response, "Recognized candidates")
+        self.assertContains(response, "Product type")
+        self.assertContains(response, "Trousers")
+        self.assertContains(response, "Observed: “pants”")
+        self.assertContains(response, "Tag")
+        self.assertContains(response, "Material")
+        self.assertContains(response, "Choice size")
+        self.assertContains(response, "Choice color")
+        self.assertContains(response, "Needs confirmation", count=5)
+        self.assertFalse(response.context["show_form_errors"])
+        self.assertEqual(
+            [
+                candidate.canonical_value
+                for candidate in response.context["recognition_preview"].candidates
+            ],
+            ["Trousers", "Classic", "Cotton", "M", "Black"],
+        )
+        self.assertEqual(
+            (
+                Product.objects.count(),
+                ProductChoice.objects.count(),
+                ProductMaterialFact.objects.count(),
+            ),
+            counts_before,
+        )
+        self.assertFalse(
+            Product.objects.filter(name="Unsaved preview product").exists()
+        )
+
+    def test_product_create_htmx_preview_does_not_require_a_valid_bundle(self):
+        self.seed_preview_vocabulary(self.business)
+        data = self.bundle_post_data(
+            [{}],
+            name="",
+            description="pants",
+        )
+        data["intent"] = "preview_recognition"
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            data,
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_recognition_preview.html")
+        self.assertContains(response, "Trousers")
+        self.assertNotContains(response, "This field is required.")
+        self.assertNotContains(
+            response,
+            "An active product requires at least one active choice.",
+        )
+        self.assertEqual(Product.objects.count(), 1)
+
+    def test_product_create_validation_error_preserves_recognition_preview(self):
+        self.seed_preview_vocabulary(self.business)
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [self.active_choice_row()],
+                name="",
+                description="pants Classic",
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This field is required.")
+        self.assertContains(response, "Recognized candidates")
+        self.assertContains(response, "Trousers")
+        self.assertContains(response, "Classic")
+        self.assertTrue(response.context["show_form_errors"])
+        self.assertEqual(Product.objects.count(), 1)
+
+    def test_product_create_htmx_preview_does_not_leak_other_business_vocabulary(self):
+        self.seed_preview_vocabulary(
+            self.other_business,
+            product_type_name="Dress",
+            product_type_alias="gown",
+            tag_name="Private",
+            material="Silk",
+            size="L",
+            color="Red",
+        )
+        data = self.bundle_post_data(
+            [{}],
+            lifecycle=Product.Lifecycle.DRAFT,
+            description="gown Private Silk L Red",
+        )
+        data["intent"] = "preview_recognition"
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            data,
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_recognition_preview.html")
+        self.assertContains(response, "No known candidates found for this Business.")
+        self.assertEqual(response.context["recognition_preview"].candidates, ())
 
     def test_product_create_without_business_shows_workspace_state(self):
         seller_without_business = get_user_model().objects.create_user(
@@ -2702,6 +3071,47 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, "Private red")
         self.assertContains(response, "Save changes")
         self.assertNotContains(response, 'name="business"')
+
+    def test_product_edit_get_previews_saved_description(self):
+        self.seed_preview_vocabulary(self.business)
+        self.product.description = "pants Classic Cotton M Black"
+        self.product.save(update_fields=["description"])
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Recognized candidates")
+        self.assertContains(response, "Needs confirmation", count=5)
+        self.assertEqual(
+            len(response.context["recognition_preview"].candidates),
+            5,
+        )
+
+    def test_product_edit_htmx_preview_does_not_mutate_product(self):
+        self.seed_preview_vocabulary(self.business)
+        data = self.bundle_post_data(
+            [self.active_choice_row(size="XL", color="Navy", quantity="9")],
+            name="Unsaved product name",
+            description="pants Cotton M Black",
+        )
+        data["intent"] = "preview_recognition"
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            data,
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_recognition_preview.html")
+        self.assertContains(response, "Recognized candidates")
+        self.assertNotContains(response, "<form")
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name, "Black trousers")
+        self.assertEqual(self.product.description, "Classic black trousers.")
+        self.assertFalse(self.product.choices.exists())
 
     def test_product_edit_updates_owned_product(self):
         self.client.force_login(self.owner)

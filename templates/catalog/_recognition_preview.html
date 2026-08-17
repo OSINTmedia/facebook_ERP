@@ -1,0 +1,38 @@
+<div
+  id="recognition-preview-region"
+  class="recognition-preview-region"
+  aria-live="polite"
+  aria-atomic="true"
+>
+  <p id="recognition-preview-loading" class="recognition-preview__loading htmx-indicator" role="status">
+    Checking description…
+  </p>
+
+  {% if recognition_preview.observed_text %}
+    <section class="recognition-preview" aria-labelledby="recognition-preview-title">
+      <div class="recognition-preview__heading">
+        <h2 id="recognition-preview-title">Recognized candidates</h2>
+        <p>Suggestions only. Nothing here is confirmed or saved.</p>
+      </div>
+
+      {% if recognition_preview.candidates %}
+        <ul class="recognition-preview__list">
+          {% for candidate in recognition_preview.candidates %}
+            <li class="recognition-candidate">
+              <span class="recognition-candidate__destination">{{ candidate.destination.label }}</span>
+              <span class="recognition-candidate__meaning">
+                <strong>{{ candidate.canonical_value }}</strong>
+                <span>Observed: “{{ candidate.observed_text }}”</span>
+              </span>
+              <span class="recognition-candidate__state">Needs confirmation</span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="recognition-preview__empty" role="status">No known candidates found for this Business.</p>
+      {% endif %}
+    </section>
+  {% else %}
+    <p class="recognition-preview__hint">Known candidates appear automatically as the description changes.</p>
+  {% endif %}
+</div>

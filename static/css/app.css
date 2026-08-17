@@ -344,6 +344,105 @@ h1 {
   font-size: 0.9rem;
 }
 
+.recognition-preview__hint,
+.recognition-preview__loading,
+.recognition-preview__heading p,
+.recognition-preview__empty,
+.recognition-candidate__meaning span {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.recognition-preview-region {
+  min-height: 1.25rem;
+}
+
+.recognition-preview__hint,
+.recognition-preview__loading {
+  margin: 0;
+}
+
+.recognition-preview__loading {
+  padding: 0.25rem 0;
+}
+
+.htmx-indicator {
+  display: none;
+}
+
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator {
+  display: block;
+}
+
+.recognition-preview {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.recognition-preview__heading {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.recognition-preview__heading h2,
+.recognition-preview__heading p,
+.recognition-preview__empty {
+  margin: 0;
+}
+
+.recognition-preview__heading h2 {
+  font-size: 1.1rem;
+}
+
+.recognition-preview__list {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recognition-candidate {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, auto) minmax(0, 1fr) auto;
+  gap: 0.6rem;
+  align-items: center;
+  padding: 0.65rem;
+  border-radius: 5px;
+  background: var(--color-background);
+}
+
+.recognition-candidate__destination,
+.recognition-candidate__state {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.recognition-candidate__destination {
+  color: var(--color-accent);
+}
+
+.recognition-candidate__meaning {
+  display: grid;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.recognition-candidate__meaning strong,
+.recognition-candidate__meaning span {
+  overflow-wrap: anywhere;
+}
+
+.recognition-candidate__state {
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
 .choice-section {
   display: grid;
   gap: 0.9rem;
@@ -489,5 +588,13 @@ h1 {
 
   .choice-row__grid {
     grid-template-columns: 1fr;
+  }
+
+  .recognition-candidate {
+    grid-template-columns: 1fr;
+  }
+
+  .recognition-candidate__state {
+    white-space: normal;
   }
 }

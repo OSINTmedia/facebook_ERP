@@ -15,6 +15,18 @@ class SemanticDestination(StrEnum):
     MEASUREMENT = "measurement"
     SEARCH_TOKEN = "search_token"
 
+    @property
+    def label(self) -> str:
+        return {
+            self.PRODUCT_TYPE: "Product type",
+            self.TAG: "Tag",
+            self.MATERIAL: "Material",
+            self.CHOICE_SIZE: "Choice size",
+            self.CHOICE_COLOR: "Choice color",
+            self.MEASUREMENT: "Measurement",
+            self.SEARCH_TOKEN: "Search token",
+        }[self]
+
 
 class CandidateSource(StrEnum):
     SUPPLIED_TERM = "supplied_term"
@@ -277,6 +289,38 @@ def recognize_choice_suggestions(
             color_values=color_values,
         ),
     )
+
+
+def recognize_product_preview_for_business(
+    description: str | None,
+    business,
+) -> RecognitionResult:
+    """Compose transient Product candidates from one Business's stored truth."""
+    if business is None:
+        return recognize_product_description(description)
+
+    from catalog.models import ProductChoice
+
+    choice_values = ProductChoice.objects.filter(
+        business=business,
+        product__business=business,
+    ).order_by("size", "color", "id").values_list("size", "color")
+    size_values = []
+    color_values = []
+    for size, color in choice_values:
+        size_values.append(size)
+        color_values.append(color)
+
+    terms = (
+        *product_type_terms_for_business(business),
+        *tag_terms_for_business(business),
+        *material_terms_for_business(business),
+        *choice_suggestion_terms(
+            size_values=size_values,
+            color_values=color_values,
+        ),
+    )
+    return recognize_product_description(description, terms=terms)
 
 
 def _find_phrase_matches(text: str, phrase: str) -> Iterable[re.Match]:

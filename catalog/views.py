@@ -10,6 +10,10 @@ from django.views.generic import TemplateView
 from businesses.selectors import MultipleBusinessesUnsupported, resolve_active_business
 from catalog.models import Product
 from catalog.product_bundles import ProductBundle
+from catalog.recognition import recognize_product_preview_for_business
+
+
+RECOGNITION_PREVIEW_INTENT = "preview_recognition"
 
 
 def get_safe_product_return_url(request):
@@ -88,13 +92,35 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             status=409,
         )
 
-    def bundle_context(self, request, bundle, **context):
+    def bundle_context(
+        self,
+        request,
+        bundle,
+        *,
+        preview_requested=False,
+        show_form_errors=True,
+        **context,
+    ):
+        recognition_preview = None
+        if bundle is not None and self.active_business is not None:
+            description = bundle.product_form["description"].value()
+            recognition_preview = recognize_product_preview_for_business(
+                description,
+                self.active_business,
+            )
+
         return self.base_context(
             request,
             form=bundle.product_form if bundle is not None else None,
             choice_formset=bundle.choice_formset if bundle is not None else None,
+            preview_requested=preview_requested,
+            recognition_preview=recognition_preview,
+            show_form_errors=show_form_errors,
             **context,
         )
+
+    def is_recognition_preview_request(self, request):
+        return request.POST.get("intent") == RECOGNITION_PREVIEW_INTENT
 
 
 class ProductCreateView(ProductMutationBusinessMixin, View):
@@ -127,6 +153,25 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
             business=self.active_business,
             data=request.POST,
         )
+        if self.is_recognition_preview_request(request):
+            context = self.bundle_context(
+                request,
+                bundle,
+                preview_requested=True,
+                show_form_errors=False,
+                page_title="Add product",
+                submit_label="Create product",
+            )
+            return render(
+                request,
+                (
+                    "catalog/_recognition_preview.html"
+                    if request.htmx
+                    else self.template_name
+                ),
+                context,
+            )
+
         if bundle.is_valid():
             bundle.save()
             messages.success(request, "Product created.")
@@ -192,6 +237,26 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
             data=request.POST,
             instance=product,
         )
+        if self.is_recognition_preview_request(request):
+            context = self.bundle_context(
+                request,
+                bundle,
+                preview_requested=True,
+                show_form_errors=False,
+                page_title=f"Edit {product.name}",
+                product=product,
+                submit_label="Save changes",
+            )
+            return render(
+                request,
+                (
+                    "catalog/_recognition_preview.html"
+                    if request.htmx
+                    else self.template_name
+                ),
+                context,
+            )
+
         if bundle.is_valid():
             bundle.save()
             messages.success(request, "Product updated.")

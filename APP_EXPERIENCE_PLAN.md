@@ -131,6 +131,8 @@ OWNER_DECISION_REQUIRED: whether relations are excluded from V1 edit form.
 - RECOMMENDED_FROM_EVIDENCE: Variant/choice rows do not carry all product-level clothing attributes or every garment measurement.
 - RECOMMENDED_FROM_EVIDENCE: Optional approved price override is variant-level only if owner approves it.
 - OWNER_PROVIDED_DIRECTION: Size/color recognized from description may suggest adding a choice, but confirmed choice rows remain the only size/color truth.
+- OWNER_PROVIDED_DIRECTION: Final V1 size and color entry uses dropdowns backed by seller-managed, Business-scoped canonical vocabularies; unrestricted open-text choice fields are not the target interaction.
+- OWNER_PROVIDED_DIRECTION: Georgian is the primary seller-facing canonical/display direction, while approved Georgian, English, and inconsistent seller wording may resolve through Business-scoped aliases. New approved values should be addable contextually without forcing routine navigation to a separate administration page.
 - RECOMMENDED_FROM_EVIDENCE: Add/remove behavior must be robust and testable.
 - RECOMMENDED_FROM_EVIDENCE: Removing the last valid choice is blocked or clearly changes product into a draft-only state if owner approves.
 - RECOMMENDED_FROM_EVIDENCE: Quantity cannot be negative.
@@ -281,4 +283,5 @@ No full WCAG compliance claim is made by this draft.
 - Clone inclusion and clone-mode UI.
 - Archive/restore inclusion and hidden/archive terminology.
 - Final Georgian vocabulary.
+- Initial canonical Size/Color value sets, alias approval behavior, and existing free-text migration review for the controlled dropdown slice.
 - Mobile filter density limit.

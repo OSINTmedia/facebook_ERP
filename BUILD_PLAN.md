@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.6 are released and `PASSED`. P4.7 Product Choice Model Baseline and its forward duplicate-policy correction are released, remote-aligned, CI-passed, and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.8 Product Choice Form/Formset and Bundle Validation Baseline is the next functional micro-slice. Bundle validation, inventory, availability, readiness, buyer replies, and Product form recognition integration do not exist yet.
+- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9a are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.9b Product Create/Edit Recognition Preview Baseline has passed local automated and owner/browser acceptance and awaits Prompt 5 release. P4.9c Business-Scoped Size/Color Vocabulary and Dropdown Baseline is next after that release. Inventory, availability, readiness, and buyer replies do not exist yet.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category prompts, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -636,10 +636,10 @@ Avoid libraries that depend on:
 #### P4.9 Product Create/Edit Recognition and Choice Integration
 
 - Objective: connect released recognition candidates and the ProductChoice model into the seller create/edit workflow while keeping the form compact.
-- Execution rule: complete P4.9 through the five functional micro-slices below. Do not treat the P4.9 umbrella as one implementation-sized slice and do not skip confirmation boundaries between candidates and persisted facts.
+- Execution rule: complete P4.9 through the six functional micro-slices below. Do not treat the P4.9 umbrella as one implementation-sized slice and do not skip controlled-vocabulary or confirmation boundaries between candidates and persisted facts.
 - Shared exclusions: large clothing forms, measurement UI, buyer reply UI, dashboard/workspace work, inventory mutation behavior, computed availability, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
-- Shared stop gate: P4.9 is complete only after P4.9a through P4.9e are released, remote-aligned, CI-passed, and the required owner decisions and browser verification have passed.
-- Status: IN_PROGRESS — P4.9a local acceptance passed; Prompt 5 release is pending. P4.9b through P4.9e are not started.
+- Shared stop gate: P4.9 is complete only after P4.9a through P4.9f are released, remote-aligned, CI-passed, and the required owner decisions and browser verification have passed.
+- Status: IN_PROGRESS — P4.9a is released and `PASSED`; P4.9b local acceptance passed and Prompt 5 release is pending; P4.9c through P4.9f are not started.
 
 ##### P4.9a Product Choice Create/Edit Integration Baseline
 
@@ -650,34 +650,45 @@ Avoid libraries that depend on:
 - Acceptance criteria: Product and choices save atomically; active Products retain at least one active choice; drafts may have no choices; cross-Business Product/choice input cannot leak or mutate data; choice fields and recovery remain accessible and mobile-readable.
 - Verification: local/test Django checks, local/test migration dry-run checks, focused create/update/bundle tests, catalog tests, full Django suite, `git diff --check`, and owner/browser review of create/edit, recovery, return paths, and a 390px viewport.
 - Proposed commit message: `feat: integrate choices into product forms`.
-- Status: LOCAL_ACCEPTANCE_PASSED — automated verification and owner/browser acceptance passed; Prompt 5 release is pending.
+- Status: PASSED — released, remote-aligned, and CI-passed; exact delivery metadata remains Git/GitHub authority.
 
 ##### P4.9b Product Create/Edit Recognition Preview Baseline
 
 - Objective: show lightweight, transient Product Type, Tag, material, size, and color candidates beside the description without persisting them as facts.
 - Dependency: P4.9a released and CI-passed.
-- Exact scope: compose the released Business-scoped recognition services into create/edit context; preserve observed text separately; render candidate destination, canonical meaning, and confirmation-required state; preserve preview context on validation errors.
+- Exact scope: compose the released Business-scoped recognition services into create/edit context; preserve observed text separately; render candidate destination, canonical meaning, and confirmation-required state; update the preview automatically through a debounced HTMX request with a full-page fallback; preserve preview context on validation errors. Product Type/Tag vocabulary and aliases, confirmed material facts, and current confirmed ProductChoice size/color values remain the read-only term sources for this baseline.
 - Explicit exclusions: Product Type/Tag attachment, material-fact writes, candidate-to-choice transfer, alias learning, automatic confirmation, HTMX-only behavior, and LLM interpretation.
 - Acceptance criteria: preview reads only the active Business vocabulary; candidates never mutate Product facts or choices; negative phrases remain excluded; the screen remains compact, accessible, and mobile-readable.
 - Verification: focused recognition-context/view tests, cross-Business non-leakage tests, error-preservation tests, full Django suite, `git diff --check`, and owner/browser preview review.
 - Proposed commit message: `feat: preview product recognition candidates`.
+- Status: LOCAL_ACCEPTANCE_PASSED — automated verification and owner/browser acceptance passed; Prompt 5 release is pending.
+
+##### P4.9c Business-Scoped Size/Color Vocabulary and Dropdown Baseline
+
+- Objective: replace open-text size/color entry with seller-managed, Business-scoped canonical vocabulary and dropdown selection before candidate transfer is implemented.
+- Dependency: P4.9b released and CI-passed.
+- Exact scope: Business-owned canonical Size and Color vocabulary; Business-scoped multilingual aliases; dropdown-only ProductChoice form selection; compact contextual seller creation/management of approved values; safe forward migration of existing ProductChoice text; recognition terms sourced from controlled vocabulary; preservation of duplicate ProductChoice row identity and quantities.
+- Explicit exclusions: universal/global fashion dictionary, automatic alias learning, classifying every description token, candidate-to-choice transfer, automatic choice save, inventory mutations, availability computation, row merging, buyer-facing wording, and broad taxonomy administration.
+- Acceptance criteria: only the active Business vocabulary appears in dropdowns; cross-Business values and aliases are rejected; existing choices migrate without stock or row-identity loss; stored choices use canonical values while recognition can match approved Georgian/English aliases; seller can add an approved value without leaving the compact Product form; duplicate ProductChoice rows remain distinct.
+- Verification: migration and rollback-shape review, focused vocabulary/alias/form/migration/ownership tests, catalog tests, full Django suite, `git diff --check`, and owner/browser dropdown and contextual-add review.
+- Proposed commit message: `feat: add controlled size color vocabulary`.
 - Status: NOT_STARTED.
 
-##### P4.9c Size/Color Candidate-to-Choice Transfer Baseline
+##### P4.9d Size/Color Candidate-to-Choice Transfer Baseline
 
-- Objective: let the seller explicitly transfer a recognized size/color candidate into an editable choice row while keeping ProductChoice as the only confirmed size/color truth.
-- Dependency: P4.9b released and CI-passed.
-- Exact scope: explicit seller action only; server-truth transfer into the current Product choice formset; preserve existing rows, management state, validation errors, duplicate-row policy, Business scope, and safe return context.
+- Objective: let the seller explicitly transfer a recognized size/color candidate into an editable controlled-vocabulary choice row while keeping ProductChoice as the only confirmed size/color truth.
+- Dependency: P4.9c released and CI-passed.
+- Exact scope: explicit seller action only; server-truth transfer into the current Product choice formset; resolve approved aliases to canonical dropdown values; preserve existing rows, management state, validation errors, duplicate-row policy, Business scope, and safe return context.
 - Explicit exclusions: silent choice creation, automatic save, inventory mutations, availability computation, row merging, buyer-facing wording, and broad dynamic form-builder behavior.
-- Acceptance criteria: unaccepted candidates remain transient; accepted values are still editable before save; only a valid final bundle persists ProductChoice rows; duplicate size/color rows remain distinct.
-- Verification: focused transfer/formset/view tests, tamper and cross-Business tests, full Django suite, `git diff --check`, and owner/browser interaction review.
+- Acceptance criteria: unaccepted candidates remain transient; accepted canonical values remain editable before save; only a valid final bundle persists ProductChoice rows; duplicate size/color rows remain distinct.
+- Verification: focused transfer/formset/view tests, alias, tamper, and cross-Business tests, full Django suite, `git diff --check`, and owner/browser interaction review.
 - Proposed commit message: `feat: transfer recognition candidates to choices`.
 - Status: NOT_STARTED.
 
-##### P4.9d Product Type and Tag Confirmation Attachment Baseline
+##### P4.9e Product Type and Tag Confirmation Attachment Baseline
 
 - Objective: persist seller-confirmed Product Type and Tag candidates as Business-scoped Product truth.
-- Dependency: P4.9c released and CI-passed; any required Product association schema is explicitly reviewed before migration creation.
+- Dependency: P4.9d released and CI-passed; any required Product association schema is explicitly reviewed before migration creation.
 - Exact scope: approved Product-to-type/tag association boundary, explicit confirmation/correction, active-Business selection only, atomic persistence with the Product mutation, and retained observed/candidate context on errors.
 - Explicit exclusions: type/tag management pages, automatic vocabulary creation, alias learning, material confirmation, relations between products, readiness scoring, search UI, and buyer replies.
 - Acceptance criteria: only explicit seller confirmation writes associations; cross-Business vocabulary is rejected; candidates alone never attach; correction and removal are deterministic and tested.
@@ -685,10 +696,10 @@ Avoid libraries that depend on:
 - Proposed commit message: `feat: confirm product type and tag candidates`.
 - Status: NOT_STARTED.
 
-##### P4.9e Material Confirmation Attachment Baseline
+##### P4.9f Material Confirmation Attachment Baseline
 
 - Objective: persist an explicitly confirmed material candidate through the existing confirmed `ProductMaterialFact` boundary.
-- Dependency: P4.9d released and CI-passed; owner resolves the exact material confirmation UI and alias policy before Prompt 3 implementation.
+- Dependency: P4.9e released and CI-passed; owner resolves the exact material confirmation UI and alias policy before Prompt 3 implementation.
 - Exact scope: explicit confirm/correct/remove behavior for canonical material, optional approved percentage, original observed wording, source, confirmation state, Product, and active Business; atomic Product-form recovery on errors.
 - Explicit exclusions: silent material writes, universal textile ontology, label OCR, image analysis, measurements, scientific composition inference, readiness, and buyer replies.
 - Acceptance criteria: candidates stay transient until confirmation; persisted material facts preserve original wording and Business/Product scope; no unsupported composition claim is invented.
