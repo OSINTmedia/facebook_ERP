@@ -272,6 +272,14 @@ Allow duplicate size/color rows within one Product, including case-insensitive, 
 Reason:
 The released P4.7 baseline encoded the opposite policy with a normalized uniqueness constraint. Preserve honest migration and Git history by removing that released constraint through a forward corrective migration rather than rewriting migration `0006` or the previous commit.
 
+### 2026-08-17 - Product and choice writes use one atomic bundle boundary
+
+Decision:
+Keep `ProductForm` and `ProductChoiceForm` field-restricted, use a custom inline formset for aggregate lifecycle and row validation, and assign Business/Product ownership inside a dedicated atomic bundle coordinator. Validate Product first so the submitted lifecycle drives the choice rule. Keep duplicate choice rows distinct and defer view/template integration to P4.9.
+
+Reason:
+Product and choice rows form one seller mutation even though their field validation belongs in separate forms. A transaction-scoped coordinator prevents partial persistence, keeps ownership input server-controlled, and lets later views remain thin without moving inventory or availability behavior into the formset.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:

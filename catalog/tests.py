@@ -1,4 +1,5 @@
 from dataclasses import FrozenInstanceError
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -8,7 +9,7 @@ from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from businesses.models import Business
-from catalog.forms import ProductForm
+from catalog.forms import ProductChoiceForm, ProductChoiceFormSet, ProductForm
 from catalog.models import (
     BusinessProductType,
     BusinessProductTypeAlias,
@@ -18,6 +19,7 @@ from catalog.models import (
     ProductChoice,
     ProductMaterialFact,
 )
+from catalog.product_bundles import ProductBundle
 from catalog.recognition import (
     RecognitionTerm,
     SemanticDestination,
@@ -1779,6 +1781,495 @@ class ProductFormTests(TestCase):
         self.assertEqual(product.description, "Classic black trousers.")
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
         self.assertEqual(Product.objects.count(), 1)
+
+
+class ProductChoiceFormTests(TestCase):
+    def test_form_exposes_only_choice_owned_fields(self):
+        form = ProductChoiceForm()
+
+        self.assertEqual(
+            list(form.fields),
+            ["size", "color", "quantity", "is_active"],
+        )
+
+    def test_form_ignores_submitted_business_and_product(self):
+        form = ProductChoiceForm(
+            data={
+                "business": 999,
+                "product": 999,
+                "size": "M",
+                "color": "Black",
+                "quantity": 2,
+                "is_active": True,
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+        choice = form.save(commit=False)
+        self.assertIsNone(choice.business_id)
+        self.assertIsNone(choice.product_id)
+
+
+class ProductChoiceFormSetTests(TestCase):
+    prefix = "choices"
+
+    def setUp(self):
+        owner = get_user_model().objects.create_user(
+            email="choice-formset-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(owner=owner, name="Seller Studio")
+
+    def formset_data(self, rows, *, initial_forms=0):
+        data = {
+            f"{self.prefix}-TOTAL_FORMS": str(len(rows)),
+            f"{self.prefix}-INITIAL_FORMS": str(initial_forms),
+            f"{self.prefix}-MIN_NUM_FORMS": "0",
+            f"{self.prefix}-MAX_NUM_FORMS": "1000",
+        }
+        for index, row in enumerate(rows):
+            for field, value in row.items():
+                data[f"{self.prefix}-{index}-{field}"] = value
+        return data
+
+    def build_formset(self, product, rows, *, initial_forms=0):
+        return ProductChoiceFormSet(
+            data=self.formset_data(rows, initial_forms=initial_forms),
+            instance=product,
+            prefix=self.prefix,
+            queryset=ProductChoice.objects.filter(business=self.business),
+        )
+
+    def test_draft_product_allows_an_empty_extra_row(self):
+        product = Product(
+            business=self.business,
+            name="Draft trousers",
+            description="Draft description.",
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+
+        formset = self.build_formset(product, [{}])
+
+        self.assertTrue(formset.is_valid())
+
+    def test_active_product_requires_at_least_one_active_choice(self):
+        product = Product(
+            business=self.business,
+            name="Active trousers",
+            description="Active description.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+
+        formset = self.build_formset(product, [])
+
+        self.assertFalse(formset.is_valid())
+        self.assertIn(
+            "An active product requires at least one active choice.",
+            formset.non_form_errors(),
+        )
+
+    def test_partially_completed_choice_keeps_field_errors(self):
+        product = Product(
+            business=self.business,
+            name="Draft trousers",
+            description="Draft description.",
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+        rows = [
+            {
+                "size": "M",
+                "color": "",
+                "quantity": "2",
+                "is_active": "on",
+            }
+        ]
+
+        formset = self.build_formset(product, rows)
+
+        self.assertFalse(formset.is_valid())
+        self.assertIn("color", formset.forms[0].errors)
+        self.assertEqual(formset.forms[0].data[f"{self.prefix}-0-size"], "M")
+
+    def test_normalized_duplicate_choice_rows_are_valid(self):
+        product = Product(
+            business=self.business,
+            name="Active trousers",
+            description="Active description.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        rows = [
+            {
+                "size": "M",
+                "color": "Black",
+                "quantity": "1",
+                "is_active": "on",
+            },
+            {
+                "size": " m ",
+                "color": " black ",
+                "quantity": "3",
+                "is_active": "on",
+            },
+        ]
+
+        formset = self.build_formset(product, rows)
+
+        self.assertTrue(formset.is_valid())
+
+    def test_deleting_last_active_choice_is_invalid_for_active_product(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Active trousers",
+            description="Active description.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size="M",
+            color="Black",
+            quantity=1,
+        )
+        rows = [
+            {
+                "id": str(choice.pk),
+                "size": choice.size,
+                "color": choice.color,
+                "quantity": str(choice.quantity),
+                "is_active": "on",
+                "DELETE": "on",
+            }
+        ]
+
+        formset = self.build_formset(product, rows, initial_forms=1)
+
+        self.assertFalse(formset.is_valid())
+        self.assertIn(
+            "An active product requires at least one active choice.",
+            formset.non_form_errors(),
+        )
+
+
+class ProductBundleTests(TestCase):
+    prefix = "choices"
+
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="bundle-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="bundle-other-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+
+    def bundle_data(
+        self,
+        rows,
+        *,
+        lifecycle=Product.Lifecycle.ACTIVE,
+        initial_forms=0,
+        name="Black trousers",
+    ):
+        data = {
+            "name": name,
+            "description": "Classic black trousers.",
+            "lifecycle": lifecycle,
+            f"{self.prefix}-TOTAL_FORMS": str(len(rows)),
+            f"{self.prefix}-INITIAL_FORMS": str(initial_forms),
+            f"{self.prefix}-MIN_NUM_FORMS": "0",
+            f"{self.prefix}-MAX_NUM_FORMS": "1000",
+        }
+        for index, row in enumerate(rows):
+            for field, value in row.items():
+                data[f"{self.prefix}-{index}-{field}"] = value
+        return data
+
+    def active_choice_row(self, **overrides):
+        row = {
+            "size": "M",
+            "color": "Black",
+            "quantity": "2",
+            "is_active": "on",
+        }
+        row.update(overrides)
+        return row
+
+    def test_valid_create_assigns_ownership_and_saves_one_bundle(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data([self.active_choice_row()]),
+        )
+
+        self.assertTrue(bundle.is_valid())
+        product = bundle.save()
+
+        self.assertEqual(product.business, self.business)
+        self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
+        choice = ProductChoice.objects.get()
+        self.assertEqual(choice.business, self.business)
+        self.assertEqual(choice.product, product)
+        self.assertEqual(choice.size, "M")
+        self.assertEqual(choice.color, "Black")
+        self.assertEqual(choice.quantity, 2)
+
+    def test_draft_product_can_save_without_choices(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data([{}], lifecycle=Product.Lifecycle.DRAFT),
+        )
+
+        self.assertTrue(bundle.is_valid())
+        product = bundle.save()
+
+        self.assertEqual(product.lifecycle, Product.Lifecycle.DRAFT)
+        self.assertFalse(product.choices.exists())
+
+    def test_invalid_choice_does_not_partially_persist_product(self):
+        invalid_row = self.active_choice_row(color="")
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data([invalid_row]),
+        )
+
+        self.assertFalse(bundle.is_valid())
+        with self.assertRaisesMessage(
+            ValueError,
+            "Cannot save an invalid Product bundle.",
+        ):
+            bundle.save()
+
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_choice_save_failure_rolls_back_product_and_choices(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data([self.active_choice_row()]),
+        )
+        self.assertTrue(bundle.is_valid())
+
+        with patch(
+            "catalog.product_bundles.ProductChoice.save",
+            side_effect=IntegrityError("simulated choice write failure"),
+        ):
+            with self.assertRaisesMessage(
+                IntegrityError,
+                "simulated choice write failure",
+            ):
+                bundle.save()
+
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_normalized_duplicate_rows_persist_as_distinct_choices(self):
+        rows = [
+            self.active_choice_row(quantity="1"),
+            self.active_choice_row(size=" m ", color=" black ", quantity="3"),
+        ]
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data(rows),
+        )
+
+        self.assertTrue(bundle.is_valid())
+        product = bundle.save()
+
+        choices = list(product.choices.order_by("id"))
+        self.assertEqual(len(choices), 2)
+        self.assertNotEqual(choices[0].pk, choices[1].pk)
+        self.assertEqual([choice.quantity for choice in choices], [1, 3])
+
+    def test_existing_product_from_another_business_is_rejected(self):
+        other_product = Product.objects.create(
+            business=self.other_business,
+            name="Other dress",
+            description="Other description.",
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+        bundle = ProductBundle(
+            business=self.business,
+            instance=other_product,
+            data=self.bundle_data([{}], lifecycle=Product.Lifecycle.DRAFT),
+        )
+
+        self.assertFalse(bundle.is_valid())
+        self.assertIn(
+            "Product must belong to the active Business.",
+            bundle.product_form.non_field_errors(),
+        )
+        with self.assertRaisesMessage(
+            ValueError,
+            "Cannot save an invalid Product bundle.",
+        ):
+            bundle.save()
+
+        other_product.refresh_from_db()
+        self.assertEqual(other_product.name, "Other dress")
+
+    def test_forged_choice_id_cannot_mutate_another_business_choice(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Owned trousers",
+            description="Owned description.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        owned_choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size="M",
+            color="Black",
+            quantity=2,
+        )
+        other_product = Product.objects.create(
+            business=self.other_business,
+            name="Other dress",
+            description="Other description.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        other_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=other_product,
+            size="L",
+            color="Red",
+            quantity=4,
+        )
+        forged_row = self.active_choice_row(
+            id=str(other_choice.pk),
+            quantity="99",
+        )
+        bundle = ProductBundle(
+            business=self.business,
+            instance=product,
+            data=self.bundle_data([forged_row], initial_forms=1),
+        )
+
+        self.assertFalse(bundle.is_valid())
+        self.assertIn("id", bundle.choice_formset.forms[0].errors)
+
+        owned_choice.refresh_from_db()
+        other_choice.refresh_from_db()
+        self.assertEqual(owned_choice.quantity, 2)
+        self.assertEqual(other_choice.quantity, 4)
+
+    def test_valid_update_saves_product_and_choice_changes(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Old trousers",
+            description="Old description.",
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size="M",
+            color="Black",
+            quantity=1,
+        )
+        row = self.active_choice_row(
+            id=str(choice.pk),
+            size="L",
+            quantity="5",
+        )
+        bundle = ProductBundle(
+            business=self.business,
+            instance=product,
+            data=self.bundle_data(
+                [row],
+                lifecycle=Product.Lifecycle.ACTIVE,
+                initial_forms=1,
+                name="Updated trousers",
+            ),
+        )
+
+        self.assertTrue(bundle.is_valid())
+        bundle.save()
+
+        product.refresh_from_db()
+        choice.refresh_from_db()
+        self.assertEqual(product.name, "Updated trousers")
+        self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
+        self.assertEqual(choice.size, "L")
+        self.assertEqual(choice.quantity, 5)
+
+    def test_active_product_cannot_delete_its_last_active_choice(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Active trousers",
+            description="Active description.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size="M",
+            color="Black",
+            quantity=1,
+        )
+        row = self.active_choice_row(
+            id=str(choice.pk),
+            quantity="1",
+            DELETE="on",
+        )
+        bundle = ProductBundle(
+            business=self.business,
+            instance=product,
+            data=self.bundle_data([row], initial_forms=1, name="Changed name"),
+        )
+
+        self.assertFalse(bundle.is_valid())
+        with self.assertRaisesMessage(
+            ValueError,
+            "Cannot save an invalid Product bundle.",
+        ):
+            bundle.save()
+
+        product.refresh_from_db()
+        self.assertEqual(product.name, "Active trousers")
+        self.assertTrue(ProductChoice.objects.filter(pk=choice.pk).exists())
+
+    def test_draft_product_can_delete_all_choices(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Draft trousers",
+            description="Draft description.",
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size="M",
+            color="Black",
+            quantity=1,
+        )
+        row = self.active_choice_row(
+            id=str(choice.pk),
+            quantity="1",
+            DELETE="on",
+        )
+        bundle = ProductBundle(
+            business=self.business,
+            instance=product,
+            data=self.bundle_data(
+                [row],
+                lifecycle=Product.Lifecycle.DRAFT,
+                initial_forms=1,
+            ),
+        )
+
+        self.assertTrue(bundle.is_valid())
+        bundle.save()
+
+        self.assertFalse(ProductChoice.objects.filter(pk=choice.pk).exists())
 
 
 class ProductListViewTests(TestCase):
