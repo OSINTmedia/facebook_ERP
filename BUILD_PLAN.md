@@ -55,7 +55,7 @@ Use this exact context-transfer order:
 10. `README.md` only for public presentation context
    - Public-facing summary only. It is not implementation authority and not a work log.
 
-Private local workflow prompts, including `codex_prompt_ERP.txt`, may be used by the owner to run the micro-slice workflow, but they are not public repository authority and must not be staged or committed.
+Local-only workflow artifacts are not public repository authority and must remain excluded from version control.
 
 ## 4. Status Vocabulary
 
@@ -300,16 +300,16 @@ Successful commit, push, Git/remote alignment, and CI success are operational cl
 
 ### P0.8 Documentation Governance Corrective Sync Before Phase 1
 
-- Objective: align document authority, checkpoint reality, private workflow prompt handling, and measurement scope before technical implementation begins.
+- Objective: align document authority, checkpoint reality, local-only artifact handling, and measurement scope before technical implementation begins.
 - Dependency: P0.1 through P0.6 `PASSED`; P0.7 explicitly `DEFERRED`.
-- Exact scope: mark owner-controlled docs frozen, mark this plan and the app experience plan semi-frozen, keep `changelog_checkpoint.md` and `DEVELOPMENT_NOTES.md` live, ignore private local workflow prompts, update Git reality, and keep detailed garment measurement implementation deferred.
+- Exact scope: mark owner-controlled docs frozen, mark this plan and the app experience plan semi-frozen, keep `changelog_checkpoint.md` and `DEVELOPMENT_NOTES.md` live, keep local-only workflow artifacts ignored, update Git reality, and keep detailed garment measurement implementation deferred.
 - Explicit exclusions: no Django initialization, no dependency install, no app code, no CI, no migrations, no source prototype changes, no commit or push during the sync itself.
 - Likely files: `.gitignore`, `README.md`, `BUILD_PLAN.md`, `APP_EXPERIENCE_PLAN.md`, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md`, selected owner-controlled docs for status and approved measurement-boundary correction.
 - Backend acceptance criteria: no backend code exists or changes.
 - Frontend/UX acceptance criteria: the assistant-first, two-primary-surface UX contract remains intact.
 - Automated verification: `git status --short --branch`, `git diff --stat`, `git diff --check`, link/path scan, and stale-state grep.
 - Manual user verification: owner confirms this corrective sync before Git checkpoint.
-- Failure cases: private prompt staged; checkpoint remains stale; measurement implementation appears as V1 scope; frozen docs gain unapproved scope.
+- Failure cases: local-only workflow artifact staged; checkpoint remains stale; measurement implementation appears as V1 scope; frozen docs gain unapproved scope.
 - Documentation updates: record this sync and next Git checkpoint in `changelog_checkpoint.md`.
 - Proposed commit message: `docs: sync governance before phase 1`.
 - Rollback/recovery note: revert only this corrective documentation sync if owner rejects it.
@@ -467,8 +467,8 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9b are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.9c Business-Scoped Size/Color Vocabulary and Dropdown Baseline has passed local automated and owner/browser acceptance and awaits Prompt 5 release. P4.9d Size/Color Candidate-to-Choice Transfer Baseline is next only after that release. Inventory, availability, readiness, and buyer replies do not exist yet.
-- Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category prompts, buyer-reply wording, and seller UI are owner-approved.
+- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9c are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.9d Size/Color Candidate-to-Choice Transfer Baseline is the next functional micro-slice. P4.9e and P4.9f remain `NOT_STARTED`. Inventory, availability, readiness, and buyer replies do not exist yet.
+- Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
 #### P4.1 Semantic Recognition Service Contract Baseline
@@ -639,7 +639,7 @@ Avoid libraries that depend on:
 - Execution rule: complete P4.9 through the six functional micro-slices below. Do not treat the P4.9 umbrella as one implementation-sized slice and do not skip controlled-vocabulary or confirmation boundaries between candidates and persisted facts.
 - Shared exclusions: large clothing forms, measurement UI, buyer reply UI, dashboard/workspace work, inventory mutation behavior, computed availability, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
 - Shared stop gate: P4.9 is complete only after P4.9a through P4.9f are released, remote-aligned, CI-passed, and the required owner decisions and browser verification have passed.
-- Status: IN_PROGRESS — P4.9a and P4.9b are released and `PASSED`; P4.9c local acceptance passed and Prompt 5 release is pending; P4.9d through P4.9f are not started.
+- Status: IN_PROGRESS — completed: P4.9a, P4.9b, and P4.9c are `PASSED`; next: P4.9d is `NOT_STARTED`; remaining: P4.9e and P4.9f are `NOT_STARTED`.
 
 ##### P4.9a Product Choice Create/Edit Integration Baseline
 
@@ -672,7 +672,7 @@ Avoid libraries that depend on:
 - Acceptance criteria: only the active Business vocabulary appears in dropdowns; cross-Business values and aliases are rejected; existing choices migrate without stock or row-identity loss; stored choices use canonical values while recognition can match approved Georgian/English aliases; seller can add an approved value without leaving the compact Product form; duplicate ProductChoice rows remain distinct.
 - Verification: migration and rollback-shape review, focused vocabulary/alias/form/migration/ownership tests, catalog tests, full Django suite, `git diff --check`, and owner/browser dropdown and contextual-add review.
 - Proposed commit message: `feat: add controlled size color vocabulary`.
-- Status: LOCAL_ACCEPTANCE_PASSED — automated integrity verification and owner/browser acceptance passed; non-blocking UX refinements for later automatic assistance remain deferred; Prompt 5 release is pending.
+- Status: PASSED — released, remote-aligned, and CI-passed; non-blocking UX refinements for later automatic assistance remain deferred.
 
 ##### P4.9d Size/Color Candidate-to-Choice Transfer Baseline
 
@@ -683,7 +683,7 @@ Avoid libraries that depend on:
 - Acceptance criteria: unaccepted candidates remain transient; accepted canonical values remain editable before save; only a valid final bundle persists ProductChoice rows; duplicate size/color rows remain distinct.
 - Verification: focused transfer/formset/view tests, alias, tamper, and cross-Business tests, full Django suite, `git diff --check`, and owner/browser interaction review.
 - Proposed commit message: `feat: transfer recognition candidates to choices`.
-- Status: NOT_STARTED.
+- Status: NOT_STARTED — next functional micro-slice; dependency satisfied by released P4.9c.
 
 ##### P4.9e Product Type and Tag Confirmation Attachment Baseline
 
@@ -699,7 +699,7 @@ Avoid libraries that depend on:
 ##### P4.9f Material Confirmation Attachment Baseline
 
 - Objective: persist an explicitly confirmed material candidate through the existing confirmed `ProductMaterialFact` boundary.
-- Dependency: P4.9e released and CI-passed; owner resolves the exact material confirmation UI and alias policy before Prompt 3 implementation.
+- Dependency: P4.9e released and CI-passed; owner resolves the exact material confirmation UI and alias policy before implementation begins.
 - Exact scope: explicit confirm/correct/remove behavior for canonical material, optional approved percentage, original observed wording, source, confirmation state, Product, and active Business; atomic Product-form recovery on errors.
 - Explicit exclusions: silent material writes, universal textile ontology, label OCR, image analysis, measurements, scientific composition inference, readiness, and buyer replies.
 - Acceptance criteria: candidates stay transient until confirmation; persisted material facts preserve original wording and Business/Product scope; no unsupported composition claim is invented.

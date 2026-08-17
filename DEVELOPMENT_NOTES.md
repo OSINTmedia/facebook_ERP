@@ -380,18 +380,18 @@ Superseded by the 2026-08-01 Workflow Version 2 delivery closure decision.
 ### 2026-08-01 - Workflow Version 2 delivery closure
 
 Decision:
-One functional micro-slice now uses one five-prompt cycle and closes through a single Release step; successful push/CI is not a documentation micro-slice.
+One functional micro-slice closes through one bounded implementation, audit, and release cycle; successful push/CI is not a documentation micro-slice.
 
 Reason:
 Documentation stores stable project truth while Git/GitHub stores exact delivery metadata such as commit hashes, remote alignment, CI runs, and CI conclusions. Post-push documentation is exceptional for failures, divergence, blockers, phase/gate closure, deployment/demo/public-release changes, or public factuality correction, not routine delivery bookkeeping.
 
-### 2026-07-28 - Private workflow prompt stays local
+### 2026-07-28 - Private workflow artifacts stay local
 
 Decision:
-Keep `codex_prompt_ERP.txt` as a private local workflow prompt file and exclude it from Git.
+Keep owner-specific workflow artifacts local and excluded from Git.
 
 Reason:
-The file contains the owner's recurring prompt sequence for running Codex micro-slices. The public repository should expose the project documentation and implementation history, while private local prompt mechanics should not become repository authority.
+The public repository should expose product reasoning, implementation boundaries, verification evidence, and honest history without publishing owner-specific operating mechanics.
 
 ### 2026-07-28 - Owner-controlled documents frozen for Phase 1 baseline
 
