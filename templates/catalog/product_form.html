@@ -58,6 +58,94 @@
           {% endfor %}
         </div>
 
+        <section class="choice-section" aria-labelledby="choice-section-title">
+          <div class="choice-section__heading">
+            <h2 id="choice-section-title">Choices</h2>
+            <p>Size, color, and quantity are stored for each sellable choice.</p>
+          </div>
+
+          {{ choice_formset.management_form }}
+
+          {% if choice_formset.non_form_errors %}
+            <div class="form-errors" role="alert">
+              {% for error in choice_formset.non_form_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="choice-list">
+            {% for choice_form in choice_formset %}
+              <fieldset class="choice-row">
+                <legend>Choice {{ forloop.counter }}</legend>
+
+                {% for hidden_field in choice_form.hidden_fields %}
+                  {{ hidden_field }}
+                  {% for error in hidden_field.errors %}
+                    <p class="field-error" role="alert">{{ error }}</p>
+                  {% endfor %}
+                {% endfor %}
+
+                {% if choice_form.non_field_errors %}
+                  <div class="form-errors" role="alert">
+                    {% for error in choice_form.non_field_errors %}
+                      <p>{{ error }}</p>
+                    {% endfor %}
+                  </div>
+                {% endif %}
+
+                <div class="choice-row__grid">
+                  <div class="form-field">
+                    <label for="{{ choice_form.size.id_for_label }}">Size</label>
+                    {{ choice_form.size }}
+                    {% for error in choice_form.size.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  </div>
+
+                  <div class="form-field">
+                    <label for="{{ choice_form.color.id_for_label }}">Color</label>
+                    {{ choice_form.color }}
+                    {% for error in choice_form.color.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  </div>
+
+                  <div class="form-field">
+                    <label for="{{ choice_form.quantity.id_for_label }}">Quantity</label>
+                    {{ choice_form.quantity }}
+                    {% for error in choice_form.quantity.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  </div>
+                </div>
+
+                <div class="choice-row__controls">
+                  <div class="choice-option">
+                    {{ choice_form.is_active }}
+                    <label for="{{ choice_form.is_active.id_for_label }}">Active choice</label>
+                  </div>
+                  {% for error in choice_form.is_active.errors %}
+                    <p class="field-error">{{ error }}</p>
+                  {% endfor %}
+
+                  {% if choice_form.instance.pk %}
+                    <div class="choice-option choice-option--remove">
+                      {{ choice_form.DELETE }}
+                      <label for="{{ choice_form.DELETE.id_for_label }}">Remove choice</label>
+                    </div>
+                    {% for error in choice_form.DELETE.errors %}
+                      <p class="field-error">{{ error }}</p>
+                    {% endfor %}
+                  {% endif %}
+                </div>
+              </fieldset>
+            {% endfor %}
+          </div>
+
+          <p class="choice-help">Use the blank row to add another choice.</p>
+        </section>
+
         <div class="form-actions">
           <button class="button button--primary" type="submit">{{ submit_label }}</button>
           <a class="button button--secondary" href="{{ return_url }}">Cancel</a>

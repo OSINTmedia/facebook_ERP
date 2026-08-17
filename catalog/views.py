@@ -8,8 +8,8 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from businesses.selectors import MultipleBusinessesUnsupported, resolve_active_business
-from catalog.forms import ProductForm
 from catalog.models import Product
+from catalog.product_bundles import ProductBundle
 
 
 def get_safe_product_return_url(request):
@@ -88,6 +88,14 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             status=409,
         )
 
+    def bundle_context(self, request, bundle, **context):
+        return self.base_context(
+            request,
+            form=bundle.product_form if bundle is not None else None,
+            choice_formset=bundle.choice_formset if bundle is not None else None,
+            **context,
+        )
+
 
 class ProductCreateView(ProductMutationBusinessMixin, View):
     def get(self, request, *args, **kwargs):
@@ -95,13 +103,16 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
         if self.business_policy_blocked:
             return self.render_business_blocked(request)
 
-        form = ProductForm() if self.active_business is not None else None
+        bundle = None
+        if self.active_business is not None:
+            bundle = ProductBundle(business=self.active_business)
+
         return render(
             request,
             self.template_name,
-            self.base_context(
+            self.bundle_context(
                 request,
-                form=form,
+                bundle,
                 page_title="Add product",
                 submit_label="Create product",
             ),
@@ -112,20 +123,21 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
         if self.business_policy_blocked or self.active_business is None:
             return self.render_business_blocked(request)
 
-        form = ProductForm(request.POST)
-        if form.is_valid():
-            product = form.save(commit=False)
-            product.business = self.active_business
-            product.save()
+        bundle = ProductBundle(
+            business=self.active_business,
+            data=request.POST,
+        )
+        if bundle.is_valid():
+            bundle.save()
             messages.success(request, "Product created.")
             return redirect(get_safe_product_return_url(request))
 
         return render(
             request,
             self.template_name,
-            self.base_context(
+            self.bundle_context(
                 request,
-                form=form,
+                bundle,
                 page_title="Add product",
                 submit_label="Create product",
             ),
@@ -152,12 +164,16 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
             return self.render_business_blocked(request)
 
         product = self.get_product()
+        bundle = ProductBundle(
+            business=self.active_business,
+            instance=product,
+        )
         return render(
             request,
             self.template_name,
-            self.base_context(
+            self.bundle_context(
                 request,
-                form=ProductForm(instance=product),
+                bundle,
                 page_title=f"Edit {product.name}",
                 product=product,
                 submit_label="Save changes",
@@ -171,18 +187,22 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
             return self.render_business_blocked(request)
 
         product = self.get_product()
-        form = ProductForm(request.POST, instance=product)
-        if form.is_valid():
-            form.save()
+        bundle = ProductBundle(
+            business=self.active_business,
+            data=request.POST,
+            instance=product,
+        )
+        if bundle.is_valid():
+            bundle.save()
             messages.success(request, "Product updated.")
             return redirect(get_safe_product_return_url(request))
 
         return render(
             request,
             self.template_name,
-            self.base_context(
+            self.bundle_context(
                 request,
-                form=form,
+                bundle,
                 page_title=f"Edit {product.name}",
                 product=product,
                 submit_label="Save changes",

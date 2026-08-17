@@ -2389,7 +2389,44 @@ class ProductListViewTests(TestCase):
         self.assertNotContains(response, "Second business product", status_code=409)
 
 
-class ProductCreateViewTests(TestCase):
+class ProductBundleViewTestMixin:
+    choice_prefix = "choices"
+
+    def bundle_post_data(
+        self,
+        rows,
+        *,
+        lifecycle=Product.Lifecycle.ACTIVE,
+        initial_forms=0,
+        name="Black trousers",
+        description="Classic black trousers.",
+    ):
+        data = {
+            "name": name,
+            "description": description,
+            "lifecycle": lifecycle,
+            f"{self.choice_prefix}-TOTAL_FORMS": str(len(rows)),
+            f"{self.choice_prefix}-INITIAL_FORMS": str(initial_forms),
+            f"{self.choice_prefix}-MIN_NUM_FORMS": "0",
+            f"{self.choice_prefix}-MAX_NUM_FORMS": "1000",
+        }
+        for index, row in enumerate(rows):
+            for field, value in row.items():
+                data[f"{self.choice_prefix}-{index}-{field}"] = value
+        return data
+
+    def active_choice_row(self, **overrides):
+        row = {
+            "size": "M",
+            "color": "Black",
+            "quantity": "2",
+            "is_active": "on",
+        }
+        row.update(overrides)
+        return row
+
+
+class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
     def setUp(self):
         user_model = get_user_model()
         self.owner = user_model.objects.create_user(
@@ -2430,6 +2467,12 @@ class ProductCreateViewTests(TestCase):
         self.assertContains(response, 'name="name"')
         self.assertContains(response, 'name="description"')
         self.assertContains(response, 'name="lifecycle"')
+        self.assertContains(response, "Choices")
+        self.assertContains(response, 'name="choices-TOTAL_FORMS"')
+        self.assertContains(response, 'name="choices-0-size"')
+        self.assertContains(response, 'name="choices-0-color"')
+        self.assertContains(response, 'name="choices-0-quantity"')
+        self.assertContains(response, 'name="choices-0-is_active"')
         self.assertContains(response, "Create product")
         self.assertNotContains(response, 'name="business"')
 
@@ -2487,14 +2530,17 @@ class ProductCreateViewTests(TestCase):
     def test_product_create_assigns_business_server_side(self):
         self.client.force_login(self.owner)
 
-        response = self.client.post(
-            self.url,
+        data = self.bundle_post_data([self.active_choice_row()])
+        data.update(
             {
                 "business": self.other_business.pk,
-                "name": "Black trousers",
-                "description": "Classic black trousers.",
-                "lifecycle": Product.Lifecycle.ACTIVE,
-            },
+                "choices-0-business": self.other_business.pk,
+            }
+        )
+
+        response = self.client.post(
+            self.url,
+            data,
         )
 
         self.assertRedirects(response, self.list_url)
@@ -2503,17 +2549,68 @@ class ProductCreateViewTests(TestCase):
         self.assertEqual(product.name, "Black trousers")
         self.assertEqual(product.description, "Classic black trousers.")
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
+        choice = ProductChoice.objects.get()
+        self.assertEqual(choice.business, self.business)
+        self.assertEqual(choice.product, product)
+        self.assertEqual(choice.size, "M")
+        self.assertEqual(choice.color, "Black")
+        self.assertEqual(choice.quantity, 2)
+
+    def test_product_create_active_requires_an_active_choice(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data([{}], name="Preserved trousers"),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "An active product requires at least one active choice.",
+        )
+        self.assertContains(response, 'value="Preserved trousers"')
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_preserves_choice_errors_and_input_atomically(self):
+        self.client.force_login(self.owner)
+        invalid_choice = self.active_choice_row(color="")
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data([invalid_choice]),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "This field is required.")
+        self.assertContains(response, 'value="M"')
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_draft_allows_empty_choice_row(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data([{}], lifecycle=Product.Lifecycle.DRAFT),
+        )
+
+        self.assertRedirects(response, self.list_url)
+        product = Product.objects.get()
+        self.assertEqual(product.lifecycle, Product.Lifecycle.DRAFT)
+        self.assertFalse(product.choices.exists())
 
     def test_product_create_preserves_validation_errors_without_creating_product(self):
         self.client.force_login(self.owner)
 
         response = self.client.post(
             self.url,
-            {
-                "name": "",
-                "description": "",
-                "lifecycle": Product.Lifecycle.ACTIVE,
-            },
+            self.bundle_post_data(
+                [self.active_choice_row()],
+                name="",
+                description="",
+            ),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -2526,18 +2623,14 @@ class ProductCreateViewTests(TestCase):
 
         response = self.client.post(
             f"{self.url}?next=https://example.com/escape",
-            {
-                "name": "Black trousers",
-                "description": "Classic black trousers.",
-                "lifecycle": Product.Lifecycle.ACTIVE,
-            },
+            self.bundle_post_data([self.active_choice_row()]),
         )
 
         self.assertRedirects(response, self.list_url)
         self.assertNotIn("example.com", response["Location"])
 
 
-class ProductUpdateViewTests(TestCase):
+class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
     def setUp(self):
         user_model = get_user_model()
         self.owner = user_model.objects.create_user(
@@ -2580,6 +2673,20 @@ class ProductUpdateViewTests(TestCase):
         )
 
     def test_product_edit_renders_form_for_owned_product(self):
+        owned_choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+            quantity=2,
+        )
+        ProductChoice.objects.create(
+            business=self.other_business,
+            product=self.other_product,
+            size="L",
+            color="Private red",
+            quantity=8,
+        )
         self.client.force_login(self.owner)
 
         response = self.client.get(self.url)
@@ -2589,6 +2696,10 @@ class ProductUpdateViewTests(TestCase):
         self.assertContains(response, "Edit Black trousers")
         self.assertContains(response, 'value="Black trousers"')
         self.assertContains(response, "Classic black trousers.")
+        self.assertContains(response, 'name="choices-TOTAL_FORMS"')
+        self.assertContains(response, f'value="{owned_choice.pk}"')
+        self.assertContains(response, 'value="Black"')
+        self.assertNotContains(response, "Private red")
         self.assertContains(response, "Save changes")
         self.assertNotContains(response, 'name="business"')
 
@@ -2596,14 +2707,16 @@ class ProductUpdateViewTests(TestCase):
         self.client.force_login(self.owner)
         return_url = f"{self.list_url}?from=edit"
 
+        data = self.bundle_post_data(
+            [self.active_choice_row(size="L", quantity="5")],
+            name="Updated trousers",
+            description="Updated description.",
+        )
+        data["next"] = return_url
+
         response = self.client.post(
             self.url,
-            {
-                "next": return_url,
-                "name": "Updated trousers",
-                "description": "Updated description.",
-                "lifecycle": Product.Lifecycle.ACTIVE,
-            },
+            data,
         )
 
         self.assertRedirects(response, return_url)
@@ -2612,17 +2725,157 @@ class ProductUpdateViewTests(TestCase):
         self.assertEqual(self.product.name, "Updated trousers")
         self.assertEqual(self.product.description, "Updated description.")
         self.assertEqual(self.product.lifecycle, Product.Lifecycle.ACTIVE)
+        choice = self.product.choices.get()
+        self.assertEqual(choice.business, self.business)
+        self.assertEqual(choice.size, "L")
+        self.assertEqual(choice.quantity, 5)
+
+    def test_product_edit_updates_and_deactivates_existing_choice(self):
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+            quantity=2,
+        )
+        row = {
+            "id": str(choice.pk),
+            "size": "XL",
+            "color": "Navy",
+            "quantity": "7",
+        }
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [row],
+                lifecycle=Product.Lifecycle.DRAFT,
+                initial_forms=1,
+                name="Updated trousers",
+            ),
+        )
+
+        self.assertRedirects(response, self.list_url)
+        choice.refresh_from_db()
+        self.assertEqual(choice.business, self.business)
+        self.assertEqual(choice.product, self.product)
+        self.assertEqual(choice.size, "XL")
+        self.assertEqual(choice.color, "Navy")
+        self.assertEqual(choice.quantity, 7)
+        self.assertFalse(choice.is_active)
+
+    def test_product_edit_active_cannot_remove_last_active_choice(self):
+        self.product.lifecycle = Product.Lifecycle.ACTIVE
+        self.product.save(update_fields=["lifecycle"])
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+            quantity=2,
+        )
+        row = self.active_choice_row(
+            id=str(choice.pk),
+            DELETE="on",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [row],
+                initial_forms=1,
+                name="Must not save",
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "An active product requires at least one active choice.",
+        )
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name, "Black trousers")
+        self.assertTrue(ProductChoice.objects.filter(pk=choice.pk).exists())
+
+    def test_product_edit_draft_can_remove_all_choices(self):
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+            quantity=2,
+        )
+        row = self.active_choice_row(
+            id=str(choice.pk),
+            DELETE="on",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [row],
+                lifecycle=Product.Lifecycle.DRAFT,
+                initial_forms=1,
+            ),
+        )
+
+        self.assertRedirects(response, self.list_url)
+        self.assertFalse(ProductChoice.objects.filter(pk=choice.pk).exists())
+
+    def test_product_edit_rejects_another_business_choice_id(self):
+        owned_choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size="M",
+            color="Black",
+            quantity=2,
+        )
+        other_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=self.other_product,
+            size="L",
+            color="Red",
+            quantity=4,
+        )
+        forged_row = self.active_choice_row(
+            id=str(other_choice.pk),
+            quantity="99",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [forged_row],
+                lifecycle=Product.Lifecycle.DRAFT,
+                initial_forms=1,
+                name="Must not save",
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Select a valid choice.")
+        self.product.refresh_from_db()
+        owned_choice.refresh_from_db()
+        other_choice.refresh_from_db()
+        self.assertEqual(self.product.name, "Black trousers")
+        self.assertEqual(owned_choice.quantity, 2)
+        self.assertEqual(other_choice.quantity, 4)
 
     def test_product_edit_preserves_validation_errors_without_changing_product(self):
         self.client.force_login(self.owner)
 
         response = self.client.post(
             self.url,
-            {
-                "name": "",
-                "description": "",
-                "lifecycle": "archived",
-            },
+            self.bundle_post_data(
+                [self.active_choice_row()],
+                lifecycle="archived",
+                name="",
+                description="",
+            ),
         )
 
         self.assertEqual(response.status_code, 200)

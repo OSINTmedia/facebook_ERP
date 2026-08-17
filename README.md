@@ -51,7 +51,7 @@ Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User an
 - Minimal business-owned Product model and Product form baselines exist and are verified locally.
 - A read-only, business-scoped Product list route exists and is verified locally.
 - Business-scoped Product create/edit routes exist and are verified locally.
-- Visible seller app workflows remain limited to login/logout, the foundation shell, the Product list, and baseline Product create/edit; stock and full workspace behavior have not started.
+- Visible seller app workflows remain limited to login/logout, the foundation shell, the Product list, and Product create/edit with server-validated size/color/quantity choice rows; inventory mutations, computed availability, recognition feedback, and full workspace behavior have not started.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
 - The GitHub repository is public, uses default branch `main`, and preserves the initial README commit `dce852b`.
 - Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed.
@@ -154,7 +154,7 @@ The future demo must use synthetic data, no real seller/customer data, no source
 
 ## Local Setup
 
-Seller-visible feature work is currently limited to email/password authentication, POST logout, the foundation shell, and the read-only Product list. The current verified setup covers dependency installation, the clean Django scaffold, environment-aware settings, PostgreSQL-only local runtime, migrations, authentication checks, auth-gated shell smoke checks, Business ownership tests, Product model/form tests, and Product list scoping tests.
+Seller-visible feature work currently includes email/password authentication, POST logout, the foundation shell, the read-only Product list, and Business-scoped Product create/edit with atomic choice-row validation. The current verified setup covers dependency installation, the clean Django scaffold, environment-aware settings, PostgreSQL-only local runtime, migrations, authentication checks, auth-gated shell smoke checks, Business ownership tests, Product/choice model and form tests, Product list scoping, and create/edit integration tests.
 
 Expected local Python version: Python 3.13.x.
 
@@ -180,7 +180,7 @@ Create a local `.env` from `.env.example` before running Django locally. Local a
 
 The verified local database is project-specific PostgreSQL and is configured only through ignored local environment values. Default Django migrations are applied locally.
 
-After local PostgreSQL credentials are configured in `.env`, run `source .venv/bin/activate && python manage.py runserver 127.0.0.1:8000` to review the auth-gated shell locally. Anonymous users are redirected to the login page; after signing in, the root route renders the base application shell, the Products nav opens the Product list, and Add product opens the baseline Product create form. Product stock and full workspace screens are still deferred.
+After local PostgreSQL credentials are configured in `.env`, run `source .venv/bin/activate && python manage.py runserver 127.0.0.1:8000` to review the auth-gated shell locally. Anonymous users are redirected to the login page; after signing in, the root route renders the base application shell, the Products nav opens the Product list, and Product create/edit supports size, color, quantity, active state, and removal for server-validated choice rows. Inventory controls, computed availability, recognition feedback, and full workspace screens are still deferred.
 
 ## Roadmap Summary
 

@@ -52,7 +52,9 @@
 - P4.5b Material Recognition Candidate Baseline is implemented, integrity-audited, locally verified, committed, pushed, CI-passed, and `PASSED`.
 - P4.6 Size/Color-to-Choice Suggestion Baseline is implemented, integrity-audited, locally verified, committed, pushed, remote-aligned, CI-passed, and `PASSED`.
 - P4.7 Product Choice Model Baseline and its forward duplicate-policy correction are released, remote-aligned, CI-passed, and `PASSED`.
-- P4.8 Product Choice Form/Formset and Bundle Validation Baseline is implemented, integrity-audited, locally verified, and ready for Prompt 5 release; remote delivery and CI are still pending.
+- P4.8 Product Choice Form/Formset and Bundle Validation Baseline is implemented, integrity-audited, locally verified, committed, pushed, remote-aligned, CI-passed, and `PASSED`.
+- P4.9 is decomposed into five functional micro-slices, P4.9a through P4.9e, so choice integration, transient recognition preview, candidate transfer, and confirmed semantic writes retain separate acceptance boundaries.
+- P4.9a Product Choice Create/Edit Integration Baseline is implemented and has passed automated integrity verification and owner-reported local acceptance; Prompt 5 release remains pending.
 - Legacy post-push checkpoint sync slices exist as historical records only; Version 2 removes routine post-push documentation micro-slices.
 - Successful commit, push, Git/remote alignment, and CI success are operational closure for the same functional micro-slice, not a new documentation micro-slice.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
@@ -65,8 +67,8 @@
 
 - Phase: Phase 4 - Semantic Recognition and Choice Model
 - Status: IN_PROGRESS
-- Current functional micro-slice: P4.8 Product Choice Form/Formset and Bundle Validation Baseline, `LOCAL_ACCEPTANCE_PASSED`; Prompt 5 release pending
-- Next planned functional micro-slice: P4.9 Product Create/Edit Recognition and Choice Integration, after P4.8 local acceptance and release
+- Current functional micro-slice: P4.9a Product Choice Create/Edit Integration Baseline, local acceptance passed; Prompt 5 release pending
+- Next planned functional micro-slice: P4.9b Product Create/Edit Recognition Preview Baseline, only after P4.9a release closure
 - Started: 2026-07-27
 - Last updated: 2026-08-17
 
@@ -852,7 +854,40 @@
   - 178 full-suite tests passed;
   - `git diff --check` passed.
 - Integrity audit result: `PASS`.
-- Result: P4.8 local acceptance passed. Prompt 5 must commit and push the approved release set, then confirm a clean tree, `HEAD`/`origin/main` alignment, and successful relevant CI before the slice is release-closed.
+- Result: P4.8 was subsequently committed, pushed, remote-aligned, CI-passed, and is release-closed; exact current delivery metadata remains sourced from Git/GitHub.
+
+### P4.9 execution map and P4.9a integrity audit
+
+- P4.9 now contains five functional micro-slices:
+  - P4.9a Product Choice Create/Edit Integration Baseline;
+  - P4.9b Product Create/Edit Recognition Preview Baseline;
+  - P4.9c Size/Color Candidate-to-Choice Transfer Baseline;
+  - P4.9d Product Type and Tag Confirmation Attachment Baseline;
+  - P4.9e Material Confirmation Attachment Baseline.
+- P4.9a implementation areas:
+  - `catalog/views.py`;
+  - `catalog/tests.py`;
+  - `templates/catalog/product_form.html`;
+  - `static/css/app.css`.
+- Implemented behavior:
+  - Product create/edit uses the released atomic `ProductBundle` boundary;
+  - existing choices and one blank extra row render with formset management state;
+  - sellers can create, update, deactivate, and delete choice rows;
+  - errors preserve Product/choice input and safe return context;
+  - Product/choice ownership remains server-controlled and Business-scoped;
+  - active Products require an active choice, while drafts may retain none.
+- Integrity audit found no source defect requiring repair and no schema, dependency, frozen-scope, availability, inventory, recognition-persistence, or broader-commerce expansion.
+- Automated audit verification:
+  - PostgreSQL readiness passed;
+  - local and test-settings Django checks passed with no issues;
+  - local and test-settings migration dry-run checks returned `No changes detected`;
+  - 32 focused create/update/bundle tests passed;
+  - 147 catalog tests passed;
+  - 185 full-suite tests passed;
+  - `git diff --check` passed.
+- Automated integrity result: `PASS`.
+- Owner/browser local acceptance: `PASS` — the owner reported the Add Product manual scenario passed after the required local Business fixture was present.
+- Result: P4.9a implementation, automated acceptance, and owner-reported local acceptance passed. It must not be marked release-closed until Prompt 5 commit/push, clean `HEAD`/`origin/main` alignment, and successful relevant CI.
 
 ## 6. Current Blockers
 
@@ -878,7 +913,8 @@
 - No current P4.5b blocker remains.
 - No current P4.6 blocker remains.
 - No P4.7 implementation, policy, or release blocker remains; the baseline and corrective release are closed.
-- No P4.8 implementation or local-acceptance blocker remains; Prompt 5 release is pending.
+- No P4.8 implementation, acceptance, or release blocker remains.
+- No P4.9a source, test, ownership, automated-verification, or local-acceptance blocker remains; Prompt 5 release is pending.
 - The old P2.1 local migration-history blocker is `RESOLVED`.
 - The old P2.1 test database permission blocker is `RESOLVED`.
 - Existing remote initial README commit must remain preserved.
@@ -886,7 +922,7 @@
 - Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
 - Gate 2 is passed after P2.5 access-control tests, Git checkpoint, push, and CI.
 - Phase 3 is passed after P3.4 release, Git/remote alignment, successful CI, and governance closure.
-- Gate 3 is not passed; P4.8 release, Product create/edit integration, inventory, and availability work remain incomplete.
+- Gate 3 is not passed; P4.9a release, the remaining P4.9 recognition/confirmation integration, inventory, and availability work remain incomplete.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -915,9 +951,11 @@ Version 2 workflow remains active: one functional micro-slice closes through the
 
 P4.7 Product Choice Model Baseline and its duplicate-policy correction are released, remote-aligned, CI-passed, and `PASSED`.
 
-P4.8 Product Choice Form/Formset and Bundle Validation Baseline is implemented, integrity-audited, and locally verified. It is ready for Prompt 5 release but is not release-closed until push, clean alignment, and relevant CI success.
+P4.8 Product Choice Form/Formset and Bundle Validation Baseline is released, remote-aligned, CI-passed, and `PASSED`.
 
-The next planned functional micro-slice is P4.9 Product Create/Edit Recognition and Choice Integration, after P4.8 local acceptance and release. Its delivery gate is: Prompt 5 must commit and push the approved P4.8 release set; the working tree must become clean; `HEAD` and `origin/main` must align; and the latest relevant CI must pass before P4.9 planning begins.
+P4.9 contains five functional micro-slices. P4.9a Product Choice Create/Edit Integration Baseline has passed automated verification and owner-reported local acceptance; Prompt 5 release is pending. P4.9b through P4.9e remain not started.
+
+The next planned functional micro-slice is P4.9b Product Create/Edit Recognition Preview Baseline. Its delivery gate is: Prompt 5 must commit and push the exact approved P4.9a release set; the working tree must become clean; `HEAD` and `origin/main` must align; and the latest relevant CI must pass before P4.9b planning begins.
 
 Exact commit hash and CI run are read from Git/GitHub. Do not create a new `.1 Post-Push...` micro-slice ID solely to record successful delivery metadata.
 
@@ -967,25 +1005,27 @@ Private local prompt:
 
 ## 11. Last Operation
 
-- Operation: P4.8 integrity audit, local acceptance, and documentation sync.
-- Source/test files audited:
-  - `catalog/forms.py`
-  - `catalog/product_bundles.py`
+- Operation: P4.9 roadmap decomposition and P4.9a integrity audit/local-acceptance documentation sync.
+- Source/test/UI files audited:
+  - `catalog/views.py`
   - `catalog/tests.py`
+  - `templates/catalog/product_form.html`
+  - `static/css/app.css`
+  - directly related Product forms, bundle coordinator, models, recognition services, and tests
 - Documentation files changed:
-  - `changelog_checkpoint.md`
-  - `DEVELOPMENT_NOTES.md`
-- Files intentionally not modified:
   - `BUILD_PLAN.md`
-  - `APP_EXPERIENCE_PLAN.md`
+  - `changelog_checkpoint.md`
   - `README.md`
+- Files intentionally not modified:
+  - `DEVELOPMENT_NOTES.md`
+  - `APP_EXPERIENCE_PLAN.md`
   - all frozen docs under `docs/`
-  - migrations, views, templates, static files, settings, CI, and dependencies
+  - migrations, settings, CI, dependencies, and recognition source
   - `codex_prompt_ERP.txt`
   - Git history or remote configuration
 - Source prototype modified: no.
-- Scope audit result: P4.8 remains backend-only and within its approved Product/choice form, formset, bundle-service, and test boundary.
-- Result: `PASS`. P4.8 is `LOCAL_ACCEPTANCE_PASSED` and ready for Prompt 5; Phase 4 remains `IN_PROGRESS`, and Gate 3 is not passed.
+- Scope audit result: P4.9a remains inside the approved Product choice create/edit integration boundary; no recognition confirmation, inventory, availability, measurement, public, or broad-commerce behavior was added.
+- Result: automated integrity `PASS`; owner-reported local acceptance `PASS`; Prompt 5 release pending.
 - Post-CI governance closure required: no.
 
 ## 12. Git Checkpoint
@@ -998,9 +1038,9 @@ Private local prompt:
 - GitHub repository visibility: public
 - GitHub default branch: `main`
 - Delivery metadata authority: exact current `HEAD`, `origin/main`, actual remote `main`, CI run, and CI conclusion must be read from Git/GitHub.
-- Last released functional milestone: P4.7 Product Choice Model Baseline and its duplicate-policy correction are committed, pushed, remote-aligned, CI-passed, and `PASSED`; correction commit `2993e2fa9f22d45fa5530fd0ea5846e1a33bd4e0`, GitHub Actions run `31814447407`.
-- Pending release milestone: P4.8 Product Choice Form/Formset and Bundle Validation Baseline, locally accepted and ready for Prompt 5.
-- Next planned functional milestone: P4.9 Product Create/Edit Recognition and Choice Integration, only after P4.8 release closure.
+- Last released functional milestone: P4.8 Product Choice Form/Formset and Bundle Validation Baseline is committed, pushed, remote-aligned, CI-passed, and `PASSED`; exact current delivery metadata is read from Git/GitHub.
+- Pending release milestone: P4.9a Product Choice Create/Edit Integration Baseline; automated integrity and owner-reported local acceptance passed, Prompt 5 remains pending.
+- Next planned functional milestone: P4.9b Product Create/Edit Recognition Preview Baseline, only after P4.9a release closure.
 - Post-push documentation rule: no routine post-push documentation sync and no new `.1 Post-Push...` micro-slice ID solely for successful delivery metadata.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and `codex_prompt_ERP.txt` remain ignored local files.
@@ -1015,9 +1055,9 @@ A new Codex chat must:
 4. confirm Version 2 workflow is active: Release closes the functional micro-slice, and routine post-push documentation sync is removed;
 5. confirm P1.1 through P1.6 are `PASSED`;
 6. confirm Gate 1 is passed, Phase 2 is `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
-7. confirm Phase 3 is `PASSED`, Phase 4 is `IN_PROGRESS`, P3.1 through P3.4 plus P4.1 through P4.7 are `PASSED`, and P4.8 is `LOCAL_ACCEPTANCE_PASSED` with Prompt 5 pending;
-8. confirm Gate 3 is not passed because P4.8 release, Product create/edit integration, inventory, and availability remain incomplete;
-9. use Prompt 5 to commit and push the exact approved P4.8 release set and verify clean alignment plus successful relevant CI;
-10. treat P4.9 Product Create/Edit Recognition and Choice Integration as the next functional micro-slice only after P4.8 release closure;
+7. confirm Phase 3 is `PASSED`, Phase 4 is `IN_PROGRESS`, P3.1 through P3.4 plus P4.1 through P4.8 are released and `PASSED`, and P4.9a has passed automated integrity and owner-reported local acceptance with Prompt 5 pending;
+8. confirm Gate 3 is not passed because P4.9a release, P4.9b through P4.9e, inventory, and availability remain incomplete;
+9. use Prompt 5 to commit and push the exact approved P4.9a release set and verify clean alignment plus successful relevant CI;
+10. treat P4.9b Product Create/Edit Recognition Preview Baseline as the next functional micro-slice only after P4.9a release closure;
 11. do not create a post-push documentation micro-slice solely to record successful delivery metadata;
 12. preserve the approved duplicate-row policy: same-size/color rows remain distinct and are not rejected or merged.

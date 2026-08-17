@@ -631,25 +631,70 @@ Avoid libraries that depend on:
 - Proposed commit message: `feat: validate product choice bundles`.
 - Rollback/recovery note: revert bundle validation changes if atomicity or error recovery is not provable; preserve earlier valid recognition services and choice model when valid.
 - Stop gate relation: required before Product create/edit integration can safely save choice truth.
-- Status: NOT_STARTED.
+- Status: PASSED; implemented, integrity-audited, committed, pushed, remote-aligned, and CI-passed.
 
 #### P4.9 Product Create/Edit Recognition and Choice Integration
 
 - Objective: connect released recognition candidates and the ProductChoice model into the seller create/edit workflow while keeping the form compact.
-- Dependency: P4.1 through P4.8 completed or explicitly scoped for the integration path; owner decisions resolved for any confirmation behavior introduced here.
-- Exact scope: integrate Product Type, Tag, material, and size/color candidate feedback into create/edit context; allow seller confirmation/correction only through approved persisted fields/models; connect accepted size/color candidates to choice rows; preserve safe return paths and existing ownership assignment.
-- Explicit exclusions: large clothing forms, measurement UI, buyer reply UI, dashboard/workspace work, inventory behavior, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
-- Likely files: `catalog/forms.py`, `catalog/views.py`, `catalog/recognition.py`, `catalog/tests.py`, `templates/catalog/product_form.html`, static CSS only if needed for compact feedback, `DEVELOPMENT_NOTES.md`, `changelog_checkpoint.md` when documentation matrix requires it.
-- Backend acceptance criteria: create/edit recognition is scoped to the active Business; unconfirmed candidates do not update Product facts; confirmed values are persisted only through approved fields/models; cross-business vocabulary cannot be attached; validation preserves typed input and candidate context on errors.
-- Frontend/UX acceptance criteria where relevant: recognition feedback is lightweight, visible near the relevant description/form section, accessible, mobile-readable, and does not hide critical errors or create one giant clothing form.
-- Automated verification: Django system check, migration dry-run check, focused form/view recognition integration tests, ownership/access tests, full Django test suite, `git diff --check`.
-- Manual user verification where UI changes: owner/browser review of create/edit flow, validation recovery, compactness, mobile first viewport, and return links.
-- Failure cases: candidate chips imply confirmed facts; form becomes overloaded; unsafe `next` handling regresses; seller can attach another Business's vocabulary; validation loses recognition context; measurements or buyer replies appear without approval.
-- Documentation updates: update live checkpoint and development notes when UI/integration behavior changes; update APP experience only if the UX contract changes; do not update README or frozen docs unless public factuality or owner-approved scope changes require it.
-- Proposed commit message: `feat: integrate recognition and choices into product forms`.
-- Rollback/recovery note: revert integration templates/views/forms together if candidate confirmation or compact form behavior fails; keep backend recognition services intact when valid.
-- Stop gate relation: required before Phase 4 can claim the description-first seller workflow is usable.
+- Execution rule: complete P4.9 through the five functional micro-slices below. Do not treat the P4.9 umbrella as one implementation-sized slice and do not skip confirmation boundaries between candidates and persisted facts.
+- Shared exclusions: large clothing forms, measurement UI, buyer reply UI, dashboard/workspace work, inventory mutation behavior, computed availability, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
+- Shared stop gate: P4.9 is complete only after P4.9a through P4.9e are released, remote-aligned, CI-passed, and the required owner decisions and browser verification have passed.
+- Status: IN_PROGRESS — P4.9a local acceptance passed; Prompt 5 release is pending. P4.9b through P4.9e are not started.
+
+##### P4.9a Product Choice Create/Edit Integration Baseline
+
+- Objective: make the released Product/choice bundle usable through the authenticated seller Product create/edit screen.
+- Dependency: P4.8 released and CI-passed.
+- Exact scope: use `ProductBundle` in create/update GET and POST paths; render management data, existing choice rows, and one blank extra row; allow create, update, deactivate, and delete; preserve field/formset errors, submitted values, safe return paths, and Business ownership isolation.
+- Explicit exclusions: recognition feedback or confirmation, dynamic multi-row cloning, inventory ledger/service, computed availability, price, media, measurements, and later-phase workspace behavior.
+- Acceptance criteria: Product and choices save atomically; active Products retain at least one active choice; drafts may have no choices; cross-Business Product/choice input cannot leak or mutate data; choice fields and recovery remain accessible and mobile-readable.
+- Verification: local/test Django checks, local/test migration dry-run checks, focused create/update/bundle tests, catalog tests, full Django suite, `git diff --check`, and owner/browser review of create/edit, recovery, return paths, and a 390px viewport.
+- Proposed commit message: `feat: integrate choices into product forms`.
+- Status: LOCAL_ACCEPTANCE_PASSED — automated verification and owner/browser acceptance passed; Prompt 5 release is pending.
+
+##### P4.9b Product Create/Edit Recognition Preview Baseline
+
+- Objective: show lightweight, transient Product Type, Tag, material, size, and color candidates beside the description without persisting them as facts.
+- Dependency: P4.9a released and CI-passed.
+- Exact scope: compose the released Business-scoped recognition services into create/edit context; preserve observed text separately; render candidate destination, canonical meaning, and confirmation-required state; preserve preview context on validation errors.
+- Explicit exclusions: Product Type/Tag attachment, material-fact writes, candidate-to-choice transfer, alias learning, automatic confirmation, HTMX-only behavior, and LLM interpretation.
+- Acceptance criteria: preview reads only the active Business vocabulary; candidates never mutate Product facts or choices; negative phrases remain excluded; the screen remains compact, accessible, and mobile-readable.
+- Verification: focused recognition-context/view tests, cross-Business non-leakage tests, error-preservation tests, full Django suite, `git diff --check`, and owner/browser preview review.
+- Proposed commit message: `feat: preview product recognition candidates`.
 - Status: NOT_STARTED.
+
+##### P4.9c Size/Color Candidate-to-Choice Transfer Baseline
+
+- Objective: let the seller explicitly transfer a recognized size/color candidate into an editable choice row while keeping ProductChoice as the only confirmed size/color truth.
+- Dependency: P4.9b released and CI-passed.
+- Exact scope: explicit seller action only; server-truth transfer into the current Product choice formset; preserve existing rows, management state, validation errors, duplicate-row policy, Business scope, and safe return context.
+- Explicit exclusions: silent choice creation, automatic save, inventory mutations, availability computation, row merging, buyer-facing wording, and broad dynamic form-builder behavior.
+- Acceptance criteria: unaccepted candidates remain transient; accepted values are still editable before save; only a valid final bundle persists ProductChoice rows; duplicate size/color rows remain distinct.
+- Verification: focused transfer/formset/view tests, tamper and cross-Business tests, full Django suite, `git diff --check`, and owner/browser interaction review.
+- Proposed commit message: `feat: transfer recognition candidates to choices`.
+- Status: NOT_STARTED.
+
+##### P4.9d Product Type and Tag Confirmation Attachment Baseline
+
+- Objective: persist seller-confirmed Product Type and Tag candidates as Business-scoped Product truth.
+- Dependency: P4.9c released and CI-passed; any required Product association schema is explicitly reviewed before migration creation.
+- Exact scope: approved Product-to-type/tag association boundary, explicit confirmation/correction, active-Business selection only, atomic persistence with the Product mutation, and retained observed/candidate context on errors.
+- Explicit exclusions: type/tag management pages, automatic vocabulary creation, alias learning, material confirmation, relations between products, readiness scoring, search UI, and buyer replies.
+- Acceptance criteria: only explicit seller confirmation writes associations; cross-Business vocabulary is rejected; candidates alone never attach; correction and removal are deterministic and tested.
+- Verification: model/migration checks if required, focused form/service/view ownership tests, full Django suite, `git diff --check`, and owner/browser confirmation review.
+- Proposed commit message: `feat: confirm product type and tag candidates`.
+- Status: NOT_STARTED.
+
+##### P4.9e Material Confirmation Attachment Baseline
+
+- Objective: persist an explicitly confirmed material candidate through the existing confirmed `ProductMaterialFact` boundary.
+- Dependency: P4.9d released and CI-passed; owner resolves the exact material confirmation UI and alias policy before Prompt 3 implementation.
+- Exact scope: explicit confirm/correct/remove behavior for canonical material, optional approved percentage, original observed wording, source, confirmation state, Product, and active Business; atomic Product-form recovery on errors.
+- Explicit exclusions: silent material writes, universal textile ontology, label OCR, image analysis, measurements, scientific composition inference, readiness, and buyer replies.
+- Acceptance criteria: candidates stay transient until confirmation; persisted material facts preserve original wording and Business/Product scope; no unsupported composition claim is invented.
+- Verification: focused material confirmation and ownership tests, error-recovery tests, full Django suite, `git diff --check`, and owner/browser confirmation review.
+- Proposed commit message: `feat: confirm product material candidates`.
+- Status: NOT_STARTED — `OWNER_DECISION_REQUIRED` for exact confirmation UI and alias behavior.
 
 #### P4.10 Phase 4 Audit and Gate 3 Closure
 
