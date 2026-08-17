@@ -209,6 +209,210 @@ class BusinessTagAlias(models.Model):
         return self.alias
 
 
+class BusinessSize(models.Model):
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.PROTECT,
+        related_name="sizes",
+    )
+    name = models.CharField(max_length=40)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                "business",
+                Lower(Trim("name")),
+                name="unique_size_name_per_business",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(name__regex=r"\S"),
+                name="size_name_not_blank",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        self.name = _normalized_required_text(
+            self.name,
+            "name",
+            "Size name is required.",
+        )
+        if _size_alias_exists(self.business_id, self.name):
+            raise ValidationError({"name": "Size name conflicts with an existing alias."})
+
+    def save(self, *args, **kwargs):
+        self.name = _normalized_required_text(
+            self.name,
+            "name",
+            "Size name is required.",
+        )
+        if _size_alias_exists(self.business_id, self.name):
+            raise ValidationError({"name": "Size name conflicts with an existing alias."})
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class BusinessColor(models.Model):
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.PROTECT,
+        related_name="colors",
+    )
+    name = models.CharField(max_length=80)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                "business",
+                Lower(Trim("name")),
+                name="unique_color_name_per_business",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(name__regex=r"\S"),
+                name="color_name_not_blank",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        self.name = _normalized_required_text(
+            self.name,
+            "name",
+            "Color name is required.",
+        )
+        if _color_alias_exists(self.business_id, self.name):
+            raise ValidationError({"name": "Color name conflicts with an existing alias."})
+
+    def save(self, *args, **kwargs):
+        self.name = _normalized_required_text(
+            self.name,
+            "name",
+            "Color name is required.",
+        )
+        if _color_alias_exists(self.business_id, self.name):
+            raise ValidationError({"name": "Color name conflicts with an existing alias."})
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
+
+
+class BusinessSizeAlias(models.Model):
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.PROTECT,
+        related_name="size_aliases",
+    )
+    size = models.ForeignKey(
+        BusinessSize,
+        on_delete=models.PROTECT,
+        related_name="aliases",
+    )
+    alias = models.CharField(max_length=80)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["alias", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                "business",
+                Lower(Trim("alias")),
+                name="unique_size_alias_per_business",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(alias__regex=r"\S"),
+                name="size_alias_not_blank",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        self.alias = _normalized_alias(self.alias, "Size alias is required.")
+        self._validate_business_scope()
+        if _size_name_exists(self.business_id, self.alias):
+            raise ValidationError({"alias": "Alias conflicts with an existing size name."})
+
+    def save(self, *args, **kwargs):
+        self.alias = _normalized_alias(self.alias, "Size alias is required.")
+        self._validate_business_scope()
+        if _size_name_exists(self.business_id, self.alias):
+            raise ValidationError({"alias": "Alias conflicts with an existing size name."})
+        super().save(*args, **kwargs)
+
+    def _validate_business_scope(self):
+        if self.business_id and self.size_id and self.size.business_id != self.business_id:
+            raise ValidationError({"size": "Size must belong to the same Business."})
+
+    def __str__(self):
+        return self.alias
+
+
+class BusinessColorAlias(models.Model):
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.PROTECT,
+        related_name="color_aliases",
+    )
+    color = models.ForeignKey(
+        BusinessColor,
+        on_delete=models.PROTECT,
+        related_name="aliases",
+    )
+    alias = models.CharField(max_length=120)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["alias", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                "business",
+                Lower(Trim("alias")),
+                name="unique_color_alias_per_business",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(alias__regex=r"\S"),
+                name="color_alias_not_blank",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        self.alias = _normalized_alias(self.alias, "Color alias is required.")
+        self._validate_business_scope()
+        if _color_name_exists(self.business_id, self.alias):
+            raise ValidationError({"alias": "Alias conflicts with an existing color name."})
+
+    def save(self, *args, **kwargs):
+        self.alias = _normalized_alias(self.alias, "Color alias is required.")
+        self._validate_business_scope()
+        if _color_name_exists(self.business_id, self.alias):
+            raise ValidationError({"alias": "Alias conflicts with an existing color name."})
+        super().save(*args, **kwargs)
+
+    def _validate_business_scope(self):
+        if (
+            self.business_id
+            and self.color_id
+            and self.color.business_id != self.business_id
+        ):
+            raise ValidationError({"color": "Color must belong to the same Business."})
+
+    def __str__(self):
+        return self.alias
+
+
 class Product(models.Model):
     class Lifecycle(models.TextChoices):
         DRAFT = "draft", "Draft"
@@ -247,24 +451,24 @@ class ProductChoice(models.Model):
         on_delete=models.PROTECT,
         related_name="choices",
     )
-    size = models.CharField(max_length=40)
-    color = models.CharField(max_length=80)
+    size = models.ForeignKey(
+        BusinessSize,
+        on_delete=models.PROTECT,
+        related_name="product_choices",
+    )
+    color = models.ForeignKey(
+        BusinessColor,
+        on_delete=models.PROTECT,
+        related_name="product_choices",
+    )
     quantity = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["product_id", "size", "color", "id"]
+        ordering = ["product_id", "size_id", "color_id", "id"]
         constraints = [
-            models.CheckConstraint(
-                condition=models.Q(size__regex=r"\S"),
-                name="product_choice_size_not_blank",
-            ),
-            models.CheckConstraint(
-                condition=models.Q(color__regex=r"\S"),
-                name="product_choice_color_not_blank",
-            ),
             models.CheckConstraint(
                 condition=models.Q(quantity__gte=0),
                 name="product_choice_quantity_nonnegative",
@@ -273,27 +477,13 @@ class ProductChoice(models.Model):
 
     def clean(self):
         super().clean()
-        self._normalize_fields()
         self._validate_business_scope()
         self._validate_quantity()
 
     def save(self, *args, **kwargs):
-        self._normalize_fields()
         self._validate_business_scope()
         self._validate_quantity()
         super().save(*args, **kwargs)
-
-    def _normalize_fields(self):
-        self.size = _normalized_required_text(
-            self.size,
-            "size",
-            "Choice size is required.",
-        )
-        self.color = _normalized_required_text(
-            self.color,
-            "color",
-            "Choice color is required.",
-        )
 
     def _validate_business_scope(self):
         if (
@@ -304,6 +494,18 @@ class ProductChoice(models.Model):
             raise ValidationError(
                 {"product": "Product must belong to the same Business."}
             )
+        if (
+            self.business_id
+            and self.size_id
+            and self.size.business_id != self.business_id
+        ):
+            raise ValidationError({"size": "Size must belong to the same Business."})
+        if (
+            self.business_id
+            and self.color_id
+            and self.color.business_id != self.business_id
+        ):
+            raise ValidationError({"color": "Color must belong to the same Business."})
 
     def _validate_quantity(self):
         if self.quantity is None or self.quantity < 0:
@@ -478,6 +680,26 @@ def _tag_name_exists(business_id, value):
     )
 
 
+def _size_name_exists(business_id, value):
+    if not business_id:
+        return False
+    return _normalized_text_exists(
+        BusinessSize.objects.filter(business_id=business_id),
+        "name",
+        value,
+    )
+
+
+def _color_name_exists(business_id, value):
+    if not business_id:
+        return False
+    return _normalized_text_exists(
+        BusinessColor.objects.filter(business_id=business_id),
+        "name",
+        value,
+    )
+
+
 def _product_type_alias_exists(business_id, value):
     if not business_id or "BusinessProductTypeAlias" not in globals():
         return False
@@ -493,6 +715,26 @@ def _tag_alias_exists(business_id, value):
         return False
     return _normalized_text_exists(
         BusinessTagAlias.objects.filter(business_id=business_id),
+        "alias",
+        value,
+    )
+
+
+def _size_alias_exists(business_id, value):
+    if not business_id or "BusinessSizeAlias" not in globals():
+        return False
+    return _normalized_text_exists(
+        BusinessSizeAlias.objects.filter(business_id=business_id),
+        "alias",
+        value,
+    )
+
+
+def _color_alias_exists(business_id, value):
+    if not business_id or "BusinessColorAlias" not in globals():
+        return False
+    return _normalized_text_exists(
+        BusinessColorAlias.objects.filter(business_id=business_id),
         "alias",
         value,
     )

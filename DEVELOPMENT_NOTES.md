@@ -288,6 +288,14 @@ Show Product Type, Tag, material, size, and color recognition candidates automat
 Reason:
 P4.9b can prove the observed/candidate/confirmed and automatic-assistant interaction without silently adding schema or writes. The owner rejected unrestricted open-text size/color as the final workflow because typos can become repeated suggestions. A dedicated forward slice preserves honest history, aligns the frozen `Select size` / `Select color` journey with Georgian-first multilingual normalization, and avoids turning every description word into a dictionary entry.
 
+### 2026-08-17 - Product choices reference controlled Business Size/Color vocabulary
+
+Decision:
+Store canonical Size and Color values in Business-owned vocabularies and make `ProductChoice` reference them through Business-scoped dropdowns. Preserve every historical ProductChoice row and its quantity during migration; case/trim-equivalent legacy labels within one Business reuse the deterministic first canonical value without merging choice rows. Aliases are explicit seller-approved recognition inputs. Automatic alias learning, automatic form filling, and silent candidate confirmation remain deferred.
+
+Reason:
+Canonical dropdown truth prevents new spelling drift and cross-Business leakage while multilingual aliases can absorb known Georgian/English wording. Keeping automatic assistance outside this baseline preserves the observed-to-candidate-to-confirmed boundary and lets the later UX refinement address lazy or chaotic input without silently inventing structured truth.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:

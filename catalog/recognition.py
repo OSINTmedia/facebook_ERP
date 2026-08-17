@@ -52,7 +52,7 @@ class RecognitionTerm:
                 seen.add(key)
                 normalized_values.append(normalized)
 
-        return tuple(normalized_values)
+        return tuple(sorted(normalized_values, key=lambda value: (-len(value), value.casefold())))
 
 
 @dataclass(frozen=True)
@@ -107,6 +107,7 @@ def recognize_product_description(
     observed_text = description or ""
     candidate_rows = []
     seen_candidates = set()
+    accepted_spans = {}
 
     for term in terms:
         canonical_value = term.canonical_value.strip()
@@ -127,7 +128,17 @@ def recognize_product_description(
                 if candidate_key in seen_candidates:
                     continue
 
+                meaning_key = (term.destination, canonical_value.casefold())
+                if any(
+                    match.start() < accepted_end and match.end() > accepted_start
+                    for accepted_start, accepted_end in accepted_spans.get(meaning_key, ())
+                ):
+                    continue
+
                 seen_candidates.add(candidate_key)
+                accepted_spans.setdefault(meaning_key, []).append(
+                    (match.start(), match.end())
+                )
                 candidate_rows.append(
                     (
                         match.start(),
@@ -291,6 +302,42 @@ def recognize_choice_suggestions(
     )
 
 
+def choice_vocabulary_terms_for_business(business) -> tuple[RecognitionTerm, ...]:
+    """Return active canonical Size/Color terms and approved aliases for a Business."""
+    if business is None:
+        return ()
+
+    from catalog.models import BusinessColor, BusinessSize
+
+    sizes = BusinessSize.objects.filter(
+        business=business,
+        is_active=True,
+    ).prefetch_related("aliases")
+    colors = BusinessColor.objects.filter(
+        business=business,
+        is_active=True,
+    ).prefetch_related("aliases")
+
+    return (
+        *(
+            RecognitionTerm(
+                destination=SemanticDestination.CHOICE_SIZE,
+                canonical_value=size.name,
+                aliases=tuple(alias.alias for alias in size.aliases.all()),
+            )
+            for size in sizes
+        ),
+        *(
+            RecognitionTerm(
+                destination=SemanticDestination.CHOICE_COLOR,
+                canonical_value=color.name,
+                aliases=tuple(alias.alias for alias in color.aliases.all()),
+            )
+            for color in colors
+        ),
+    )
+
+
 def recognize_product_preview_for_business(
     description: str | None,
     business,
@@ -299,26 +346,11 @@ def recognize_product_preview_for_business(
     if business is None:
         return recognize_product_description(description)
 
-    from catalog.models import ProductChoice
-
-    choice_values = ProductChoice.objects.filter(
-        business=business,
-        product__business=business,
-    ).order_by("size", "color", "id").values_list("size", "color")
-    size_values = []
-    color_values = []
-    for size, color in choice_values:
-        size_values.append(size)
-        color_values.append(color)
-
     terms = (
         *product_type_terms_for_business(business),
         *tag_terms_for_business(business),
         *material_terms_for_business(business),
-        *choice_suggestion_terms(
-            size_values=size_values,
-            color_values=color_values,
-        ),
+        *choice_vocabulary_terms_for_business(business),
     )
     return recognize_product_description(description, terms=terms)
 

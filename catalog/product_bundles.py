@@ -19,6 +19,7 @@ class ProductBundle:
             instance=self.product,
             prefix=choice_prefix,
             queryset=ProductChoice.objects.filter(business=business),
+            form_kwargs={"business": business},
         )
         self._validated = False
         self._is_valid = False

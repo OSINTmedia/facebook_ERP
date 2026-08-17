@@ -283,5 +283,5 @@ No full WCAG compliance claim is made by this draft.
 - Clone inclusion and clone-mode UI.
 - Archive/restore inclusion and hidden/archive terminology.
 - Final Georgian vocabulary.
-- Initial canonical Size/Color value sets, alias approval behavior, and existing free-text migration review for the controlled dropdown slice.
+- Automatic Size/Color form filling, alias suggestion/approval behavior, and any convenience preset policy for a later assistant UX refinement; the current controlled-dropdown baseline uses explicit seller-approved values and aliases.
 - Mobile filter density limit.

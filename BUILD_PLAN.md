@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9a are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.9b Product Create/Edit Recognition Preview Baseline has passed local automated and owner/browser acceptance and awaits Prompt 5 release. P4.9c Business-Scoped Size/Color Vocabulary and Dropdown Baseline is next after that release. Inventory, availability, readiness, and buyer replies do not exist yet.
+- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9b are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.9c Business-Scoped Size/Color Vocabulary and Dropdown Baseline has passed local automated and owner/browser acceptance and awaits Prompt 5 release. P4.9d Size/Color Candidate-to-Choice Transfer Baseline is next only after that release. Inventory, availability, readiness, and buyer replies do not exist yet.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category prompts, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -639,7 +639,7 @@ Avoid libraries that depend on:
 - Execution rule: complete P4.9 through the six functional micro-slices below. Do not treat the P4.9 umbrella as one implementation-sized slice and do not skip controlled-vocabulary or confirmation boundaries between candidates and persisted facts.
 - Shared exclusions: large clothing forms, measurement UI, buyer reply UI, dashboard/workspace work, inventory mutation behavior, computed availability, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
 - Shared stop gate: P4.9 is complete only after P4.9a through P4.9f are released, remote-aligned, CI-passed, and the required owner decisions and browser verification have passed.
-- Status: IN_PROGRESS — P4.9a is released and `PASSED`; P4.9b local acceptance passed and Prompt 5 release is pending; P4.9c through P4.9f are not started.
+- Status: IN_PROGRESS — P4.9a and P4.9b are released and `PASSED`; P4.9c local acceptance passed and Prompt 5 release is pending; P4.9d through P4.9f are not started.
 
 ##### P4.9a Product Choice Create/Edit Integration Baseline
 
@@ -661,18 +661,18 @@ Avoid libraries that depend on:
 - Acceptance criteria: preview reads only the active Business vocabulary; candidates never mutate Product facts or choices; negative phrases remain excluded; the screen remains compact, accessible, and mobile-readable.
 - Verification: focused recognition-context/view tests, cross-Business non-leakage tests, error-preservation tests, full Django suite, `git diff --check`, and owner/browser preview review.
 - Proposed commit message: `feat: preview product recognition candidates`.
-- Status: LOCAL_ACCEPTANCE_PASSED — automated verification and owner/browser acceptance passed; Prompt 5 release is pending.
+- Status: PASSED — released, remote-aligned, and CI-passed; exact delivery metadata remains Git/GitHub authority.
 
 ##### P4.9c Business-Scoped Size/Color Vocabulary and Dropdown Baseline
 
 - Objective: replace open-text size/color entry with seller-managed, Business-scoped canonical vocabulary and dropdown selection before candidate transfer is implemented.
 - Dependency: P4.9b released and CI-passed.
-- Exact scope: Business-owned canonical Size and Color vocabulary; Business-scoped multilingual aliases; dropdown-only ProductChoice form selection; compact contextual seller creation/management of approved values; safe forward migration of existing ProductChoice text; recognition terms sourced from controlled vocabulary; preservation of duplicate ProductChoice row identity and quantities.
+- Exact scope: Business-owned canonical Size and Color vocabulary; Business-scoped multilingual aliases; dropdown-only ProductChoice form selection; compact contextual seller creation of approved values and explicit aliases; safe forward migration of existing ProductChoice text; recognition terms sourced from controlled vocabulary; preservation of duplicate ProductChoice row identity and quantities. Historical case/trim-equivalent text maps to the deterministic first canonical value within its Business without merging ProductChoice rows; semantically different values are not guessed or merged.
 - Explicit exclusions: universal/global fashion dictionary, automatic alias learning, classifying every description token, candidate-to-choice transfer, automatic choice save, inventory mutations, availability computation, row merging, buyer-facing wording, and broad taxonomy administration.
 - Acceptance criteria: only the active Business vocabulary appears in dropdowns; cross-Business values and aliases are rejected; existing choices migrate without stock or row-identity loss; stored choices use canonical values while recognition can match approved Georgian/English aliases; seller can add an approved value without leaving the compact Product form; duplicate ProductChoice rows remain distinct.
 - Verification: migration and rollback-shape review, focused vocabulary/alias/form/migration/ownership tests, catalog tests, full Django suite, `git diff --check`, and owner/browser dropdown and contextual-add review.
 - Proposed commit message: `feat: add controlled size color vocabulary`.
-- Status: NOT_STARTED.
+- Status: LOCAL_ACCEPTANCE_PASSED — automated integrity verification and owner/browser acceptance passed; non-blocking UX refinements for later automatic assistance remain deferred; Prompt 5 release is pending.
 
 ##### P4.9d Size/Color Candidate-to-Choice Transfer Baseline
 

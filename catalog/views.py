@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.http import Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
@@ -8,12 +9,20 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from businesses.selectors import MultipleBusinessesUnsupported, resolve_active_business
+from catalog.forms import ChoiceVocabularyForm
 from catalog.models import Product
 from catalog.product_bundles import ProductBundle
 from catalog.recognition import recognize_product_preview_for_business
+from catalog.vocabulary import (
+    COLOR_VOCABULARY,
+    SIZE_VOCABULARY,
+    create_choice_vocabulary_entry,
+)
 
 
 RECOGNITION_PREVIEW_INTENT = "preview_recognition"
+ADD_SIZE_VOCABULARY_INTENT = "add_size_vocabulary"
+ADD_COLOR_VOCABULARY_INTENT = "add_color_vocabulary"
 
 
 def get_safe_product_return_url(request):
@@ -109,6 +118,15 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
                 self.active_business,
             )
 
+        context.setdefault(
+            "size_vocabulary_form",
+            ChoiceVocabularyForm(kind=SIZE_VOCABULARY, prefix="size-vocabulary"),
+        )
+        context.setdefault(
+            "color_vocabulary_form",
+            ChoiceVocabularyForm(kind=COLOR_VOCABULARY, prefix="color-vocabulary"),
+        )
+
         return self.base_context(
             request,
             form=bundle.product_form if bundle is not None else None,
@@ -121,6 +139,100 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
 
     def is_recognition_preview_request(self, request):
         return request.POST.get("intent") == RECOGNITION_PREVIEW_INTENT
+
+    def is_vocabulary_request(self, request):
+        return request.POST.get("intent") in {
+            ADD_SIZE_VOCABULARY_INTENT,
+            ADD_COLOR_VOCABULARY_INTENT,
+        }
+
+    def handle_vocabulary_request(self, request, bundle, **context):
+        intent = request.POST.get("intent")
+        kind = (
+            SIZE_VOCABULARY
+            if intent == ADD_SIZE_VOCABULARY_INTENT
+            else COLOR_VOCABULARY
+        )
+        size_form = ChoiceVocabularyForm(
+            kind=SIZE_VOCABULARY,
+            prefix="size-vocabulary",
+        )
+        color_form = ChoiceVocabularyForm(
+            kind=COLOR_VOCABULARY,
+            prefix="color-vocabulary",
+        )
+        vocabulary_form = ChoiceVocabularyForm(
+            request.POST,
+            kind=kind,
+            prefix=f"{kind}-vocabulary",
+        )
+        if kind == SIZE_VOCABULARY:
+            size_form = vocabulary_form
+        else:
+            color_form = vocabulary_form
+
+        vocabulary_feedback = None
+        if vocabulary_form.is_valid():
+            try:
+                canonical = create_choice_vocabulary_entry(
+                    business=self.active_business,
+                    kind=kind,
+                    name=vocabulary_form.cleaned_data["name"],
+                    aliases=vocabulary_form.cleaned_data["aliases"],
+                )
+            except ValidationError as error:
+                self.add_vocabulary_errors(vocabulary_form, error)
+            else:
+                label = "Size" if kind == SIZE_VOCABULARY else "Color"
+                vocabulary_feedback = f'{label} "{canonical.name}" saved.'
+                if kind == SIZE_VOCABULARY:
+                    size_form = ChoiceVocabularyForm(
+                        kind=SIZE_VOCABULARY,
+                        prefix="size-vocabulary",
+                    )
+                else:
+                    color_form = ChoiceVocabularyForm(
+                        kind=COLOR_VOCABULARY,
+                        prefix="color-vocabulary",
+                    )
+                bundle = ProductBundle(
+                    business=self.active_business,
+                    data=request.POST,
+                    instance=bundle.product,
+                )
+
+        rendered_context = self.bundle_context(
+            request,
+            bundle,
+            show_form_errors=False,
+            size_vocabulary_form=size_form,
+            color_vocabulary_form=color_form,
+            vocabulary_feedback=vocabulary_feedback,
+            **context,
+        )
+        return render(
+            request,
+            (
+                "catalog/_choice_section.html"
+                if request.htmx
+                else self.template_name
+            ),
+            rendered_context,
+        )
+
+    @staticmethod
+    def add_vocabulary_errors(form, error):
+        if hasattr(error, "message_dict"):
+            for field_name, messages_for_field in error.message_dict.items():
+                target = field_name if field_name in form.fields else None
+                if field_name == NON_FIELD_ERRORS:
+                    target = None
+                for message in messages_for_field:
+                    form.add_error(target, message)
+            return
+
+        for message in error.messages:
+            form.add_error(None, message)
 
 
 class ProductCreateView(ProductMutationBusinessMixin, View):
@@ -170,6 +282,14 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
                     else self.template_name
                 ),
                 context,
+            )
+
+        if self.is_vocabulary_request(request):
+            return self.handle_vocabulary_request(
+                request,
+                bundle,
+                page_title="Add product",
+                submit_label="Create product",
             )
 
         if bundle.is_valid():
@@ -255,6 +375,15 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
                     else self.template_name
                 ),
                 context,
+            )
+
+        if self.is_vocabulary_request(request):
+            return self.handle_vocabulary_request(
+                request,
+                bundle,
+                page_title=f"Edit {product.name}",
+                product=product,
+                submit_label="Save changes",
             )
 
         if bundle.is_valid():

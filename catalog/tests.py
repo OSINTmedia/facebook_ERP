@@ -9,10 +9,19 @@ from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
 
 from businesses.models import Business
-from catalog.forms import ProductChoiceForm, ProductChoiceFormSet, ProductForm
+from catalog.forms import (
+    ChoiceVocabularyForm,
+    ProductChoiceForm,
+    ProductChoiceFormSet,
+    ProductForm,
+)
 from catalog.models import (
+    BusinessColor,
+    BusinessColorAlias,
     BusinessProductType,
     BusinessProductTypeAlias,
+    BusinessSize,
+    BusinessSizeAlias,
     BusinessTag,
     BusinessTagAlias,
     Product,
@@ -24,6 +33,7 @@ from catalog.recognition import (
     RecognitionTerm,
     SemanticDestination,
     choice_suggestion_terms,
+    choice_vocabulary_terms_for_business,
     material_terms_for_business,
     recognize_choice_suggestions,
     recognize_materials_for_business,
@@ -32,6 +42,29 @@ from catalog.recognition import (
     recognize_product_types_for_business,
     recognize_product_description,
 )
+from catalog.vocabulary import (
+    COLOR_VOCABULARY,
+    SIZE_VOCABULARY,
+    create_choice_vocabulary_entry,
+)
+
+
+def size_value(business, name="M", *, is_active=True):
+    size, _ = BusinessSize.objects.get_or_create(
+        business=business,
+        name=name,
+        defaults={"is_active": is_active},
+    )
+    return size
+
+
+def color_value(business, name="Black", *, is_active=True):
+    color, _ = BusinessColor.objects.get_or_create(
+        business=business,
+        name=name,
+        defaults={"is_active": is_active},
+    )
+    return color
 
 
 class RecognitionServiceContractTests(SimpleTestCase):
@@ -296,11 +329,13 @@ class ProductRecognitionPreviewTests(TestCase):
             original_text=material,
             source=ProductMaterialFact.Source.DESCRIPTION,
         )
+        canonical_size = size_value(business, size)
+        canonical_color = color_value(business, color)
         ProductChoice.objects.create(
             business=business,
             product=source_product,
-            size=size,
-            color=color,
+            size=canonical_size,
+            color=canonical_color,
         )
         return source_product
 
@@ -383,8 +418,8 @@ class ProductRecognitionPreviewTests(TestCase):
         self.assertEqual(result.candidates, ())
         self.assertEqual(result.confirmed_facts, ())
 
-    def test_preview_deduplicates_repeated_choice_vocabulary(self):
-        source_product = self.seed_vocabulary(
+    def test_preview_resolves_explicit_size_and_color_aliases(self):
+        self.seed_vocabulary(
             self.business,
             product_type_name="Trousers",
             product_type_alias="pants",
@@ -393,23 +428,33 @@ class ProductRecognitionPreviewTests(TestCase):
             size="M",
             color="Black",
         )
-        ProductChoice.objects.create(
+        canonical_size = BusinessSize.objects.get(
             business=self.business,
-            product=source_product,
-            size="m",
-            color="black",
+            name="M",
+        )
+        canonical_color = BusinessColor.objects.get(
+            business=self.business,
+            name="Black",
+        )
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=canonical_size,
+            alias="M-ზომა",
+        )
+        BusinessColorAlias.objects.create(
+            business=self.business,
+            color=canonical_color,
+            alias="შავი",
         )
 
-        result = recognize_product_preview_for_business("M Black", self.business)
+        result = recognize_product_preview_for_business("M-ზომა, შავი", self.business)
 
-        self.assertEqual(
-            len(result.candidates_for(SemanticDestination.CHOICE_SIZE)),
-            1,
-        )
-        self.assertEqual(
-            len(result.candidates_for(SemanticDestination.CHOICE_COLOR)),
-            1,
-        )
+        size_candidate = result.candidates_for(SemanticDestination.CHOICE_SIZE)[0]
+        color_candidate = result.candidates_for(SemanticDestination.CHOICE_COLOR)[0]
+        self.assertEqual(size_candidate.canonical_value, "M")
+        self.assertEqual(size_candidate.observed_text, "M-ზომა")
+        self.assertEqual(color_candidate.canonical_value, "Black")
+        self.assertEqual(color_candidate.observed_text, "შავი")
 
     def test_preview_without_business_has_no_candidates(self):
         result = recognize_product_preview_for_business("pants M Black", None)
@@ -417,6 +462,150 @@ class ProductRecognitionPreviewTests(TestCase):
         self.assertEqual(result.observed_text, "pants M Black")
         self.assertEqual(result.candidates, ())
         self.assertEqual(result.confirmed_facts, ())
+
+
+class ChoiceVocabularyFormTests(SimpleTestCase):
+    def test_form_normalizes_and_deduplicates_explicit_aliases(self):
+        form = ChoiceVocabularyForm(
+            {
+                "size-vocabulary-name": " M ",
+                "size-vocabulary-aliases": "M-ზომა, M size\nM-ზომა",
+            },
+            kind=SIZE_VOCABULARY,
+            prefix="size-vocabulary",
+        )
+
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.cleaned_data["name"], "M")
+        self.assertEqual(form.cleaned_data["aliases"], ("M-ზომა", "M size"))
+
+    def test_form_rejects_alias_equal_to_canonical_value(self):
+        form = ChoiceVocabularyForm(
+            {
+                "color-vocabulary-name": "შავი",
+                "color-vocabulary-aliases": "Black, შავი",
+            },
+            kind=COLOR_VOCABULARY,
+            prefix="color-vocabulary",
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("aliases", form.errors)
+
+
+class ChoiceVocabularyModelTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        owner = user_model.objects.create_user(
+            email="choice-vocabulary-owner@example.com",
+            password="test-password",
+        )
+        other_owner = user_model.objects.create_user(
+            email="choice-vocabulary-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(owner=owner, name="Seller Studio")
+        self.other_business = Business.objects.create(
+            owner=other_owner,
+            name="Other Studio",
+        )
+
+    def test_canonical_values_are_normalized_unique_and_business_scoped(self):
+        size = BusinessSize.objects.create(business=self.business, name="  M  ")
+        color = BusinessColor.objects.create(business=self.business, name="  შავი  ")
+
+        self.assertEqual(size.name, "M")
+        self.assertEqual(color.name, "შავი")
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                BusinessSize.objects.create(business=self.business, name="m")
+
+        other_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="m",
+        )
+        self.assertEqual(other_size.business, self.other_business)
+
+    def test_aliases_require_the_same_business_and_cannot_collide_with_names(self):
+        size = size_value(self.business)
+        other_size = size_value(self.other_business, "L")
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=size,
+            alias="M-ზომა",
+        )
+
+        conflicting_alias = BusinessSizeAlias(
+            business=self.business,
+            size=size,
+            alias="M",
+        )
+        with self.assertRaises(ValidationError):
+            conflicting_alias.full_clean()
+        with self.assertRaises(ValidationError):
+            conflicting_alias.save()
+
+        cross_business_alias = BusinessSizeAlias(
+            business=self.business,
+            size=other_size,
+            alias="Large",
+        )
+        with self.assertRaises(ValidationError):
+            cross_business_alias.full_clean()
+        with self.assertRaises(ValidationError):
+            cross_business_alias.save()
+
+    def test_contextual_creation_is_atomic_when_an_alias_conflicts(self):
+        existing_size = size_value(self.business, "S")
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=existing_size,
+            alias="small",
+        )
+
+        with self.assertRaises(ValidationError):
+            create_choice_vocabulary_entry(
+                business=self.business,
+                kind=SIZE_VOCABULARY,
+                name="M",
+                aliases=("M-ზომა", "small"),
+            )
+
+        self.assertFalse(BusinessSize.objects.filter(business=self.business, name="M").exists())
+        self.assertFalse(
+            BusinessSizeAlias.objects.filter(
+                business=self.business,
+                alias="M-ზომა",
+            ).exists()
+        )
+
+    def test_recognition_uses_only_active_vocabulary_from_the_supplied_business(self):
+        owned_size = size_value(self.business, "M")
+        inactive_color = color_value(self.business, "შავი")
+        inactive_color.is_active = False
+        inactive_color.save(update_fields=["is_active"])
+        other_color = color_value(self.other_business, "Red")
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=owned_size,
+            alias="M-ზომა",
+        )
+        BusinessColorAlias.objects.create(
+            business=self.other_business,
+            color=other_color,
+            alias="წითელი",
+        )
+
+        terms = choice_vocabulary_terms_for_business(self.business)
+        result = recognize_product_description("M-ზომა, შავი, წითელი", terms=terms)
+
+        self.assertEqual(
+            [
+                (candidate.destination, candidate.canonical_value)
+                for candidate in result.candidates
+            ],
+            [(SemanticDestination.CHOICE_SIZE, "M")],
+        )
 
 
 class BusinessProductTypeModelTests(TestCase):
@@ -1684,13 +1873,18 @@ class ProductChoiceModelTests(TestCase):
             name="Black dress",
             description="Black dress from another Business.",
         )
+        self.size = size_value(self.business, "M")
+        self.large_size = size_value(self.business, "L")
+        self.color = color_value(self.business, "Black")
+        self.other_size = size_value(self.other_business, "M")
+        self.other_color = color_value(self.other_business, "Black")
 
     def test_choice_belongs_to_business_and_product(self):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=2,
         )
 
@@ -1706,51 +1900,38 @@ class ProductChoiceModelTests(TestCase):
             with transaction.atomic():
                 ProductChoice.objects.create(
                     product=self.product,
-                    size="M",
-                    color="Black",
+                    size=self.size,
+                    color=self.color,
                 )
 
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
                 ProductChoice.objects.create(
                     business=self.business,
-                    size="M",
-                    color="Black",
+                    size=self.size,
+                    color=self.color,
                 )
 
-    def test_choice_requires_non_blank_size_and_color(self):
+    def test_choice_requires_size_and_color_references(self):
         for field_name in ("size", "color"):
             with self.subTest(field_name=field_name):
                 choice = ProductChoice(
                     business=self.business,
                     product=self.product,
-                    size="M",
-                    color="Black",
+                    size=self.size,
+                    color=self.color,
                 )
-                setattr(choice, field_name, "   ")
+                setattr(choice, field_name, None)
 
                 with self.assertRaises(ValidationError):
                     choice.full_clean()
-                with self.assertRaises(ValidationError):
-                    choice.save()
-
-    def test_choice_strips_size_and_color_on_save(self):
-        choice = ProductChoice.objects.create(
-            business=self.business,
-            product=self.product,
-            size="  M  ",
-            color="  Black  ",
-        )
-
-        self.assertEqual(choice.size, "M")
-        self.assertEqual(choice.color, "Black")
 
     def test_choice_quantity_accepts_zero_and_rejects_negative_values(self):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=0,
         )
 
@@ -1759,8 +1940,8 @@ class ProductChoiceModelTests(TestCase):
         invalid_choice = ProductChoice(
             business=self.business,
             product=self.product,
-            size="L",
-            color="Black",
+            size=self.large_size,
+            color=self.color,
             quantity=-1,
         )
         with self.assertRaises(ValidationError):
@@ -1772,8 +1953,8 @@ class ProductChoiceModelTests(TestCase):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             is_active=False,
         )
 
@@ -1783,8 +1964,8 @@ class ProductChoiceModelTests(TestCase):
         choice = ProductChoice(
             business=self.business,
             product=self.other_product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
         )
 
         with self.assertRaises(ValidationError):
@@ -1792,20 +1973,40 @@ class ProductChoiceModelTests(TestCase):
         with self.assertRaises(ValidationError):
             choice.save()
 
-    def test_duplicate_choices_are_allowed_after_case_and_trim_normalization(self):
+    def test_choice_rejects_cross_business_size_and_color_references(self):
+        wrong_size = ProductChoice(
+            business=self.business,
+            product=self.product,
+            size=self.other_size,
+            color=self.color,
+        )
+        wrong_color = ProductChoice(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.other_color,
+        )
+
+        for choice in (wrong_size, wrong_color):
+            with self.assertRaises(ValidationError):
+                choice.full_clean()
+            with self.assertRaises(ValidationError):
+                choice.save()
+
+    def test_duplicate_choices_with_the_same_canonical_values_are_allowed(self):
         first_choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=1,
             is_active=False,
         )
         second_choice = ProductChoice(
             business=self.business,
             product=self.product,
-            size=" m ",
-            color=" black ",
+            size=self.size,
+            color=self.color,
             quantity=3,
         )
 
@@ -1814,8 +2015,8 @@ class ProductChoiceModelTests(TestCase):
 
         self.assertNotEqual(first_choice.pk, second_choice.pk)
         self.assertEqual(ProductChoice.objects.filter(product=self.product).count(), 2)
-        self.assertEqual(second_choice.size, "m")
-        self.assertEqual(second_choice.color, "black")
+        self.assertEqual(second_choice.size, self.size)
+        self.assertEqual(second_choice.color, self.color)
         self.assertEqual(first_choice.quantity, 1)
         self.assertEqual(second_choice.quantity, 3)
         self.assertFalse(first_choice.is_active)
@@ -1825,21 +2026,21 @@ class ProductChoiceModelTests(TestCase):
         ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
         )
 
         same_business_choice = ProductChoice.objects.create(
             business=self.business,
             product=self.second_product,
-            size="m",
-            color="black",
+            size=self.size,
+            color=self.color,
         )
         other_business_choice = ProductChoice.objects.create(
             business=self.other_business,
             product=self.other_product,
-            size="M",
-            color="Black",
+            size=self.other_size,
+            color=self.other_color,
         )
 
         self.assertEqual(ProductChoice.objects.count(), 3)
@@ -1850,8 +2051,8 @@ class ProductChoiceModelTests(TestCase):
         ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
         )
 
         with self.assertRaises(ProtectedError):
@@ -1861,8 +2062,8 @@ class ProductChoiceModelTests(TestCase):
         ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
         )
 
         with self.assertRaises(ProtectedError):
@@ -1883,8 +2084,8 @@ class ProductChoiceModelTests(TestCase):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
         )
 
         self.assertEqual(str(choice), "Black trousers: M / Black")
@@ -1964,8 +2165,27 @@ class ProductFormTests(TestCase):
 
 
 class ProductChoiceFormTests(TestCase):
+    def setUp(self):
+        owner = get_user_model().objects.create_user(
+            email="choice-form-owner@example.com",
+            password="test-password",
+        )
+        other_owner = get_user_model().objects.create_user(
+            email="choice-form-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(owner=owner, name="Seller Studio")
+        self.other_business = Business.objects.create(
+            owner=other_owner,
+            name="Other Studio",
+        )
+        self.size = size_value(self.business)
+        self.color = color_value(self.business)
+        self.other_size = size_value(self.other_business, "L")
+        self.other_color = color_value(self.other_business, "Red")
+
     def test_form_exposes_only_choice_owned_fields(self):
-        form = ProductChoiceForm()
+        form = ProductChoiceForm(business=self.business)
 
         self.assertEqual(
             list(form.fields),
@@ -1977,17 +2197,44 @@ class ProductChoiceFormTests(TestCase):
             data={
                 "business": 999,
                 "product": 999,
-                "size": "M",
-                "color": "Black",
+                "size": self.size.pk,
+                "color": self.color.pk,
                 "quantity": 2,
                 "is_active": True,
-            }
+            },
+            business=self.business,
         )
 
         self.assertTrue(form.is_valid())
         choice = form.save(commit=False)
         self.assertIsNone(choice.business_id)
         self.assertIsNone(choice.product_id)
+
+    def test_form_dropdowns_include_only_active_values_from_the_business(self):
+        inactive_size = size_value(self.business, "XL")
+        inactive_size.is_active = False
+        inactive_size.save(update_fields=["is_active"])
+
+        form = ProductChoiceForm(business=self.business)
+
+        self.assertEqual(list(form.fields["size"].queryset), [self.size])
+        self.assertEqual(list(form.fields["color"].queryset), [self.color])
+        self.assertNotIn(self.other_size, form.fields["size"].queryset)
+
+    def test_form_rejects_cross_business_vocabulary_ids(self):
+        form = ProductChoiceForm(
+            data={
+                "size": self.other_size.pk,
+                "color": self.other_color.pk,
+                "quantity": 2,
+                "is_active": True,
+            },
+            business=self.business,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("size", form.errors)
+        self.assertIn("color", form.errors)
 
 
 class ProductChoiceFormSetTests(TestCase):
@@ -1999,6 +2246,8 @@ class ProductChoiceFormSetTests(TestCase):
             password="test-password",
         )
         self.business = Business.objects.create(owner=owner, name="Seller Studio")
+        self.size = size_value(self.business)
+        self.color = color_value(self.business)
 
     def formset_data(self, rows, *, initial_forms=0):
         data = {
@@ -2018,6 +2267,7 @@ class ProductChoiceFormSetTests(TestCase):
             instance=product,
             prefix=self.prefix,
             queryset=ProductChoice.objects.filter(business=self.business),
+            form_kwargs={"business": self.business},
         )
 
     def test_draft_product_allows_an_empty_extra_row(self):
@@ -2057,7 +2307,7 @@ class ProductChoiceFormSetTests(TestCase):
         )
         rows = [
             {
-                "size": "M",
+                "size": str(self.size.pk),
                 "color": "",
                 "quantity": "2",
                 "is_active": "on",
@@ -2068,7 +2318,10 @@ class ProductChoiceFormSetTests(TestCase):
 
         self.assertFalse(formset.is_valid())
         self.assertIn("color", formset.forms[0].errors)
-        self.assertEqual(formset.forms[0].data[f"{self.prefix}-0-size"], "M")
+        self.assertEqual(
+            formset.forms[0].data[f"{self.prefix}-0-size"],
+            str(self.size.pk),
+        )
 
     def test_normalized_duplicate_choice_rows_are_valid(self):
         product = Product(
@@ -2079,14 +2332,14 @@ class ProductChoiceFormSetTests(TestCase):
         )
         rows = [
             {
-                "size": "M",
-                "color": "Black",
+                "size": str(self.size.pk),
+                "color": str(self.color.pk),
                 "quantity": "1",
                 "is_active": "on",
             },
             {
-                "size": " m ",
-                "color": " black ",
+                "size": str(self.size.pk),
+                "color": str(self.color.pk),
                 "quantity": "3",
                 "is_active": "on",
             },
@@ -2106,15 +2359,15 @@ class ProductChoiceFormSetTests(TestCase):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=1,
         )
         rows = [
             {
                 "id": str(choice.pk),
-                "size": choice.size,
-                "color": choice.color,
+                "size": str(choice.size_id),
+                "color": str(choice.color_id),
                 "quantity": str(choice.quantity),
                 "is_active": "on",
                 "DELETE": "on",
@@ -2151,6 +2404,11 @@ class ProductBundleTests(TestCase):
             owner=self.other_owner,
             name="Other Studio",
         )
+        self.size = size_value(self.business, "M")
+        self.large_size = size_value(self.business, "L")
+        self.color = color_value(self.business, "Black")
+        self.other_size = size_value(self.other_business, "L")
+        self.other_color = color_value(self.other_business, "Red")
 
     def bundle_data(
         self,
@@ -2176,8 +2434,8 @@ class ProductBundleTests(TestCase):
 
     def active_choice_row(self, **overrides):
         row = {
-            "size": "M",
-            "color": "Black",
+            "size": str(self.size.pk),
+            "color": str(self.color.pk),
             "quantity": "2",
             "is_active": "on",
         }
@@ -2198,8 +2456,8 @@ class ProductBundleTests(TestCase):
         choice = ProductChoice.objects.get()
         self.assertEqual(choice.business, self.business)
         self.assertEqual(choice.product, product)
-        self.assertEqual(choice.size, "M")
-        self.assertEqual(choice.color, "Black")
+        self.assertEqual(choice.size, self.size)
+        self.assertEqual(choice.color, self.color)
         self.assertEqual(choice.quantity, 2)
 
     def test_draft_product_can_save_without_choices(self):
@@ -2254,7 +2512,7 @@ class ProductBundleTests(TestCase):
     def test_normalized_duplicate_rows_persist_as_distinct_choices(self):
         rows = [
             self.active_choice_row(quantity="1"),
-            self.active_choice_row(size=" m ", color=" black ", quantity="3"),
+            self.active_choice_row(quantity="3"),
         ]
         bundle = ProductBundle(
             business=self.business,
@@ -2306,8 +2564,8 @@ class ProductBundleTests(TestCase):
         owned_choice = ProductChoice.objects.create(
             business=self.business,
             product=product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=2,
         )
         other_product = Product.objects.create(
@@ -2319,8 +2577,8 @@ class ProductBundleTests(TestCase):
         other_choice = ProductChoice.objects.create(
             business=self.other_business,
             product=other_product,
-            size="L",
-            color="Red",
+            size=self.other_size,
+            color=self.other_color,
             quantity=4,
         )
         forged_row = self.active_choice_row(
@@ -2351,13 +2609,13 @@ class ProductBundleTests(TestCase):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=1,
         )
         row = self.active_choice_row(
             id=str(choice.pk),
-            size="L",
+            size=str(self.large_size.pk),
             quantity="5",
         )
         bundle = ProductBundle(
@@ -2378,7 +2636,7 @@ class ProductBundleTests(TestCase):
         choice.refresh_from_db()
         self.assertEqual(product.name, "Updated trousers")
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
-        self.assertEqual(choice.size, "L")
+        self.assertEqual(choice.size, self.large_size)
         self.assertEqual(choice.quantity, 5)
 
     def test_active_product_cannot_delete_its_last_active_choice(self):
@@ -2391,8 +2649,8 @@ class ProductBundleTests(TestCase):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=1,
         )
         row = self.active_choice_row(
@@ -2427,8 +2685,8 @@ class ProductBundleTests(TestCase):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=1,
         )
         row = self.active_choice_row(
@@ -2597,8 +2855,8 @@ class ProductBundleViewTestMixin:
 
     def active_choice_row(self, **overrides):
         row = {
-            "size": "M",
-            "color": "Black",
+            "size": str(self.size.pk),
+            "color": str(self.color.pk),
             "quantity": "2",
             "is_active": "on",
         }
@@ -2641,11 +2899,13 @@ class ProductBundleViewTestMixin:
             original_text=material,
             source=ProductMaterialFact.Source.DESCRIPTION,
         )
+        canonical_size = size_value(business, size)
+        canonical_color = color_value(business, color)
         ProductChoice.objects.create(
             business=business,
             product=source_product,
-            size=size,
-            color=color,
+            size=canonical_size,
+            color=canonical_color,
         )
         return source_product
 
@@ -2669,6 +2929,10 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
             owner=self.other_owner,
             name="Other Studio",
         )
+        self.size = size_value(self.business, "M")
+        self.color = color_value(self.business, "Black")
+        self.other_size = size_value(self.other_business, "L")
+        self.other_color = color_value(self.other_business, "Red")
         self.url = reverse("catalog:product_create")
         self.list_url = reverse("catalog:product_list")
 
@@ -2695,6 +2959,10 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, 'name="choices-TOTAL_FORMS"')
         self.assertContains(response, 'name="choices-0-size"')
         self.assertContains(response, 'name="choices-0-color"')
+        self.assertContains(response, '<select name="choices-0-size"')
+        self.assertContains(response, '<select name="choices-0-color"')
+        self.assertNotContains(response, '<input type="text" name="choices-0-size"')
+        self.assertNotContains(response, '<input type="text" name="choices-0-color"')
         self.assertContains(response, 'name="choices-0-quantity"')
         self.assertContains(response, 'name="choices-0-is_active"')
         self.assertContains(response, 'hx-post="."')
@@ -2706,6 +2974,79 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, "Preview recognition")
         self.assertContains(response, "Create product")
         self.assertNotContains(response, 'name="business"')
+
+    def test_product_create_htmx_adds_size_and_aliases_without_saving_product(self):
+        data = self.bundle_post_data(
+            [self.active_choice_row()],
+            name="Unsaved product",
+            description="Unsaved description",
+        )
+        data.update(
+            {
+                "intent": "add_size_vocabulary",
+                "size-vocabulary-name": "S",
+                "size-vocabulary-aliases": "S-ზომა, S size",
+            }
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_choice_section.html")
+        size = BusinessSize.objects.get(business=self.business, name="S")
+        self.assertEqual(
+            list(size.aliases.values_list("alias", flat=True)),
+            ["S size", "S-ზომა"],
+        )
+        self.assertEqual(response.context["vocabulary_feedback"], 'Size "S" saved.')
+        self.assertContains(response, ">S</option>")
+        self.assertContains(response, f'value="{self.size.pk}" selected')
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_full_page_adds_color_and_preserves_unsaved_input(self):
+        data = self.bundle_post_data(
+            [self.active_choice_row()],
+            name="Unsaved product",
+            description="Unsaved description",
+        )
+        data.update(
+            {
+                "intent": "add_color_vocabulary",
+                "color-vocabulary-name": "Black",
+                "color-vocabulary-aliases": "შავი",
+            }
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/product_form.html")
+        color = BusinessColor.objects.get(business=self.business, name="Black")
+        self.assertTrue(color.aliases.filter(alias="შავი").exists())
+        self.assertContains(response, 'value="Unsaved product"')
+        self.assertContains(response, "Unsaved description")
+        self.assertEqual(
+            response.context["vocabulary_feedback"],
+            'Color "Black" saved.',
+        )
+        self.assertEqual(Product.objects.count(), 0)
+
+    def test_product_create_rejects_cross_business_dropdown_values(self):
+        self.client.force_login(self.owner)
+        row = self.active_choice_row(
+            size=str(self.other_size.pk),
+            color=str(self.other_color.pk),
+        )
+
+        response = self.client.post(self.url, self.bundle_post_data([row]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Select a valid choice.", count=2)
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
 
     def test_product_create_htmx_previews_candidates_without_saving(self):
         self.seed_preview_vocabulary(self.business)
@@ -2921,8 +3262,8 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         choice = ProductChoice.objects.get()
         self.assertEqual(choice.business, self.business)
         self.assertEqual(choice.product, product)
-        self.assertEqual(choice.size, "M")
-        self.assertEqual(choice.color, "Black")
+        self.assertEqual(choice.size, self.size)
+        self.assertEqual(choice.color, self.color)
         self.assertEqual(choice.quantity, 2)
 
     def test_product_create_active_requires_an_active_choice(self):
@@ -2953,7 +3294,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "This field is required.")
-        self.assertContains(response, 'value="M"')
+        self.assertContains(response, f'value="{self.size.pk}" selected')
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
 
@@ -3018,6 +3359,13 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
             owner=self.other_owner,
             name="Other Studio",
         )
+        self.size = size_value(self.business, "M")
+        self.large_size = size_value(self.business, "L")
+        self.extra_large_size = size_value(self.business, "XL")
+        self.color = color_value(self.business, "Black")
+        self.navy = color_value(self.business, "Navy")
+        self.other_size = size_value(self.other_business, "L")
+        self.other_color = color_value(self.other_business, "Private red")
         self.product = Product.objects.create(
             business=self.business,
             name="Black trousers",
@@ -3045,15 +3393,15 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         owned_choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=2,
         )
         ProductChoice.objects.create(
             business=self.other_business,
             product=self.other_product,
-            size="L",
-            color="Private red",
+            size=self.other_size,
+            color=self.other_color,
             quantity=8,
         )
         self.client.force_login(self.owner)
@@ -3067,7 +3415,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, "Classic black trousers.")
         self.assertContains(response, 'name="choices-TOTAL_FORMS"')
         self.assertContains(response, f'value="{owned_choice.pk}"')
-        self.assertContains(response, 'value="Black"')
+        self.assertContains(response, ">Black</option>")
         self.assertNotContains(response, "Private red")
         self.assertContains(response, "Save changes")
         self.assertNotContains(response, 'name="business"')
@@ -3088,10 +3436,51 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
             5,
         )
 
+    def test_product_edit_htmx_adds_color_without_mutating_product(self):
+        data = self.bundle_post_data(
+            [self.active_choice_row()],
+            name="Unsaved product name",
+            description="Unsaved description.",
+        )
+        data.update(
+            {
+                "intent": "add_color_vocabulary",
+                "color-vocabulary-name": "Blue",
+                "color-vocabulary-aliases": "ლურჯი, blue color",
+            }
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_choice_section.html")
+        color = BusinessColor.objects.get(business=self.business, name="Blue")
+        self.assertEqual(
+            list(color.aliases.values_list("alias", flat=True)),
+            ["blue color", "ლურჯი"],
+        )
+        self.assertEqual(
+            response.context["vocabulary_feedback"],
+            'Color "Blue" saved.',
+        )
+        self.assertContains(response, ">Blue</option>")
+        self.assertContains(response, f'value="{self.color.pk}" selected')
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name, "Black trousers")
+        self.assertEqual(self.product.description, "Classic black trousers.")
+        self.assertFalse(self.product.choices.exists())
+
     def test_product_edit_htmx_preview_does_not_mutate_product(self):
         self.seed_preview_vocabulary(self.business)
         data = self.bundle_post_data(
-            [self.active_choice_row(size="XL", color="Navy", quantity="9")],
+            [
+                self.active_choice_row(
+                    size=str(self.extra_large_size.pk),
+                    color=str(self.navy.pk),
+                    quantity="9",
+                )
+            ],
             name="Unsaved product name",
             description="pants Cotton M Black",
         )
@@ -3118,7 +3507,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         return_url = f"{self.list_url}?from=edit"
 
         data = self.bundle_post_data(
-            [self.active_choice_row(size="L", quantity="5")],
+            [self.active_choice_row(size=str(self.large_size.pk), quantity="5")],
             name="Updated trousers",
             description="Updated description.",
         )
@@ -3137,21 +3526,21 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(self.product.lifecycle, Product.Lifecycle.ACTIVE)
         choice = self.product.choices.get()
         self.assertEqual(choice.business, self.business)
-        self.assertEqual(choice.size, "L")
+        self.assertEqual(choice.size, self.large_size)
         self.assertEqual(choice.quantity, 5)
 
     def test_product_edit_updates_and_deactivates_existing_choice(self):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=2,
         )
         row = {
             "id": str(choice.pk),
-            "size": "XL",
-            "color": "Navy",
+            "size": str(self.extra_large_size.pk),
+            "color": str(self.navy.pk),
             "quantity": "7",
         }
         self.client.force_login(self.owner)
@@ -3170,8 +3559,8 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         choice.refresh_from_db()
         self.assertEqual(choice.business, self.business)
         self.assertEqual(choice.product, self.product)
-        self.assertEqual(choice.size, "XL")
-        self.assertEqual(choice.color, "Navy")
+        self.assertEqual(choice.size, self.extra_large_size)
+        self.assertEqual(choice.color, self.navy)
         self.assertEqual(choice.quantity, 7)
         self.assertFalse(choice.is_active)
 
@@ -3181,8 +3570,8 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=2,
         )
         row = self.active_choice_row(
@@ -3213,8 +3602,8 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=2,
         )
         row = self.active_choice_row(
@@ -3239,15 +3628,15 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         owned_choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
-            size="M",
-            color="Black",
+            size=self.size,
+            color=self.color,
             quantity=2,
         )
         other_choice = ProductChoice.objects.create(
             business=self.other_business,
             product=self.other_product,
-            size="L",
-            color="Red",
+            size=self.other_size,
+            color=self.other_color,
             quantity=4,
         )
         forged_row = self.active_choice_row(

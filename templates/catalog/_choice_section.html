@@ -1,0 +1,187 @@
+<section id="choice-section" class="choice-section" aria-labelledby="choice-section-title">
+  <div class="choice-section__heading">
+    <h2 id="choice-section-title">Choices</h2>
+    <p>Select approved size and color values for each sellable choice.</p>
+  </div>
+
+  {% if vocabulary_feedback %}
+    <p class="vocabulary-feedback" role="status">{{ vocabulary_feedback }}</p>
+  {% endif %}
+
+  <div class="choice-vocabulary" aria-label="Approved choice vocabulary">
+    <details class="vocabulary-editor" {% if size_vocabulary_form.errors %}open{% endif %}>
+      <summary>Add approved size</summary>
+      <div class="vocabulary-editor__body">
+        <p class="vocabulary-editor__help">Use one canonical label and only known alternative wording.</p>
+
+        {% if size_vocabulary_form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in size_vocabulary_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="form-field">
+          <label for="{{ size_vocabulary_form.name.id_for_label }}">{{ size_vocabulary_form.name.label }}</label>
+          {{ size_vocabulary_form.name }}
+          {% for error in size_vocabulary_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="form-field">
+          <label for="{{ size_vocabulary_form.aliases.id_for_label }}">{{ size_vocabulary_form.aliases.label }}</label>
+          {{ size_vocabulary_form.aliases }}
+          {% for error in size_vocabulary_form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="vocabulary-editor__action">
+          <button
+            class="button button--secondary button--compact"
+            type="submit"
+            name="intent"
+            value="add_size_vocabulary"
+            hx-post="."
+            hx-target="#choice-section"
+            hx-swap="outerHTML"
+            hx-include="closest form"
+            hx-indicator="#size-vocabulary-loading"
+            hx-disabled-elt="this"
+          >Add size</button>
+          <span id="size-vocabulary-loading" class="htmx-indicator vocabulary-loading" role="status">Adding…</span>
+        </div>
+      </div>
+    </details>
+
+    <details class="vocabulary-editor" {% if color_vocabulary_form.errors %}open{% endif %}>
+      <summary>Add approved color</summary>
+      <div class="vocabulary-editor__body">
+        <p class="vocabulary-editor__help">Prefer the seller-facing Georgian label; English wording can be an alias.</p>
+
+        {% if color_vocabulary_form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in color_vocabulary_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="form-field">
+          <label for="{{ color_vocabulary_form.name.id_for_label }}">{{ color_vocabulary_form.name.label }}</label>
+          {{ color_vocabulary_form.name }}
+          {% for error in color_vocabulary_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="form-field">
+          <label for="{{ color_vocabulary_form.aliases.id_for_label }}">{{ color_vocabulary_form.aliases.label }}</label>
+          {{ color_vocabulary_form.aliases }}
+          {% for error in color_vocabulary_form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+        </div>
+        <div class="vocabulary-editor__action">
+          <button
+            class="button button--secondary button--compact"
+            type="submit"
+            name="intent"
+            value="add_color_vocabulary"
+            hx-post="."
+            hx-target="#choice-section"
+            hx-swap="outerHTML"
+            hx-include="closest form"
+            hx-indicator="#color-vocabulary-loading"
+            hx-disabled-elt="this"
+          >Add color</button>
+          <span id="color-vocabulary-loading" class="htmx-indicator vocabulary-loading" role="status">Adding…</span>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  {{ choice_formset.management_form }}
+
+  {% if show_form_errors %}
+    {% if choice_formset.non_form_errors %}
+      <div class="form-errors" role="alert">
+        {% for error in choice_formset.non_form_errors %}
+          <p>{{ error }}</p>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+
+  <div class="choice-list">
+    {% for choice_form in choice_formset %}
+      <fieldset class="choice-row">
+        <legend>Choice {{ forloop.counter }}</legend>
+
+        {% for hidden_field in choice_form.hidden_fields %}
+          {{ hidden_field }}
+          {% if show_form_errors %}
+            {% for error in hidden_field.errors %}
+              <p class="field-error" role="alert">{{ error }}</p>
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+
+        {% if show_form_errors %}
+          {% if choice_form.non_field_errors %}
+            <div class="form-errors" role="alert">
+              {% for error in choice_form.non_field_errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endif %}
+
+        <div class="choice-row__grid">
+          <div class="form-field">
+            <label for="{{ choice_form.size.id_for_label }}">Size</label>
+            {{ choice_form.size }}
+            {% if show_form_errors %}
+              {% for error in choice_form.size.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          <div class="form-field">
+            <label for="{{ choice_form.color.id_for_label }}">Color</label>
+            {{ choice_form.color }}
+            {% if show_form_errors %}
+              {% for error in choice_form.color.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          <div class="form-field">
+            <label for="{{ choice_form.quantity.id_for_label }}">Quantity</label>
+            {{ choice_form.quantity }}
+            {% if show_form_errors %}
+              {% for error in choice_form.quantity.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="choice-row__controls">
+          <div class="choice-option">
+            {{ choice_form.is_active }}
+            <label for="{{ choice_form.is_active.id_for_label }}">Active choice</label>
+          </div>
+          {% if show_form_errors %}
+            {% for error in choice_form.is_active.errors %}
+              <p class="field-error">{{ error }}</p>
+            {% endfor %}
+          {% endif %}
+
+          {% if choice_form.instance.pk %}
+            <div class="choice-option choice-option--remove">
+              {{ choice_form.DELETE }}
+              <label for="{{ choice_form.DELETE.id_for_label }}">Remove choice</label>
+            </div>
+            {% if show_form_errors %}
+              {% for error in choice_form.DELETE.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            {% endif %}
+          {% endif %}
+        </div>
+      </fieldset>
+    {% endfor %}
+  </div>
+
+  <p class="choice-help">Use the blank row to add another choice.</p>
+</section>
