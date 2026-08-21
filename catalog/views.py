@@ -2,27 +2,31 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.http import Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views import View
 from django.views.generic import TemplateView
 
 from businesses.selectors import MultipleBusinessesUnsupported, resolve_active_business
-from catalog.forms import ChoiceVocabularyForm
-from catalog.models import Product
+from catalog.choice_transfers import transfer_choice_candidate
+from catalog.forms import ChoiceVocabularyEditForm, ChoiceVocabularyForm
+from catalog.models import BusinessColor, BusinessSize, Product
 from catalog.product_bundles import ProductBundle
 from catalog.recognition import recognize_product_preview_for_business
 from catalog.vocabulary import (
     COLOR_VOCABULARY,
     SIZE_VOCABULARY,
     create_choice_vocabulary_entry,
+    update_choice_vocabulary_entry,
 )
 
 
 RECOGNITION_PREVIEW_INTENT = "preview_recognition"
 ADD_SIZE_VOCABULARY_INTENT = "add_size_vocabulary"
 ADD_COLOR_VOCABULARY_INTENT = "add_color_vocabulary"
+TRANSFER_CHOICE_CANDIDATE_INTENT = "transfer_choice_candidate"
+UPDATE_VOCABULARY_INTENT = "update_vocabulary"
 
 
 def get_safe_product_return_url(request):
@@ -37,6 +41,20 @@ def get_safe_product_return_url(request):
         return candidate
 
     return fallback
+
+
+def add_validation_errors_to_form(form, error):
+    if hasattr(error, "message_dict"):
+        for field_name, messages_for_field in error.message_dict.items():
+            target = field_name if field_name in form.fields else None
+            if field_name == NON_FIELD_ERRORS:
+                target = None
+            for message in messages_for_field:
+                form.add_error(target, message)
+        return
+
+    for message in error.messages:
+        form.add_error(None, message)
 
 
 class ProductListView(LoginRequiredMixin, TemplateView):
@@ -71,6 +89,226 @@ class ProductListView(LoginRequiredMixin, TemplateView):
             }
         )
         return context
+
+
+class ChoiceVocabularyView(LoginRequiredMixin, View):
+    template_name = "catalog/choice_vocabulary.html"
+
+    def resolve_business(self, request):
+        self.business_policy_blocked = False
+        self.active_business = None
+        try:
+            self.active_business = resolve_active_business(request.user)
+        except MultipleBusinessesUnsupported:
+            self.business_policy_blocked = True
+
+    def get(self, request, *args, **kwargs):
+        self.resolve_business(request)
+        status = 409 if self.business_policy_blocked else 200
+        return render(request, self.template_name, self.get_context(request), status=status)
+
+    def post(self, request, *args, **kwargs):
+        self.resolve_business(request)
+        if self.business_policy_blocked or self.active_business is None:
+            return render(
+                request,
+                self.template_name,
+                self.get_context(request),
+                status=409,
+            )
+
+        intent = request.POST.get("intent", "")
+        if intent in {ADD_SIZE_VOCABULARY_INTENT, ADD_COLOR_VOCABULARY_INTENT}:
+            return self.handle_add(request, intent)
+        if intent.startswith(f"{UPDATE_VOCABULARY_INTENT}:"):
+            return self.handle_update(request, intent)
+
+        return render(
+            request,
+            self.template_name,
+            self.get_context(
+                request,
+                vocabulary_error="Unknown vocabulary action. Refresh and try again.",
+            ),
+            status=400,
+        )
+
+    def handle_add(self, request, intent):
+        kind = (
+            SIZE_VOCABULARY
+            if intent == ADD_SIZE_VOCABULARY_INTENT
+            else COLOR_VOCABULARY
+        )
+        form = ChoiceVocabularyForm(
+            request.POST,
+            kind=kind,
+            prefix=f"add-{kind}",
+        )
+        if form.is_valid():
+            try:
+                canonical = create_choice_vocabulary_entry(
+                    business=self.active_business,
+                    kind=kind,
+                    name=form.cleaned_data["name"],
+                    aliases=form.cleaned_data["aliases"],
+                )
+            except ValidationError as error:
+                add_validation_errors_to_form(form, error)
+            else:
+                messages.success(
+                    request,
+                    f'{kind.title()} "{canonical.name}" saved.',
+                )
+                return redirect(request.get_full_path())
+
+        context_key = f"{kind}_add_form"
+        return render(
+            request,
+            self.template_name,
+            self.get_context(request, **{context_key: form}),
+        )
+
+    def handle_update(self, request, intent):
+        try:
+            _, kind, raw_entry_id = intent.split(":")
+            entry_id = int(raw_entry_id)
+        except (TypeError, ValueError):
+            return render(
+                request,
+                self.template_name,
+                self.get_context(
+                    request,
+                    vocabulary_error=(
+                        "Invalid vocabulary selection. Refresh and try again."
+                    ),
+                ),
+                status=400,
+            )
+
+        if kind == SIZE_VOCABULARY:
+            model = BusinessSize
+        elif kind == COLOR_VOCABULARY:
+            model = BusinessColor
+        else:
+            return render(
+                request,
+                self.template_name,
+                self.get_context(
+                    request,
+                    vocabulary_error=(
+                        "Invalid vocabulary selection. Refresh and try again."
+                    ),
+                ),
+                status=400,
+            )
+
+        entry = get_object_or_404(
+            model.objects.prefetch_related("aliases"),
+            business=self.active_business,
+            pk=entry_id,
+        )
+        form = ChoiceVocabularyEditForm(
+            request.POST,
+            kind=kind,
+            instance=entry,
+            prefix=f"edit-{kind}-{entry.pk}",
+        )
+        if form.is_valid():
+            try:
+                canonical = update_choice_vocabulary_entry(
+                    business=self.active_business,
+                    kind=kind,
+                    entry_id=entry.pk,
+                    name=form.cleaned_data["name"],
+                    aliases=form.cleaned_data["aliases"],
+                    is_active=form.cleaned_data["is_active"],
+                )
+            except ValidationError as error:
+                add_validation_errors_to_form(form, error)
+            else:
+                messages.success(
+                    request,
+                    f'{kind.title()} "{canonical.name}" updated.',
+                )
+                return redirect(request.get_full_path())
+
+        return render(
+            request,
+            self.template_name,
+            self.get_context(
+                request,
+                bound_edit_kind=kind,
+                bound_edit_form=form,
+                bound_edit_entry_id=entry.pk,
+            ),
+        )
+
+    def get_context(self, request, **context):
+        context.setdefault("active_business", self.active_business)
+        context.setdefault("business_policy_blocked", self.business_policy_blocked)
+        context.setdefault("current_nav", "products")
+        context.setdefault("return_url", get_safe_product_return_url(request))
+        context.setdefault(
+            "size_add_form",
+            ChoiceVocabularyForm(kind=SIZE_VOCABULARY, prefix="add-size"),
+        )
+        context.setdefault(
+            "color_add_form",
+            ChoiceVocabularyForm(kind=COLOR_VOCABULARY, prefix="add-color"),
+        )
+
+        size_entries = BusinessSize.objects.none()
+        color_entries = BusinessColor.objects.none()
+        if self.active_business is not None:
+            size_entries = BusinessSize.objects.filter(
+                business=self.active_business
+            ).prefetch_related("aliases")
+            color_entries = BusinessColor.objects.filter(
+                business=self.active_business
+            ).prefetch_related("aliases")
+
+        context["size_entries"] = self.build_entry_rows(
+            size_entries,
+            kind=SIZE_VOCABULARY,
+            bound_kind=context.get("bound_edit_kind"),
+            bound_entry_id=context.get("bound_edit_entry_id"),
+            bound_form=context.get("bound_edit_form"),
+        )
+        context["color_entries"] = self.build_entry_rows(
+            color_entries,
+            kind=COLOR_VOCABULARY,
+            bound_kind=context.get("bound_edit_kind"),
+            bound_entry_id=context.get("bound_edit_entry_id"),
+            bound_form=context.get("bound_edit_form"),
+        )
+        return context
+
+    @staticmethod
+    def build_entry_rows(
+        entries,
+        *,
+        kind,
+        bound_kind=None,
+        bound_entry_id=None,
+        bound_form=None,
+    ):
+        rows = []
+        for entry in entries:
+            form = ChoiceVocabularyEditForm(
+                kind=kind,
+                instance=entry,
+                prefix=f"edit-{kind}-{entry.pk}",
+            )
+            if kind == bound_kind and entry.pk == bound_entry_id:
+                form = bound_form
+            rows.append(
+                {
+                    "entry": entry,
+                    "aliases": tuple(entry.aliases.all()),
+                    "form": form,
+                }
+            )
+        return rows
 
 
 class ProductMutationBusinessMixin(LoginRequiredMixin):
@@ -146,6 +384,52 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             ADD_COLOR_VOCABULARY_INTENT,
         }
 
+    def is_choice_candidate_transfer_request(self, request):
+        intent = request.POST.get("intent", "")
+        return intent.startswith(f"{TRANSFER_CHOICE_CANDIDATE_INTENT}:")
+
+    def handle_choice_candidate_transfer(self, request, bundle, **context):
+        intent = request.POST.get("intent", "")
+        candidate_reference = intent.removeprefix(
+            f"{TRANSFER_CHOICE_CANDIDATE_INTENT}:"
+        )
+        transfer_feedback = None
+        transfer_error = None
+
+        try:
+            transfer = transfer_choice_candidate(
+                data=request.POST,
+                business=self.active_business,
+                candidate_reference=candidate_reference,
+            )
+        except ValidationError as error:
+            transfer_error = " ".join(error.messages)
+        else:
+            bundle = ProductBundle(
+                business=self.active_business,
+                data=transfer.data,
+                instance=bundle.product,
+            )
+            transfer_feedback = transfer.feedback
+
+        bundle.is_valid()
+        rendered_context = self.bundle_context(
+            request,
+            bundle,
+            choice_transfer_feedback=transfer_feedback,
+            choice_transfer_error=transfer_error,
+            **context,
+        )
+        return render(
+            request,
+            (
+                "catalog/_choice_section.html"
+                if request.htmx
+                else self.template_name
+            ),
+            rendered_context,
+        )
+
     def handle_vocabulary_request(self, request, bundle, **context):
         intent = request.POST.get("intent")
         kind = (
@@ -181,7 +465,7 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
                     aliases=vocabulary_form.cleaned_data["aliases"],
                 )
             except ValidationError as error:
-                self.add_vocabulary_errors(vocabulary_form, error)
+                add_validation_errors_to_form(vocabulary_form, error)
             else:
                 label = "Size" if kind == SIZE_VOCABULARY else "Color"
                 vocabulary_feedback = f'{label} "{canonical.name}" saved.'
@@ -219,21 +503,6 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             ),
             rendered_context,
         )
-
-    @staticmethod
-    def add_vocabulary_errors(form, error):
-        if hasattr(error, "message_dict"):
-            for field_name, messages_for_field in error.message_dict.items():
-                target = field_name if field_name in form.fields else None
-                if field_name == NON_FIELD_ERRORS:
-                    target = None
-                for message in messages_for_field:
-                    form.add_error(target, message)
-            return
-
-        for message in error.messages:
-            form.add_error(None, message)
-
 
 class ProductCreateView(ProductMutationBusinessMixin, View):
     def get(self, request, *args, **kwargs):
@@ -286,6 +555,14 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
 
         if self.is_vocabulary_request(request):
             return self.handle_vocabulary_request(
+                request,
+                bundle,
+                page_title="Add product",
+                submit_label="Create product",
+            )
+
+        if self.is_choice_candidate_transfer_request(request):
+            return self.handle_choice_candidate_transfer(
                 request,
                 bundle,
                 page_title="Add product",
@@ -379,6 +656,15 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
 
         if self.is_vocabulary_request(request):
             return self.handle_vocabulary_request(
+                request,
+                bundle,
+                page_title=f"Edit {product.name}",
+                product=product,
+                submit_label="Save changes",
+            )
+
+        if self.is_choice_candidate_transfer_request(request):
+            return self.handle_choice_candidate_transfer(
                 request,
                 bundle,
                 page_title=f"Edit {product.name}",

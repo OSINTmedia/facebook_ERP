@@ -296,6 +296,22 @@ Store canonical Size and Color values in Business-owned vocabularies and make `P
 Reason:
 Canonical dropdown truth prevents new spelling drift and cross-Business leakage while multilingual aliases can absorb known Georgian/English wording. Keeping automatic assistance outside this baseline preserves the observed-to-candidate-to-confirmed boundary and lets the later UX refinement address lazy or chaotic input without silently inventing structured truth.
 
+### 2026-08-17 - Size/Color vocabulary needs a visible maintenance surface
+
+Decision:
+Extend the still-unreleased P4.9d delivery with P4.9d_expand: an authenticated Business-scoped Size/Color vocabulary page that shows aliases grouped under each canonical value and supports add, canonical rename, explicit alias-list replacement, and activation/deactivation. Keep canonical deletion, merging, automatic alias learning, and Product Type/Tag/material administration outside this extension.
+
+Reason:
+Contextual creation prevents the Product form from becoming blocked, but it does not let a seller prepare vocabulary in advance or understand which Georgian, English, and inconsistent wording resolves to one canonical value. Editing the existing canonical row preserves ProductChoice foreign keys; atomic alias replacement prevents partial dictionary state; deactivation safely removes a value from new recognition and dropdown selection without deleting historical choice truth. Locking the owning Business row serializes concurrent vocabulary writes so cross-table canonical/alias validation cannot race inside these service boundaries.
+
+### 2026-08-21 - Candidate transfer binds the displayed canonical meaning
+
+Decision:
+Include the displayed canonical Size/Color meaning in the explicit candidate-transfer intent and require the server to match it against the freshly recomputed Business-scoped candidate before changing copied formset data.
+
+Reason:
+Candidate index, semantic destination, and observed-text span alone did not detect a concurrent vocabulary rename or alias reassignment that preserved the same span but changed its canonical meaning. Binding the displayed meaning prevents the seller's explicit action from transferring a different current interpretation while retaining the no-write-before-bundle-save boundary.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:

@@ -25,6 +25,27 @@
                 <span>Observed: “{{ candidate.observed_text }}”</span>
               </span>
               <span class="recognition-candidate__state">Needs confirmation</span>
+              {% if candidate.destination.value == "choice_size" or candidate.destination.value == "choice_color" %}
+                <div class="recognition-candidate__actions">
+                  <button
+                    class="button button--secondary button--compact recognition-candidate__action"
+                    type="submit"
+                    name="intent"
+                    value="transfer_choice_candidate:{{ forloop.counter0 }}:{{ candidate.destination.value }}:{{ candidate.span_start }}:{{ candidate.span_end }}:{{ candidate.canonical_value|urlencode }}"
+                    hx-post="."
+                    hx-target="#choice-section"
+                    hx-swap="outerHTML"
+                    hx-include="closest form"
+                    hx-indicator="#choice-transfer-loading-{{ forloop.counter0 }}"
+                    hx-disabled-elt="this"
+                  >Use in choices</button>
+                  <span
+                    id="choice-transfer-loading-{{ forloop.counter0 }}"
+                    class="htmx-indicator recognition-candidate__loading"
+                    role="status"
+                  >Adding…</span>
+                </div>
+              {% endif %}
             </li>
           {% endfor %}
         </ul>

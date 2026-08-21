@@ -131,6 +131,24 @@ class ChoiceVocabularyForm(forms.Form):
         return cleaned_data
 
 
+class ChoiceVocabularyEditForm(ChoiceVocabularyForm):
+    is_active = forms.BooleanField(
+        required=False,
+        label="Available for new choices and recognition",
+    )
+
+    def __init__(self, *args, kind, instance, **kwargs):
+        self.instance = instance
+        initial = kwargs.setdefault("initial", {})
+        initial.setdefault("name", instance.name)
+        initial.setdefault(
+            "aliases",
+            ", ".join(alias.alias for alias in instance.aliases.all()),
+        )
+        initial.setdefault("is_active", instance.is_active)
+        super().__init__(*args, kind=kind, **kwargs)
+
+
 class BaseProductChoiceFormSet(BaseInlineFormSet):
     """Validate Product choices together at the Product bundle boundary."""
 

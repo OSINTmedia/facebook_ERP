@@ -1,5 +1,7 @@
 from dataclasses import FrozenInstanceError
+from types import SimpleNamespace
 from unittest.mock import patch
+from urllib.parse import quote
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
@@ -10,6 +12,7 @@ from django.urls import reverse
 
 from businesses.models import Business
 from catalog.forms import (
+    ChoiceVocabularyEditForm,
     ChoiceVocabularyForm,
     ProductChoiceForm,
     ProductChoiceFormSet,
@@ -46,6 +49,7 @@ from catalog.vocabulary import (
     COLOR_VOCABULARY,
     SIZE_VOCABULARY,
     create_choice_vocabulary_entry,
+    update_choice_vocabulary_entry,
 )
 
 
@@ -492,6 +496,28 @@ class ChoiceVocabularyFormTests(SimpleTestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("aliases", form.errors)
 
+    def test_edit_form_prepares_current_name_aliases_and_active_state(self):
+        size = SimpleNamespace(
+            name="M",
+            is_active=False,
+            aliases=SimpleNamespace(
+                all=lambda: (
+                    SimpleNamespace(alias="M size"),
+                    SimpleNamespace(alias="M-ზომა"),
+                )
+            ),
+        )
+
+        form = ChoiceVocabularyEditForm(
+            kind=SIZE_VOCABULARY,
+            instance=size,
+            prefix="edit-size",
+        )
+
+        self.assertEqual(form["name"].value(), "M")
+        self.assertEqual(form["aliases"].value(), "M size, M-ზომა")
+        self.assertFalse(form["is_active"].value())
+
 
 class ChoiceVocabularyModelTests(TestCase):
     def setUp(self):
@@ -606,6 +632,102 @@ class ChoiceVocabularyModelTests(TestCase):
             ],
             [(SemanticDestination.CHOICE_SIZE, "M")],
         )
+
+    def test_update_replaces_aliases_and_preserves_referenced_choice(self):
+        size = size_value(self.business, "M")
+        color = color_value(self.business, "Black")
+        old_alias = BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=size,
+            alias="M size",
+        )
+        product = Product.objects.create(
+            business=self.business,
+            name="Black trousers",
+            description="Classic black trousers.",
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=size,
+            color=color,
+            quantity=7,
+        )
+
+        updated_size = update_choice_vocabulary_entry(
+            business=self.business,
+            kind=SIZE_VOCABULARY,
+            entry_id=size.pk,
+            name="Medium",
+            aliases=("M", "M-ზომა"),
+            is_active=False,
+        )
+
+        choice.refresh_from_db()
+        self.assertEqual(updated_size.pk, size.pk)
+        self.assertEqual(updated_size.name, "Medium")
+        self.assertFalse(updated_size.is_active)
+        self.assertEqual(choice.size_id, size.pk)
+        self.assertEqual(choice.quantity, 7)
+        self.assertFalse(BusinessSizeAlias.objects.filter(pk=old_alias.pk).exists())
+        self.assertEqual(
+            set(updated_size.aliases.values_list("alias", flat=True)),
+            {"M", "M-ზომა"},
+        )
+
+    def test_update_rolls_back_when_replacement_alias_conflicts(self):
+        medium = size_value(self.business, "M")
+        small = size_value(self.business, "S")
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=medium,
+            alias="M size",
+        )
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=small,
+            alias="Small",
+        )
+
+        with self.assertRaises(ValidationError):
+            update_choice_vocabulary_entry(
+                business=self.business,
+                kind=SIZE_VOCABULARY,
+                entry_id=medium.pk,
+                name="Medium",
+                aliases=("M-ზომა", "Small"),
+                is_active=False,
+            )
+
+        medium.refresh_from_db()
+        self.assertEqual(medium.name, "M")
+        self.assertTrue(medium.is_active)
+        self.assertEqual(
+            list(medium.aliases.values_list("alias", flat=True)),
+            ["M size"],
+        )
+        self.assertFalse(
+            BusinessSizeAlias.objects.filter(
+                business=self.business,
+                alias="M-ზომა",
+            ).exists()
+        )
+
+    def test_update_rejects_entry_from_another_business(self):
+        other_color = color_value(self.other_business, "Red")
+
+        with self.assertRaises(ValidationError):
+            update_choice_vocabulary_entry(
+                business=self.business,
+                kind=COLOR_VOCABULARY,
+                entry_id=other_color.pk,
+                name="Blue",
+                aliases=("ლურჯი",),
+            )
+
+        other_color.refresh_from_db()
+        self.assertEqual(other_color.name, "Red")
+        self.assertFalse(other_color.aliases.exists())
 
 
 class BusinessProductTypeModelTests(TestCase):
@@ -2762,6 +2884,7 @@ class ProductListViewTests(TestCase):
         self.assertContains(response, owned_product.description)
         self.assertContains(response, "Active")
         self.assertContains(response, "Add product")
+        self.assertContains(response, "Manage size/color vocabulary")
         self.assertContains(response, "Edit")
         self.assertContains(response, 'aria-current="page"')
         self.assertNotContains(response, "Red dress")
@@ -2827,8 +2950,276 @@ class ProductListViewTests(TestCase):
         self.assertNotContains(response, "Second business product", status_code=409)
 
 
+class ChoiceVocabularyViewTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="vocabulary-view-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="vocabulary-view-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Seller Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+        self.url = reverse("catalog:choice_vocabulary")
+
+    def test_vocabulary_page_requires_authentication(self):
+        response = self.client.get(self.url)
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self.url}",
+        )
+
+    def test_vocabulary_page_groups_owned_aliases_and_includes_inactive_values(self):
+        size = size_value(self.business, "M")
+        inactive_color = color_value(self.business, "შავი")
+        inactive_color.is_active = False
+        inactive_color.save(update_fields=["is_active"])
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=size,
+            alias="M-ზომა",
+        )
+        BusinessColorAlias.objects.create(
+            business=self.business,
+            color=inactive_color,
+            alias="Black",
+        )
+        other_size = size_value(self.other_business, "PRIVATE-OTHER-SIZE")
+        BusinessSizeAlias.objects.create(
+            business=self.other_business,
+            size=other_size,
+            alias="PRIVATE-OTHER-ALIAS",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/choice_vocabulary.html")
+        self.assertContains(response, "Size and Color vocabulary")
+        self.assertContains(response, "M-ზომა")
+        self.assertContains(response, "Black")
+        self.assertContains(response, "Inactive")
+        self.assertNotContains(response, "PRIVATE-OTHER-SIZE")
+        self.assertNotContains(response, "PRIVATE-OTHER-ALIAS")
+
+    def test_vocabulary_page_adds_canonical_with_grouped_aliases(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                "add-size-name": " M ",
+                "add-size-aliases": "M-ზომა, M size",
+                "intent": "add_size_vocabulary",
+            },
+        )
+
+        self.assertRedirects(response, self.url)
+        size = BusinessSize.objects.get(business=self.business, name="M")
+        self.assertEqual(
+            set(size.aliases.values_list("alias", flat=True)),
+            {"M-ზომა", "M size"},
+        )
+
+    def test_vocabulary_page_updates_entry_without_changing_choice_identity(self):
+        size = size_value(self.business, "M")
+        color = color_value(self.business, "Black")
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=size,
+            alias="M size",
+        )
+        product = Product.objects.create(
+            business=self.business,
+            name="Black trousers",
+            description="Classic black trousers.",
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=size,
+            color=color,
+            quantity=5,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                f"edit-size-{size.pk}-name": "Medium",
+                f"edit-size-{size.pk}-aliases": "M, M-ზომა",
+                "intent": f"update_vocabulary:size:{size.pk}",
+            },
+        )
+
+        self.assertRedirects(response, self.url)
+        size.refresh_from_db()
+        choice.refresh_from_db()
+        self.assertEqual(size.name, "Medium")
+        self.assertFalse(size.is_active)
+        self.assertEqual(
+            set(size.aliases.values_list("alias", flat=True)),
+            {"M", "M-ზომა"},
+        )
+        self.assertEqual(choice.size_id, size.pk)
+        self.assertEqual(choice.quantity, 5)
+
+    def test_vocabulary_page_reactivates_inactive_entry(self):
+        color = color_value(self.business, "Black")
+        color.is_active = False
+        color.save(update_fields=["is_active"])
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                f"edit-color-{color.pk}-name": "Black",
+                f"edit-color-{color.pk}-aliases": "შავი",
+                f"edit-color-{color.pk}-is_active": "on",
+                "intent": f"update_vocabulary:color:{color.pk}",
+            },
+        )
+
+        self.assertRedirects(response, self.url)
+        color.refresh_from_db()
+        self.assertTrue(color.is_active)
+        self.assertEqual(
+            list(color.aliases.values_list("alias", flat=True)),
+            ["შავი"],
+        )
+
+    def test_vocabulary_page_rolls_back_conflicting_alias_update(self):
+        medium = size_value(self.business, "M")
+        small = size_value(self.business, "S")
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=medium,
+            alias="M size",
+        )
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=small,
+            alias="Small",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                f"edit-size-{medium.pk}-name": "Medium",
+                f"edit-size-{medium.pk}-aliases": "M-ზომა, Small",
+                f"edit-size-{medium.pk}-is_active": "on",
+                "intent": f"update_vocabulary:size:{medium.pk}",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        bound_row = next(
+            row
+            for row in response.context["size_entries"]
+            if row["entry"].pk == medium.pk
+        )
+        self.assertTrue(bound_row["form"].errors)
+        medium.refresh_from_db()
+        self.assertEqual(medium.name, "M")
+        self.assertTrue(medium.is_active)
+        self.assertEqual(
+            list(medium.aliases.values_list("alias", flat=True)),
+            ["M size"],
+        )
+
+    def test_vocabulary_page_cannot_update_another_business_entry(self):
+        other_color = color_value(self.other_business, "Red")
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                f"edit-color-{other_color.pk}-name": "Blue",
+                f"edit-color-{other_color.pk}-aliases": "ლურჯი",
+                f"edit-color-{other_color.pk}-is_active": "on",
+                "intent": f"update_vocabulary:color:{other_color.pk}",
+            },
+        )
+
+        self.assertEqual(response.status_code, 404)
+        other_color.refresh_from_db()
+        self.assertEqual(other_color.name, "Red")
+        self.assertFalse(other_color.aliases.exists())
+
+    def test_vocabulary_mutation_without_business_is_blocked(self):
+        seller_without_business = get_user_model().objects.create_user(
+            email="vocabulary-view-no-business@example.com",
+            password="test-password",
+        )
+        self.client.force_login(seller_without_business)
+
+        response = self.client.post(
+            self.url,
+            {
+                "add-color-name": "შავი",
+                "add-color-aliases": "Black",
+                "intent": "add_color_vocabulary",
+            },
+        )
+
+        self.assertEqual(response.status_code, 409)
+        self.assertContains(
+            response,
+            "No business workspace yet.",
+            status_code=409,
+        )
+        self.assertFalse(BusinessColor.objects.filter(name="შავი").exists())
+
+    def test_vocabulary_page_preserves_safe_return_path(self):
+        self.client.force_login(self.owner)
+        return_url = f"{reverse('catalog:product_list')}?from=vocabulary"
+
+        response = self.client.get(self.url, {"next": return_url})
+
+        self.assertEqual(response.context["return_url"], return_url)
+        self.assertContains(response, f'href="{return_url.replace("&", "&amp;")}"')
+
+    def test_vocabulary_page_refuses_multiple_businesses_without_switcher(self):
+        Business.objects.create(owner=self.owner, name="Second Studio")
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 409)
+        self.assertContains(
+            response,
+            "Multiple business workspaces need an approved switcher",
+            status_code=409,
+        )
+
+
 class ProductBundleViewTestMixin:
     choice_prefix = "choices"
+
+    @staticmethod
+    def transfer_intent(
+        index,
+        destination,
+        span_start,
+        span_end,
+        canonical_value,
+    ):
+        return (
+            f"transfer_choice_candidate:{index}:{destination.value}:"
+            f"{span_start}:{span_end}:{quote(canonical_value, safe='')}"
+        )
 
     def bundle_post_data(
         self,
@@ -3090,6 +3481,19 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, "Choice size")
         self.assertContains(response, "Choice color")
         self.assertContains(response, "Needs confirmation", count=5)
+        self.assertContains(response, "Use in choices", count=2)
+        self.assertContains(
+            response,
+            'value="transfer_choice_candidate:3:choice_size:21:22:M"',
+        )
+        self.assertContains(
+            response,
+            'value="transfer_choice_candidate:4:choice_color:23:28:Black"',
+        )
+        self.assertNotContains(
+            response,
+            'value="transfer_choice_candidate:0:product_type:0:5:Trousers"',
+        )
         self.assertFalse(response.context["show_form_errors"])
         self.assertEqual(
             [
@@ -3109,6 +3513,262 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertFalse(
             Product.objects.filter(name="Unsaved preview product").exists()
         )
+
+    def test_product_create_htmx_transfers_size_without_saving(self):
+        row = self.active_choice_row(
+            size="",
+            quantity="7",
+        )
+        data = self.bundle_post_data(
+            [row],
+            name="Unsaved transfer product",
+            description="M Black",
+        )
+        data["intent"] = self.transfer_intent(
+            0,
+            SemanticDestination.CHOICE_SIZE,
+            0,
+            1,
+            "M",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_choice_section.html")
+        transferred_form = response.context["choice_formset"].forms[0]
+        self.assertEqual(transferred_form["size"].value(), str(self.size.pk))
+        self.assertEqual(transferred_form["color"].value(), str(self.color.pk))
+        self.assertEqual(transferred_form["quantity"].value(), "7")
+        self.assertEqual(
+            response.context["choice_transfer_feedback"],
+            'Size "M" added to Choice 1. Review the row before saving.',
+        )
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_full_page_transfer_preserves_product_input(self):
+        data = self.bundle_post_data(
+            [self.active_choice_row(color="")],
+            name="Unsaved full-page product",
+            description="Black",
+        )
+        data["next"] = f"{self.list_url}?from=transfer"
+        data["intent"] = self.transfer_intent(
+            0,
+            SemanticDestination.CHOICE_COLOR,
+            0,
+            5,
+            "Black",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/product_form.html")
+        transferred_form = response.context["choice_formset"].forms[0]
+        self.assertEqual(transferred_form["color"].value(), str(self.color.pk))
+        self.assertContains(response, 'value="Unsaved full-page product"')
+        self.assertContains(response, "Black")
+        self.assertEqual(
+            response.context["return_url"],
+            f"{self.list_url}?from=transfer",
+        )
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_transfers_aliases_to_one_canonical_choice_row(self):
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=self.size,
+            alias="M-ზომა",
+        )
+        BusinessColorAlias.objects.create(
+            business=self.business,
+            color=self.color,
+            alias="შავი",
+        )
+        data = self.bundle_post_data(
+            [self.active_choice_row(size="", color="", quantity="0")],
+            name="Unsaved alias product",
+            description="M-ზომა შავი",
+        )
+        data["intent"] = self.transfer_intent(
+            0,
+            SemanticDestination.CHOICE_SIZE,
+            0,
+            6,
+            "M",
+        )
+        self.client.force_login(self.owner)
+
+        size_response = self.client.post(
+            self.url,
+            data,
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(size_response.status_code, 200)
+        self.assertContains(size_response, "This field is required.")
+        next_data = size_response.context["choice_formset"].data.copy()
+        next_data["intent"] = self.transfer_intent(
+            1,
+            SemanticDestination.CHOICE_COLOR,
+            7,
+            11,
+            "Black",
+        )
+
+        color_response = self.client.post(
+            self.url,
+            next_data,
+            HTTP_HX_REQUEST="true",
+        )
+
+        transferred_form = color_response.context["choice_formset"].forms[0]
+        self.assertEqual(transferred_form["size"].value(), str(self.size.pk))
+        self.assertEqual(transferred_form["color"].value(), str(self.color.pk))
+        self.assertEqual(
+            color_response.context["choice_transfer_feedback"],
+            'Color "Black" added to Choice 1. Review the row before saving.',
+        )
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_transfer_appends_row_without_merging_duplicates(self):
+        data = self.bundle_post_data(
+            [self.active_choice_row(quantity="5")],
+            name="Unsaved duplicate product",
+            description="M",
+        )
+        data["intent"] = self.transfer_intent(
+            0,
+            SemanticDestination.CHOICE_SIZE,
+            0,
+            1,
+            "M",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        formset = response.context["choice_formset"]
+        self.assertEqual(formset.total_form_count(), 2)
+        self.assertEqual(formset.forms[0]["size"].value(), str(self.size.pk))
+        self.assertEqual(formset.forms[0]["quantity"].value(), "5")
+        self.assertEqual(formset.forms[1]["size"].value(), str(self.size.pk))
+        self.assertEqual(formset.forms[1]["color"].value(), "")
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_rejects_non_choice_candidate_transfer(self):
+        BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        data = self.bundle_post_data(
+            [self.active_choice_row()],
+            name="Unsaved product",
+            description="Trousers",
+        )
+        data["intent"] = self.transfer_intent(
+            0,
+            SemanticDestination.PRODUCT_TYPE,
+            0,
+            8,
+            "Trousers",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        self.assertContains(
+            response,
+            "Only Size and Color candidates can become choices.",
+        )
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_rejects_cross_business_or_stale_candidate_transfer(self):
+        data = self.bundle_post_data(
+            [self.active_choice_row(size="")],
+            name="Unsaved product",
+            description="L Red",
+        )
+        data["intent"] = self.transfer_intent(
+            0,
+            SemanticDestination.CHOICE_SIZE,
+            0,
+            1,
+            "L",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        self.assertContains(response, "That candidate is no longer available.")
+        transferred_form = response.context["choice_formset"].forms[0]
+        self.assertEqual(transferred_form["size"].value(), "")
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_rejects_candidate_when_preview_identity_has_shifted(self):
+        data = self.bundle_post_data(
+            [self.active_choice_row(size="")],
+            name="Unsaved product",
+            description="M Black",
+        )
+        data["intent"] = self.transfer_intent(
+            0,
+            SemanticDestination.CHOICE_SIZE,
+            0,
+            1,
+            "M",
+        )
+        self.size.is_active = False
+        self.size.save(update_fields=["is_active"])
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        self.assertContains(response, "That candidate is no longer available.")
+        transferred_form = response.context["choice_formset"].forms[0]
+        self.assertEqual(transferred_form["size"].value(), "")
+        self.assertEqual(transferred_form["color"].value(), str(self.color.pk))
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_rejects_candidate_when_canonical_meaning_has_changed(self):
+        data = self.bundle_post_data(
+            [self.active_choice_row(size="")],
+            name="Unsaved product",
+            description="M",
+        )
+        data["intent"] = self.transfer_intent(
+            0,
+            SemanticDestination.CHOICE_SIZE,
+            0,
+            1,
+            "M",
+        )
+        self.size.name = "Medium"
+        self.size.save()
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=self.size,
+            alias="M",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        self.assertContains(response, "That candidate is no longer available.")
+        transferred_form = response.context["choice_formset"].forms[0]
+        self.assertEqual(transferred_form["size"].value(), "")
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
 
     def test_product_create_htmx_preview_does_not_require_a_valid_bundle(self):
         self.seed_preview_vocabulary(self.business)
@@ -3501,6 +4161,55 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(self.product.name, "Black trousers")
         self.assertEqual(self.product.description, "Classic black trousers.")
         self.assertFalse(self.product.choices.exists())
+
+    def test_product_edit_htmx_transfer_preserves_row_and_does_not_mutate(self):
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=2,
+        )
+        row = self.active_choice_row(
+            id=str(choice.pk),
+            color="",
+            quantity="9",
+        )
+        data = self.bundle_post_data(
+            [row],
+            initial_forms=1,
+            name="Unsaved edit name",
+            description="Navy",
+        )
+        data["next"] = f"{self.list_url}?from=transfer"
+        data["intent"] = self.transfer_intent(
+            0,
+            SemanticDestination.CHOICE_COLOR,
+            0,
+            4,
+            "Navy",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_choice_section.html")
+        transferred_form = response.context["choice_formset"].forms[0]
+        self.assertEqual(transferred_form["id"].value(), str(choice.pk))
+        self.assertEqual(transferred_form["size"].value(), str(self.size.pk))
+        self.assertEqual(transferred_form["color"].value(), str(self.navy.pk))
+        self.assertEqual(transferred_form["quantity"].value(), "9")
+        self.assertEqual(
+            response.context["return_url"],
+            f"{self.list_url}?from=transfer",
+        )
+        self.product.refresh_from_db()
+        choice.refresh_from_db()
+        self.assertEqual(self.product.name, "Black trousers")
+        self.assertEqual(self.product.description, "Classic black trousers.")
+        self.assertEqual(choice.color, self.color)
+        self.assertEqual(choice.quantity, 2)
 
     def test_product_edit_updates_owned_product(self):
         self.client.force_login(self.owner)

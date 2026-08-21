@@ -48,6 +48,7 @@ VALIDATED_PROTOTYPE_LESSON: The source prototype became useful because it placed
 | Product workspace | Daily catalog and stock operations | Product cards, search/filter, inline stock |
 | Product create | Add a new product truth bundle | Keep focused; avoid relation/admin concepts |
 | Product edit/correction | Correct product facts and choices | Consider focused correction paths later |
+| Size/Color vocabulary | Prepare and maintain approved choice wording | Show canonical values, grouped aliases, and active state without mixing Product Type/Tag administration |
 | Taxonomy management | Maintain approved types/tags if in V1 | OWNER_DECISION_REQUIRED |
 | Product detail | Focused inspection or remove from V1 | OWNER_DECISION_REQUIRED |
 
@@ -133,6 +134,8 @@ OWNER_DECISION_REQUIRED: whether relations are excluded from V1 edit form.
 - OWNER_PROVIDED_DIRECTION: Size/color recognized from description may suggest adding a choice, but confirmed choice rows remain the only size/color truth.
 - OWNER_PROVIDED_DIRECTION: Final V1 size and color entry uses dropdowns backed by seller-managed, Business-scoped canonical vocabularies; unrestricted open-text choice fields are not the target interaction.
 - OWNER_PROVIDED_DIRECTION: Georgian is the primary seller-facing canonical/display direction, while approved Georgian, English, and inconsistent seller wording may resolve through Business-scoped aliases. New approved values should be addable contextually without forcing routine navigation to a separate administration page.
+- OWNER_PROVIDED_DIRECTION: A dedicated authenticated Size/Color vocabulary surface complements contextual creation by showing the complete dictionary for the resolved active Business, including inactive values. Each canonical value visibly owns its alias group and can be renamed, have its explicit aliases replaced, or be activated/deactivated without deleting existing ProductChoice truth.
+- RECOMMENDED_FROM_EVIDENCE: Vocabulary editing must explain that canonical rename changes the displayed value anywhere that canonical row is referenced, while deactivation removes it from new selection and recognition without deleting existing choices.
 - RECOMMENDED_FROM_EVIDENCE: Add/remove behavior must be robust and testable.
 - RECOMMENDED_FROM_EVIDENCE: Removing the last valid choice is blocked or clearly changes product into a draft-only state if owner approves.
 - RECOMMENDED_FROM_EVIDENCE: Quantity cannot be negative.
@@ -240,6 +243,7 @@ No full WCAG compliance claim is made by this draft.
 | Product card | One clear primary action hierarchy, compact stock controls, no stale critical facts after update |
 | Product create | Description-first input, recognition feedback remains lightweight, first valid product can be created without route confusion |
 | Product edit | Missing data can be corrected, validation preserves input, return path explicit |
+| Size/Color vocabulary | Canonical values and grouped aliases are visible; add/edit/deactivate is Business-scoped, recoverable, and mobile-readable |
 | Taxonomy management | If in scope, used items cannot be deleted silently, recovery links return to management |
 | Product detail | If in scope, has a distinct job not duplicated by card |
 

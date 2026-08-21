@@ -1,11 +1,22 @@
 <section id="choice-section" class="choice-section" aria-labelledby="choice-section-title">
   <div class="choice-section__heading">
-    <h2 id="choice-section-title">Choices</h2>
-    <p>Select approved size and color values for each sellable choice.</p>
+    <div>
+      <h2 id="choice-section-title">Choices</h2>
+      <p>Select approved size and color values for each sellable choice.</p>
+    </div>
+    <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">View and manage full vocabulary</a>
   </div>
 
   {% if vocabulary_feedback %}
     <p class="vocabulary-feedback" role="status">{{ vocabulary_feedback }}</p>
+  {% endif %}
+
+  {% if choice_transfer_feedback %}
+    <p class="choice-transfer-feedback" role="status">{{ choice_transfer_feedback }}</p>
+  {% endif %}
+
+  {% if choice_transfer_error %}
+    <p class="choice-transfer-error" role="alert">{{ choice_transfer_error }}</p>
   {% endif %}
 
   <div class="choice-vocabulary" aria-label="Approved choice vocabulary">
