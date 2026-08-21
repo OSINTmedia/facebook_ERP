@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Size and Color Vocabulary | Seller Workspace{% endblock %}
+{% block title %}Product Vocabulary | Seller Workspace{% endblock %}
 
 {% block content %}
   <section class="shell-page" aria-labelledby="choice-vocabulary-title">
     <div class="shell-heading">
       <p class="eyebrow">Seller workspace</p>
-      <h1 id="choice-vocabulary-title">Size and Color vocabulary</h1>
-      <p>Prepare canonical dropdown values and group every approved alternative wording under the value it means.</p>
+      <h1 id="choice-vocabulary-title">Product vocabulary</h1>
+      <p>Prepare canonical Product Types, Tags, Sizes, and Colors, and group every approved alternative wording under the value it means.</p>
     </div>
 
     <div>
@@ -28,183 +28,96 @@
       </div>
     {% else %}
       <div class="vocabulary-manager">
-        <section class="vocabulary-manager__group" aria-labelledby="size-vocabulary-title">
-          <div class="vocabulary-manager__heading">
-            <div>
-              <h2 id="size-vocabulary-title">Sizes</h2>
-              <p>Examples: M with aliases M-ზომა, M ზომა, or M size.</p>
+        {% for group in vocabulary_groups %}
+          <section class="vocabulary-manager__group" aria-labelledby="{{ group.kind }}-vocabulary-title">
+            <div class="vocabulary-manager__heading">
+              <div>
+                <h2 id="{{ group.kind }}-vocabulary-title">{{ group.title }}</h2>
+                <p>{{ group.description }}</p>
+              </div>
+              <span class="status-pill">{{ group.entries|length }} canonical</span>
             </div>
-            <span class="status-pill">{{ size_entries|length }} canonical</span>
-          </div>
 
-          <details class="vocabulary-editor" {% if size_add_form.errors %}open{% endif %}>
-            <summary>Add canonical size</summary>
-            <form class="vocabulary-editor__body" method="post" novalidate>
-              {% csrf_token %}
-              {% if size_add_form.non_field_errors %}
-                <div class="form-errors" role="alert">
-                  {% for error in size_add_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-                </div>
-              {% endif %}
-              <div class="form-field">
-                <label for="{{ size_add_form.name.id_for_label }}">{{ size_add_form.name.label }}</label>
-                {{ size_add_form.name }}
-                {% for error in size_add_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-              </div>
-              <div class="form-field">
-                <label for="{{ size_add_form.aliases.id_for_label }}">{{ size_add_form.aliases.label }}</label>
-                {{ size_add_form.aliases }}
-                {% for error in size_add_form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-              </div>
-              <button class="button button--primary button--compact" type="submit" name="intent" value="add_size_vocabulary">Add size</button>
-            </form>
-          </details>
-
-          {% if size_entries %}
-            <ul class="vocabulary-manager__list" aria-label="Size vocabulary">
-              {% for row in size_entries %}
-                <li class="vocabulary-entry">
-                  <div class="vocabulary-entry__summary">
-                    <div>
-                      <h3>{{ row.entry.name }}</h3>
-                      <p class="vocabulary-entry__state">{% if row.entry.is_active %}Active{% else %}Inactive{% endif %}</p>
-                    </div>
-                    <div class="vocabulary-entry__aliases" aria-label="Aliases for {{ row.entry.name }}">
-                      <span class="vocabulary-entry__aliases-label">Aliases</span>
-                      {% if row.aliases %}
-                        <ul>
-                          {% for alias in row.aliases %}<li>{{ alias.alias }}</li>{% endfor %}
-                        </ul>
-                      {% else %}
-                        <span class="vocabulary-entry__empty">No aliases yet</span>
-                      {% endif %}
-                    </div>
+            <details class="vocabulary-editor" {% if group.add_form.errors %}open{% endif %}>
+              <summary>{{ group.add_summary }}</summary>
+              <form class="vocabulary-editor__body" method="post" novalidate>
+                {% csrf_token %}
+                {% if group.add_form.non_field_errors %}
+                  <div class="form-errors" role="alert">
+                    {% for error in group.add_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
                   </div>
-
-                  <details class="vocabulary-entry__editor" {% if row.form.errors %}open{% endif %}>
-                    <summary>Edit {{ row.entry.name }}</summary>
-                    <form class="vocabulary-entry__form" method="post" novalidate>
-                      {% csrf_token %}
-                      <p class="vocabulary-entry__warning">Renaming updates this label on every choice that references it. Deactivation keeps existing choices but removes this value from new selection and recognition.</p>
-                      {% if row.form.non_field_errors %}
-                        <div class="form-errors" role="alert">
-                          {% for error in row.form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-                        </div>
-                      {% endif %}
-                      <div class="form-field">
-                        <label for="{{ row.form.name.id_for_label }}">{{ row.form.name.label }}</label>
-                        {{ row.form.name }}
-                        {% for error in row.form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-                      </div>
-                      <div class="form-field">
-                        <label for="{{ row.form.aliases.id_for_label }}">{{ row.form.aliases.label }}</label>
-                        {{ row.form.aliases }}
-                        <p class="field-help">Comma-separated. Removing a word here removes that alias after Save.</p>
-                        {% for error in row.form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-                      </div>
-                      <div class="choice-option">
-                        {{ row.form.is_active }}
-                        <label for="{{ row.form.is_active.id_for_label }}">{{ row.form.is_active.label }}</label>
-                      </div>
-                      <button class="button button--secondary button--compact" type="submit" name="intent" value="update_vocabulary:size:{{ row.entry.pk }}">Save size</button>
-                    </form>
-                  </details>
-                </li>
-              {% endfor %}
-            </ul>
-          {% else %}
-            <p class="recognition-preview__empty">No canonical sizes yet.</p>
-          {% endif %}
-        </section>
-
-        <section class="vocabulary-manager__group" aria-labelledby="color-vocabulary-title">
-          <div class="vocabulary-manager__heading">
-            <div>
-              <h2 id="color-vocabulary-title">Colors</h2>
-              <p>Prefer a seller-facing Georgian canonical label and keep English or inconsistent wording as aliases.</p>
-            </div>
-            <span class="status-pill">{{ color_entries|length }} canonical</span>
-          </div>
-
-          <details class="vocabulary-editor" {% if color_add_form.errors %}open{% endif %}>
-            <summary>Add canonical color</summary>
-            <form class="vocabulary-editor__body" method="post" novalidate>
-              {% csrf_token %}
-              {% if color_add_form.non_field_errors %}
-                <div class="form-errors" role="alert">
-                  {% for error in color_add_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                {% endif %}
+                <div class="form-field">
+                  <label for="{{ group.add_form.name.id_for_label }}">{{ group.add_form.name.label }}</label>
+                  {{ group.add_form.name }}
+                  {% for error in group.add_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                 </div>
-              {% endif %}
-              <div class="form-field">
-                <label for="{{ color_add_form.name.id_for_label }}">{{ color_add_form.name.label }}</label>
-                {{ color_add_form.name }}
-                {% for error in color_add_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-              </div>
-              <div class="form-field">
-                <label for="{{ color_add_form.aliases.id_for_label }}">{{ color_add_form.aliases.label }}</label>
-                {{ color_add_form.aliases }}
-                {% for error in color_add_form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-              </div>
-              <button class="button button--primary button--compact" type="submit" name="intent" value="add_color_vocabulary">Add color</button>
-            </form>
-          </details>
+                <div class="form-field">
+                  <label for="{{ group.add_form.aliases.id_for_label }}">{{ group.add_form.aliases.label }}</label>
+                  {{ group.add_form.aliases }}
+                  {% for error in group.add_form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                </div>
+                <button class="button button--primary button--compact" type="submit" name="intent" value="{{ group.add_intent }}">{{ group.add_button }}</button>
+              </form>
+            </details>
 
-          {% if color_entries %}
-            <ul class="vocabulary-manager__list" aria-label="Color vocabulary">
-              {% for row in color_entries %}
-                <li class="vocabulary-entry">
-                  <div class="vocabulary-entry__summary">
-                    <div>
-                      <h3>{{ row.entry.name }}</h3>
-                      <p class="vocabulary-entry__state">{% if row.entry.is_active %}Active{% else %}Inactive{% endif %}</p>
+            {% if group.entries %}
+              <ul class="vocabulary-manager__list" aria-label="{{ group.title }} vocabulary">
+                {% for row in group.entries %}
+                  <li class="vocabulary-entry">
+                    <div class="vocabulary-entry__summary">
+                      <div>
+                        <h3>{{ row.entry.name }}</h3>
+                        <p class="vocabulary-entry__state">{% if row.entry.is_active %}Active{% else %}Inactive{% endif %}</p>
+                      </div>
+                      <div class="vocabulary-entry__aliases" aria-label="Aliases for {{ row.entry.name }}">
+                        <span class="vocabulary-entry__aliases-label">Aliases</span>
+                        {% if row.aliases %}
+                          <ul>
+                            {% for alias in row.aliases %}<li>{{ alias.alias }}</li>{% endfor %}
+                          </ul>
+                        {% else %}
+                          <span class="vocabulary-entry__empty">No aliases yet</span>
+                        {% endif %}
+                      </div>
                     </div>
-                    <div class="vocabulary-entry__aliases" aria-label="Aliases for {{ row.entry.name }}">
-                      <span class="vocabulary-entry__aliases-label">Aliases</span>
-                      {% if row.aliases %}
-                        <ul>
-                          {% for alias in row.aliases %}<li>{{ alias.alias }}</li>{% endfor %}
-                        </ul>
-                      {% else %}
-                        <span class="vocabulary-entry__empty">No aliases yet</span>
-                      {% endif %}
-                    </div>
-                  </div>
 
-                  <details class="vocabulary-entry__editor" {% if row.form.errors %}open{% endif %}>
-                    <summary>Edit {{ row.entry.name }}</summary>
-                    <form class="vocabulary-entry__form" method="post" novalidate>
-                      {% csrf_token %}
-                      <p class="vocabulary-entry__warning">Renaming updates this label on every choice that references it. Deactivation keeps existing choices but removes this value from new selection and recognition.</p>
-                      {% if row.form.non_field_errors %}
-                        <div class="form-errors" role="alert">
-                          {% for error in row.form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                    <details class="vocabulary-entry__editor" {% if row.form.errors %}open{% endif %}>
+                      <summary>Edit {{ row.entry.name }}</summary>
+                      <form class="vocabulary-entry__form" method="post" novalidate>
+                        {% csrf_token %}
+                        <p class="vocabulary-entry__warning">{{ group.warning }}</p>
+                        {% if row.form.non_field_errors %}
+                          <div class="form-errors" role="alert">
+                            {% for error in row.form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                          </div>
+                        {% endif %}
+                        <div class="form-field">
+                          <label for="{{ row.form.name.id_for_label }}">{{ row.form.name.label }}</label>
+                          {{ row.form.name }}
+                          {% for error in row.form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                         </div>
-                      {% endif %}
-                      <div class="form-field">
-                        <label for="{{ row.form.name.id_for_label }}">{{ row.form.name.label }}</label>
-                        {{ row.form.name }}
-                        {% for error in row.form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-                      </div>
-                      <div class="form-field">
-                        <label for="{{ row.form.aliases.id_for_label }}">{{ row.form.aliases.label }}</label>
-                        {{ row.form.aliases }}
-                        <p class="field-help">Comma-separated. Removing a word here removes that alias after Save.</p>
-                        {% for error in row.form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-                      </div>
-                      <div class="choice-option">
-                        {{ row.form.is_active }}
-                        <label for="{{ row.form.is_active.id_for_label }}">{{ row.form.is_active.label }}</label>
-                      </div>
-                      <button class="button button--secondary button--compact" type="submit" name="intent" value="update_vocabulary:color:{{ row.entry.pk }}">Save color</button>
-                    </form>
-                  </details>
-                </li>
-              {% endfor %}
-            </ul>
-          {% else %}
-            <p class="recognition-preview__empty">No canonical colors yet.</p>
-          {% endif %}
-        </section>
+                        <div class="form-field">
+                          <label for="{{ row.form.aliases.id_for_label }}">{{ row.form.aliases.label }}</label>
+                          {{ row.form.aliases }}
+                          <p class="field-help">Comma-separated. Removing a word here removes that alias after Save.</p>
+                          {% for error in row.form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+                        </div>
+                        <div class="choice-option">
+                          {{ row.form.is_active }}
+                          <label for="{{ row.form.is_active.id_for_label }}">{{ row.form.is_active.label }}</label>
+                        </div>
+                        <button class="button button--secondary button--compact" type="submit" name="intent" value="update_vocabulary:{{ group.kind }}:{{ row.entry.pk }}">{{ group.save_button }}</button>
+                      </form>
+                    </details>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="recognition-preview__empty">{{ group.empty_message }}</p>
+            {% endif %}
+          </section>
+        {% endfor %}
       </div>
     {% endif %}
   </section>

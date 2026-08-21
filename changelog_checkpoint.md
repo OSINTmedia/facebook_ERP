@@ -53,12 +53,13 @@
 - P4.6 Size/Color-to-Choice Suggestion Baseline is implemented, integrity-audited, locally verified, committed, pushed, remote-aligned, CI-passed, and `PASSED`.
 - P4.7 Product Choice Model Baseline and its forward duplicate-policy correction are released, remote-aligned, CI-passed, and `PASSED`.
 - P4.8 Product Choice Form/Formset and Bundle Validation Baseline is implemented, integrity-audited, locally verified, committed, pushed, remote-aligned, CI-passed, and `PASSED`.
-- P4.9 is decomposed into six roadmap micro-slices, P4.9a through P4.9f, plus the owner-approved P4.9d_expand extension so choice integration, transient recognition preview, controlled Size/Color vocabulary, candidate transfer, vocabulary maintenance, and confirmed semantic writes retain explicit acceptance boundaries.
+- P4.9 is decomposed into six roadmap micro-slices, P4.9a through P4.9f, plus the owner-approved P4.9d_expand and P4.9e_expand extensions so choice integration, transient recognition preview, controlled vocabulary, candidate transfer, vocabulary maintenance, and confirmed semantic writes retain explicit acceptance boundaries.
 - P4.9a Product Choice Create/Edit Integration Baseline is released, remote-aligned, CI-passed, and `PASSED`; exact delivery metadata remains Git/GitHub authority.
 - P4.9b Product Create/Edit Recognition Preview Baseline is released, remote-aligned, CI-passed, and `PASSED`; exact delivery metadata remains Git/GitHub authority.
 - P4.9c Business-Scoped Size/Color Vocabulary and Dropdown Baseline is released, remote-aligned, CI-passed, and `PASSED`; exact delivery metadata remains Git/GitHub authority.
 - P4.9c replaces unrestricted choice text with Business-scoped canonical Size/Color dropdown truth and explicit multilingual aliases.
-- P4.9d explicit Size/Color candidate transfer and its owner-approved P4.9d_expand full vocabulary manager have passed local implementation, automated verification, the combined integrity audit, and their required owner browser reviews; release remains pending. Automatic or silent form filling and automatic alias learning remain deferred.
+- P4.9d explicit Size/Color candidate transfer and its owner-approved P4.9d_expand full vocabulary manager are released, remote-aligned, CI-passed, and `PASSED`. Automatic or silent form filling and automatic alias learning remain deferred.
+- P4.9e Product Type and Tag Confirmation Attachment Baseline plus P4.9e_expand Product Type and Tag Vocabulary Management Surface are locally implemented, integrity-audited, automated-verification complete, and owner-reviewed; Prompt 5 release remains pending.
 - Legacy post-push checkpoint sync slices exist as historical records only; Version 2 removes routine post-push documentation micro-slices.
 - Successful commit, push, Git/remote alignment, and CI success are operational closure for the same functional micro-slice, not a new documentation micro-slice.
 - CI workflow is committed and pushed in `.github/workflows/django.yml`.
@@ -71,8 +72,8 @@
 
 - Phase: Phase 4 - Semantic Recognition and Choice Model
 - Status: IN_PROGRESS
-- Current functional state: P4.9d Size/Color Candidate-to-Choice Transfer Baseline plus P4.9d_expand Size/Color Vocabulary Management Surface are `AUDITED_READY` in one pending delivery after passing local implementation, automated verification, the combined integrity audit, and required owner browser reviews; release remains pending
-- Next functional micro-slice after this delivery closes: P4.9e Product Type and Tag Confirmation Attachment Baseline — `NOT_STARTED`
+- Current functional state: P4.9d plus P4.9d_expand are release-closed; P4.9e Product Type and Tag Confirmation Attachment Baseline plus P4.9e_expand Product Type and Tag Vocabulary Management Surface are `AUDITED_READY` after local implementation, combined integrity verification, resolved local migration recovery, and required owner browser acceptance; Prompt 5 release remains pending
+- Next functional micro-slice after this combined delivery closes: P4.9f Material Confirmation Attachment Baseline — `NOT_STARTED` and still requires the documented owner decision on exact confirmation UI and alias behavior
 - Started: 2026-07-27
 - Last updated: 2026-08-21
 
@@ -860,17 +861,18 @@
 - Integrity audit result: `PASS`.
 - Result: P4.8 was subsequently committed, pushed, remote-aligned, CI-passed, and is release-closed; exact current delivery metadata remains sourced from Git/GitHub.
 
-### P4.9 execution map, released P4.9c, and current P4.9d delivery
+### P4.9 execution map, released P4.9d delivery, and current P4.9e/P4.9e_expand delivery
 
-- P4.9 contains six roadmap micro-slices plus one owner-approved extension:
+- P4.9 contains six roadmap micro-slices plus two owner-approved extensions:
   - P4.9a Product Choice Create/Edit Integration Baseline;
   - P4.9b Product Create/Edit Recognition Preview Baseline;
   - P4.9c Business-Scoped Size/Color Vocabulary and Dropdown Baseline;
   - P4.9d Size/Color Candidate-to-Choice Transfer Baseline;
   - P4.9d_expand Size/Color Vocabulary Management Surface;
   - P4.9e Product Type and Tag Confirmation Attachment Baseline;
+  - P4.9e_expand Product Type and Tag Vocabulary Management Surface;
   - P4.9f Material Confirmation Attachment Baseline.
-- P4.9a and P4.9b are release-closed; Git/GitHub is authoritative for their exact commits and CI evidence.
+- P4.9a through P4.9d, including P4.9d_expand, are release-closed; Git/GitHub is authoritative for their exact commits and CI evidence.
 - P4.9b implementation areas:
   - `catalog/forms.py`;
   - `catalog/recognition.py`;
@@ -927,7 +929,20 @@
 - Combined integrity audit verification: local/test Django checks passed; local/test migration dry-runs returned `No changes detected`; local/test migration-state checks passed; 39 focused transfer/vocabulary tests, 193 catalog tests, and 231 full-suite tests passed; `git diff --check` passed.
 - Verification environment note: the configured IDE Python lacked Django, so checks used that compatible Python with the repository's existing `.venv` site-packages per command; no dependency installation or repository/IDE configuration change was made.
 - Integrity audit result: `PASS` — no ownership, transaction, state-truth, UX-boundary, deployment-compatibility, secret, or later-phase defect remains, and the required P4.9d_expand browser review subsequently passed.
-- Owner/browser result: P4.9d candidate transfer `PASS`; P4.9d_expand vocabulary management `PASS` on desktop and approximately 390px mobile width. Release remains pending, so neither item is marked release-closed.
+- Owner/browser result: P4.9d candidate transfer `PASS`; P4.9d_expand vocabulary management `PASS` on desktop and approximately 390px mobile width.
+- Result: P4.9d plus P4.9d_expand were subsequently committed, pushed, remote-aligned, CI-passed, and release-closed; exact delivery metadata remains sourced from Git/GitHub.
+- P4.9e plus P4.9e_expand implementation areas:
+  - `catalog/models.py` and migrations `0010_product_classification.py`/`0011_product_type_tag_activation.py` add the protected Product classification associations and non-destructive active state for Type/Tag vocabulary;
+  - `catalog/forms.py` limits new confirmation to active canonical values from the current Business while retaining existing inactive confirmed values for correction/removal;
+  - `catalog/product_bundles.py` persists Product, choice, type, and tag correction/removal inside the existing atomic bundle boundary;
+  - `catalog/vocabulary.py`, `catalog/views.py`, and `catalog/recognition.py` provide atomic Business-scoped Type/Tag vocabulary maintenance and exclude inactive vocabulary from new recognition;
+  - `templates/catalog/product_form.html`, `templates/catalog/choice_vocabulary.html`, `templates/catalog/product_list.html`, and `static/css/app.css` provide compact confirmed-classification controls, a complete Product vocabulary manager, safe return paths, and responsive presentation;
+  - `catalog/tests.py` covers association and vocabulary integrity, cross-Business/tampered values, candidate no-write behavior, validation recovery, deterministic replacement/removal, activation semantics, transaction rollback, and existing-reference preservation.
+- Implemented behavior: one optional canonical Product Type and zero or more canonical Tags become confirmed Product truth only after explicit seller selection and a valid Product bundle save. Sellers can create, rename, replace aliases for, and activate/deactivate current-Business Product Types and Tags; deactivation removes values from new confirmation and recognition without deleting existing Product truth. Candidates alone never attach, and canonical deletion/merge, automatic vocabulary or alias learning, material confirmation, inventory, availability, readiness, search, and buyer replies remain excluded.
+- Combined hardening: owner review exposed that local PostgreSQL had not applied additive migration `0011`, so Product Add failed on missing activation columns even though fresh test databases passed. The failure was reproduced, the additive local migration was applied without data loss, local migration-state verification passed, and a direct local Product Create render returned `200` with classification and choice controls.
+- Combined verification: local/test Django checks and migration dry-runs passed; local migration-state check passed; 165 focused P4.9e/P4.9e_expand tests, 222 catalog tests, and 260 full-suite tests passed; `git diff --check` passed.
+- Integrity audit result: `PASS` — Business isolation, atomic Product/vocabulary writes, candidate-versus-confirmed truth, inactive-reference preservation, validation recovery, and hosted Django/PostgreSQL compatibility remain intact with no later-phase behavior.
+- Required owner/browser review: `PASS` after local schema recovery. Prompt 5 release remains the only delivery gate.
 
 ## 6. Current Blockers
 
@@ -957,7 +972,8 @@
 - No P4.9a implementation or release blocker remains; the slice is closed.
 - No P4.9b implementation or release blocker remains; the slice is closed.
 - No P4.9c implementation, acceptance, or release blocker remains; the slice is closed. Owner-noted automatic-assistance and alias UX refinements are deferred and non-blocking.
-- No known P4.9d or P4.9d_expand implementation, test, integrity, or owner-acceptance blocker remains. Release is still required before delivery closure.
+- No P4.9d or P4.9d_expand implementation, acceptance, or release blocker remains; the combined delivery is closed.
+- No known P4.9e or P4.9e_expand implementation, verification, integrity, migration-state, or owner-acceptance blocker remains. Prompt 5 release remains pending.
 - The old P2.1 local migration-history blocker is `RESOLVED`.
 - The old P2.1 test database permission blocker is `RESOLVED`.
 - Existing remote initial README commit must remain preserved.
@@ -965,7 +981,7 @@
 - Gate 1 is passed after local P1.6 checks and successful GitHub Actions verification.
 - Gate 2 is passed after P2.5 access-control tests, Git checkpoint, push, and CI.
 - Phase 3 is passed after P3.4 release, Git/remote alignment, successful CI, and governance closure.
-- Gate 3 is not passed; the pending P4.9d/P4.9d_expand delivery, P4.9e through P4.9f, inventory, and availability work remain incomplete.
+- Gate 3 is not passed; the P4.9e/P4.9e_expand release, P4.9f, inventory, and availability work remain incomplete.
 - OWNER_DECISION_REQUIRED items remain:
   - final project/repository name;
   - license;
@@ -974,7 +990,6 @@
   - product relations inclusion;
   - clone inclusion and stock-copy policy;
   - archive/restore inclusion and hidden/archive terminology;
-  - type/tag management page inclusion;
   - tag readiness policy;
   - price zero/null/missing/free policy;
   - exact material confirmation UI and alias policy;
@@ -996,9 +1011,9 @@ P4.7 Product Choice Model Baseline and its duplicate-policy correction are relea
 
 P4.8 Product Choice Form/Formset and Bundle Validation Baseline is released, remote-aligned, CI-passed, and `PASSED`.
 
-P4.9 contains six roadmap micro-slices plus the owner-approved P4.9d_expand extension. P4.9a Product Choice Create/Edit Integration Baseline, P4.9b Product Create/Edit Recognition Preview Baseline, and P4.9c Business-Scoped Size/Color Vocabulary and Dropdown Baseline are released and `PASSED`. P4.9d and P4.9d_expand are locally implemented in one pending delivery; P4.9e and P4.9f remain `NOT_STARTED`.
+P4.9 contains six roadmap micro-slices plus the owner-approved P4.9d_expand and P4.9e_expand extensions. P4.9a through P4.9d, including P4.9d_expand, are released and `PASSED`. P4.9e plus P4.9e_expand are `AUDITED_READY` with Prompt 5 release pending; P4.9f remains `NOT_STARTED`.
 
-The current delivery is P4.9d Size/Color Candidate-to-Choice Transfer Baseline plus P4.9d_expand Size/Color Vocabulary Management Surface. Local implementation, automated verification, the combined integrity audit, and required owner browser reviews passed; Prompt 5 release remains pending. After that delivery is release-closed, the next functional micro-slice is P4.9e Product Type and Tag Confirmation Attachment Baseline.
+The current combined delivery is P4.9e Product Type and Tag Confirmation Attachment Baseline plus P4.9e_expand Product Type and Tag Vocabulary Management Surface. Local implementation, automated verification, combined integrity audit, local migration recovery, and required owner browser confirmation passed; Prompt 5 release is the immediate gate. After this delivery is release-closed, the next functional micro-slice is P4.9f Material Confirmation Attachment Baseline, subject to the existing owner decision on its exact confirmation UI and alias behavior.
 
 Exact commit hash and CI run are read from Git/GitHub. Do not create a new `.1 Post-Push...` micro-slice ID solely to record successful delivery metadata.
 
@@ -1048,24 +1063,26 @@ Private local artifacts:
 
 ## 11. Last Operation
 
-- Operation: combined P4.9d/P4.9d_expand integrity audit, stale-candidate identity hardening, focused regression coverage, and mandatory documentation synchronization.
-- Source/test/UI files changed or directly verified:
-  - `catalog/choice_transfers.py`
+- Operation: combined P4.9e/P4.9e_expand integrity audit, local schema recovery, owner acceptance, and mandatory documentation synchronization.
+- Source/test/UI/migration files changed or directly verified:
+  - `catalog/models.py`
+  - `catalog/migrations/0010_product_classification.py`
+  - `catalog/migrations/0011_product_type_tag_activation.py`
   - `catalog/forms.py`
+  - `catalog/product_bundles.py`
+  - `catalog/recognition.py`
   - `catalog/vocabulary.py`
   - `catalog/views.py`
-  - `catalog/urls.py`
   - `catalog/tests.py`
-  - `templates/catalog/_recognition_preview.html`
-  - `templates/catalog/_choice_section.html`
   - `templates/catalog/choice_vocabulary.html`
+  - `templates/catalog/product_form.html`
   - `templates/catalog/product_list.html`
   - `static/css/app.css`
-- Documentation updated by the audit: `BUILD_PLAN.md`, `DEVELOPMENT_NOTES.md`, and `changelog_checkpoint.md`; the existing approved `APP_EXPERIENCE_PLAN.md` and `README.md` delivery changes were reviewed for consistency without further audit edits.
-- Files intentionally not modified: models, migrations, settings, CI, dependencies, all frozen docs under `docs/`, owner-specific local workflow artifacts, Git history, and remote configuration.
+- Documentation updated by the audit: `changelog_checkpoint.md`, `DEVELOPMENT_NOTES.md`, `BUILD_PLAN.md`, `APP_EXPERIENCE_PLAN.md`, and `README.md`.
+- Files intentionally not modified: URLs, settings, CI, dependencies, frozen docs, Git history, remote configuration, and unrelated owner-controlled local documents.
 - Source prototype modified: no.
-- Scope result: explicit candidate transfer and full active-Business Size/Color vocabulary maintenance are implemented without canonical deletion/merge, automatic alias learning, automatic/silent filling, Product Type/Tag/material management, inventory, availability, measurements, buyer-facing, public, or broader-commerce behavior.
-- Verification result: local/test checks, migration dry-runs, and migration-state checks passed; 39 focused transfer/vocabulary tests, 193 catalog tests, and 231 full-suite tests passed; `git diff --check` passed. P4.9d and P4.9d_expand required owner/browser acceptance passed; release remains pending.
+- Scope result: active-Business Product Type/Tag vocabulary can be maintained explicitly and selected canonical values can be confirmed, corrected, or removed through the atomic Product bundle without automatic candidate attachment or learning, canonical deletion/merge, material writes, inventory, availability, readiness, search, buyer replies, public, or broader-commerce behavior.
+- Verification result: local/test Django checks and migration dry-runs passed; local migration-state check passed after applying missing additive migration `0011`; direct local Product Create render returned `200`; 165 focused tests, 222 catalog tests, and 260 full-suite tests passed; `git diff --check` passed; required owner/browser acceptance passed.
 - Post-CI governance closure required: no.
 
 ## 12. Git Checkpoint
@@ -1078,9 +1095,9 @@ Private local artifacts:
 - GitHub repository visibility: public
 - GitHub default branch: `main`
 - Delivery metadata authority: exact current `HEAD`, `origin/main`, actual remote `main`, CI run, and CI conclusion must be read from Git/GitHub.
-- Last released functional milestone: P4.9c Business-Scoped Size/Color Vocabulary and Dropdown Baseline is committed, pushed, remote-aligned, CI-passed, and `PASSED`; exact current delivery metadata is read from Git/GitHub.
-- Pending release milestone: P4.9d Size/Color Candidate-to-Choice Transfer Baseline plus P4.9d_expand Size/Color Vocabulary Management Surface — `AUDITED_READY` after local implementation, automated verification, integrity audit, and required owner browser reviews; release pending.
-- Next functional milestone after pending delivery closure: P4.9e Product Type and Tag Confirmation Attachment Baseline — `NOT_STARTED`.
+- Last released functional milestone: P4.9d Size/Color Candidate-to-Choice Transfer Baseline plus P4.9d_expand Size/Color Vocabulary Management Surface are committed, pushed, remote-aligned, CI-passed, and `PASSED`; exact current delivery metadata is read from Git/GitHub.
+- Pending release milestone: P4.9e Product Type and Tag Confirmation Attachment Baseline plus P4.9e_expand Product Type and Tag Vocabulary Management Surface — `AUDITED_READY`; Prompt 5 release remains pending.
+- Next functional milestone after pending delivery closure: P4.9f Material Confirmation Attachment Baseline — `NOT_STARTED` and subject to its existing owner decision.
 - Post-push documentation rule: no routine post-push documentation sync and no new `.1 Post-Push...` micro-slice ID solely for successful delivery metadata.
 - Ignored local files:
   - `.env`, `.venv/`, Python cache, and owner-specific workflow artifacts remain ignored local files.
@@ -1095,9 +1112,9 @@ A new Codex chat must:
 4. confirm Version 2 workflow is active: Release closes the functional micro-slice, and routine post-push documentation sync is removed;
 5. confirm P1.1 through P1.6 are `PASSED`;
 6. confirm Gate 1 is passed, Phase 2 is `PASSED`, P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are `PASSED`;
-7. confirm Phase 3 is `PASSED`, Phase 4 is `IN_PROGRESS`, and P3.1 through P3.4 plus P4.1 through P4.9c are released and `PASSED`;
-8. confirm Gate 3 is not passed because the pending P4.9d/P4.9d_expand delivery, P4.9e through P4.9f, inventory, and availability remain incomplete;
-9. confirm P4.9d plus P4.9d_expand are `AUDITED_READY` in one pending delivery after required owner browser reviews passed, with release still required; P4.9e is next only after this delivery closes;
+7. confirm Phase 3 is `PASSED`, Phase 4 is `IN_PROGRESS`, and P3.1 through P3.4 plus P4.1 through P4.9d, including P4.9d_expand, are released and `PASSED`;
+8. confirm Gate 3 is not passed because the P4.9e/P4.9e_expand release, P4.9f, inventory, and availability remain incomplete;
+9. confirm P4.9e plus P4.9e_expand are `AUDITED_READY` after required owner browser review passed, with Prompt 5 release still pending; P4.9f remains next only after this delivery closes and its existing owner decision is resolved;
 10. preserve clean branch/remote alignment and successful relevant CI as the delivery gate before beginning later functional work;
 11. do not create a post-push documentation micro-slice solely to record successful delivery metadata;
 12. preserve the approved duplicate-row policy: same-size/color rows remain distinct and are not rejected or merged.

@@ -30,6 +30,7 @@ from catalog.models import (
     Product,
     ProductChoice,
     ProductMaterialFact,
+    ProductTag,
 )
 from catalog.product_bundles import ProductBundle
 from catalog.recognition import (
@@ -47,7 +48,9 @@ from catalog.recognition import (
 )
 from catalog.vocabulary import (
     COLOR_VOCABULARY,
+    PRODUCT_TYPE_VOCABULARY,
     SIZE_VOCABULARY,
+    TAG_VOCABULARY,
     create_choice_vocabulary_entry,
     update_choice_vocabulary_entry,
 )
@@ -518,6 +521,29 @@ class ChoiceVocabularyFormTests(SimpleTestCase):
         self.assertEqual(form["aliases"].value(), "M size, M-ზომა")
         self.assertFalse(form["is_active"].value())
 
+    def test_form_supports_product_type_and_tag_vocabulary(self):
+        product_type_form = ChoiceVocabularyForm(
+            {
+                "type-name": " Shirt ",
+                "type-aliases": "party shirt, პერანგი",
+            },
+            kind=PRODUCT_TYPE_VOCABULARY,
+            prefix="type",
+        )
+        tag_form = ChoiceVocabularyForm(
+            {
+                "tag-name": " Party ",
+                "tag-aliases": "partywear, საღამოს",
+            },
+            kind=TAG_VOCABULARY,
+            prefix="tag",
+        )
+
+        self.assertTrue(product_type_form.is_valid())
+        self.assertTrue(tag_form.is_valid())
+        self.assertEqual(product_type_form.cleaned_data["name"], "Shirt")
+        self.assertEqual(tag_form.cleaned_data["name"], "Party")
+
 
 class ChoiceVocabularyModelTests(TestCase):
     def setUp(self):
@@ -729,6 +755,97 @@ class ChoiceVocabularyModelTests(TestCase):
         self.assertEqual(other_color.name, "Red")
         self.assertFalse(other_color.aliases.exists())
 
+    def test_product_type_update_preserves_product_reference(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Shirt",
+        )
+        product = Product.objects.create(
+            business=self.business,
+            product_type=product_type,
+            name="Party shirt",
+            description="Party shirt.",
+        )
+
+        updated_type = update_choice_vocabulary_entry(
+            business=self.business,
+            kind=PRODUCT_TYPE_VOCABULARY,
+            entry_id=product_type.pk,
+            name="პერანგი",
+            aliases=("Shirt", "party shirt"),
+            is_active=False,
+        )
+
+        product.refresh_from_db()
+        self.assertEqual(updated_type.pk, product_type.pk)
+        self.assertFalse(updated_type.is_active)
+        self.assertEqual(product.product_type_id, product_type.pk)
+        self.assertEqual(
+            set(updated_type.aliases.values_list("alias", flat=True)),
+            {"Shirt", "party shirt"},
+        )
+
+    def test_tag_alias_replacement_rolls_back_on_collision(self):
+        party = BusinessTag.objects.create(business=self.business, name="Party")
+        classic = BusinessTag.objects.create(
+            business=self.business,
+            name="Classic",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=party,
+            alias="partywear",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=classic,
+            alias="formal",
+        )
+
+        with self.assertRaises(ValidationError):
+            update_choice_vocabulary_entry(
+                business=self.business,
+                kind=TAG_VOCABULARY,
+                entry_id=party.pk,
+                name="Occasion",
+                aliases=("evening", "formal"),
+                is_active=False,
+            )
+
+        party.refresh_from_db()
+        self.assertEqual(party.name, "Party")
+        self.assertTrue(party.is_active)
+        self.assertEqual(
+            list(party.aliases.values_list("alias", flat=True)),
+            ["partywear"],
+        )
+
+    def test_create_taxonomy_entry_rejects_another_canonical_alias(self):
+        shirt = BusinessProductType.objects.create(
+            business=self.business,
+            name="Shirt",
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=shirt,
+            alias="party shirt",
+        )
+
+        with self.assertRaises(ValidationError):
+            create_choice_vocabulary_entry(
+                business=self.business,
+                kind=PRODUCT_TYPE_VOCABULARY,
+                name="Top",
+                aliases=("party shirt",),
+            )
+
+        self.assertFalse(
+            BusinessProductType.objects.filter(
+                business=self.business,
+                name="Top",
+            ).exists()
+        )
+
 
 class BusinessProductTypeModelTests(TestCase):
     def setUp(self):
@@ -758,6 +875,7 @@ class BusinessProductTypeModelTests(TestCase):
 
         self.assertEqual(product_type.business, self.business)
         self.assertEqual(self.business.product_types.get(), product_type)
+        self.assertTrue(product_type.is_active)
 
     def test_product_type_requires_business(self):
         with self.assertRaises(IntegrityError):
@@ -855,6 +973,7 @@ class BusinessTagModelTests(TestCase):
 
         self.assertEqual(tag.business, self.business)
         self.assertEqual(self.business.tags.get(), tag)
+        self.assertTrue(tag.is_active)
 
     def test_tag_requires_business(self):
         with self.assertRaises(IntegrityError):
@@ -1735,6 +1854,25 @@ class ProductTypeRecognitionTests(TestCase):
         self.assertEqual(result.candidates, ())
         self.assertEqual(result.confirmed_facts, ())
 
+    def test_inactive_product_type_and_alias_are_not_recognized(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Shirt",
+            is_active=False,
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=product_type,
+            alias="party shirt",
+        )
+
+        result = recognize_product_types_for_business(
+            "party shirt",
+            self.business,
+        )
+
+        self.assertEqual(result.candidates, ())
+
 
 class TagRecognitionTests(TestCase):
     def setUp(self):
@@ -1843,6 +1981,22 @@ class TagRecognitionTests(TestCase):
         self.assertEqual(result.candidates, ())
         self.assertEqual(result.confirmed_facts, ())
 
+    def test_inactive_tag_and_alias_are_not_recognized(self):
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Party",
+            is_active=False,
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=tag,
+            alias="partywear",
+        )
+
+        result = recognize_tags_for_business("partywear", self.business)
+
+        self.assertEqual(result.candidates, ())
+
 
 class ProductModelTests(TestCase):
     def setUp(self):
@@ -1914,6 +2068,41 @@ class ProductModelTests(TestCase):
 
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
 
+    def test_product_accepts_one_owned_product_type(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+
+        product = Product.objects.create(
+            business=self.business,
+            product_type=product_type,
+            name="Black trousers",
+            description="Classic black trousers.",
+        )
+
+        self.assertEqual(product.product_type, product_type)
+        self.assertEqual(product_type.products.get(), product)
+
+    def test_product_rejects_product_type_from_another_business(self):
+        other_product_type = BusinessProductType.objects.create(
+            business=self.other_business,
+            name="Private type",
+        )
+        product = Product(
+            business=self.business,
+            product_type=other_product_type,
+            name="Black trousers",
+            description="Classic black trousers.",
+        )
+
+        with self.assertRaises(ValidationError):
+            product.full_clean()
+        with self.assertRaises(ValidationError):
+            product.save()
+
+        self.assertFalse(Product.objects.exists())
+
     def test_product_rejects_unknown_lifecycle_value(self):
         product = Product(
             business=self.business,
@@ -1959,6 +2148,88 @@ class ProductModelTests(TestCase):
         )
 
         self.assertEqual(str(product), "Black trousers")
+
+
+class ProductTagModelTests(TestCase):
+    def setUp(self):
+        owner = get_user_model().objects.create_user(
+            email="product-tag-owner@example.com",
+            password="test-password",
+        )
+        other_owner = get_user_model().objects.create_user(
+            email="product-tag-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(owner=owner, name="Seller Studio")
+        self.other_business = Business.objects.create(
+            owner=other_owner,
+            name="Other Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="Black trousers",
+            description="Classic black trousers.",
+        )
+        self.other_product = Product.objects.create(
+            business=self.other_business,
+            name="Private dress",
+            description="Private description.",
+        )
+        self.tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Classic",
+        )
+        self.other_tag = BusinessTag.objects.create(
+            business=self.other_business,
+            name="Private",
+        )
+
+    def test_product_tag_is_business_owned_confirmed_association(self):
+        link = ProductTag.objects.create(
+            business=self.business,
+            product=self.product,
+            tag=self.tag,
+        )
+
+        self.assertEqual(self.product.tags.get(), self.tag)
+        self.assertEqual(self.tag.products.get(), self.product)
+        self.assertEqual(self.business.product_tag_links.get(), link)
+
+    def test_product_tag_rejects_cross_business_product_or_tag(self):
+        wrong_product = ProductTag(
+            business=self.business,
+            product=self.other_product,
+            tag=self.tag,
+        )
+        wrong_tag = ProductTag(
+            business=self.business,
+            product=self.product,
+            tag=self.other_tag,
+        )
+
+        for link in (wrong_product, wrong_tag):
+            with self.subTest(link=link):
+                with self.assertRaises(ValidationError):
+                    link.full_clean()
+                with self.assertRaises(ValidationError):
+                    link.save()
+
+        self.assertFalse(ProductTag.objects.exists())
+
+    def test_product_tag_is_unique_per_product(self):
+        ProductTag.objects.create(
+            business=self.business,
+            product=self.product,
+            tag=self.tag,
+        )
+        duplicate = ProductTag(
+            business=self.business,
+            product=self.product,
+            tag=self.tag,
+        )
+
+        with self.assertRaises(ValidationError):
+            duplicate.full_clean()
 
 
 class ProductChoiceModelTests(TestCase):
@@ -2232,11 +2503,111 @@ class ProductFormTests(TestCase):
             owner=self.other_owner,
             name="Other Studio",
         )
+        self.product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        self.tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Classic",
+        )
+        self.other_product_type = BusinessProductType.objects.create(
+            business=self.other_business,
+            name="Private type",
+        )
+        self.other_tag = BusinessTag.objects.create(
+            business=self.other_business,
+            name="Private tag",
+        )
 
     def test_form_exposes_only_approved_product_fields(self):
-        form = ProductForm()
+        form = ProductForm(business=self.business)
 
-        self.assertEqual(list(form.fields), ["name", "description", "lifecycle"])
+        self.assertEqual(
+            list(form.fields),
+            ["name", "description", "product_type", "tags", "lifecycle"],
+        )
+
+    def test_form_classification_choices_are_business_scoped(self):
+        form = ProductForm(business=self.business)
+
+        self.assertEqual(
+            list(form.fields["product_type"].queryset),
+            [self.product_type],
+        )
+        self.assertEqual(list(form.fields["tags"].queryset), [self.tag])
+        self.assertNotIn(
+            self.other_product_type,
+            form.fields["product_type"].queryset,
+        )
+        self.assertNotIn(self.other_tag, form.fields["tags"].queryset)
+
+    def test_form_hides_inactive_classification_from_new_products(self):
+        self.product_type.is_active = False
+        self.product_type.save(update_fields=["is_active"])
+        self.tag.is_active = False
+        self.tag.save(update_fields=["is_active"])
+
+        form = ProductForm(business=self.business)
+
+        self.assertNotIn(self.product_type, form.fields["product_type"].queryset)
+        self.assertNotIn(self.tag, form.fields["tags"].queryset)
+
+    def test_form_preserves_inactive_existing_classification_for_edit(self):
+        product = Product.objects.create(
+            business=self.business,
+            product_type=self.product_type,
+            name="Party shirt",
+            description="Party shirt.",
+        )
+        ProductTag.objects.create(
+            business=self.business,
+            product=product,
+            tag=self.tag,
+        )
+        self.product_type.is_active = False
+        self.product_type.save(update_fields=["is_active"])
+        self.tag.is_active = False
+        self.tag.save(update_fields=["is_active"])
+
+        form = ProductForm(instance=product, business=self.business)
+
+        self.assertIn(self.product_type, form.fields["product_type"].queryset)
+        self.assertIn(self.tag, form.fields["tags"].queryset)
+
+    def test_form_rejects_cross_business_classification_values(self):
+        form = ProductForm(
+            data={
+                "name": "Black trousers",
+                "description": "Classic black trousers.",
+                "product_type": self.other_product_type.pk,
+                "tags": [self.other_tag.pk],
+                "lifecycle": Product.Lifecycle.DRAFT,
+            },
+            business=self.business,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("product_type", form.errors)
+        self.assertIn("tags", form.errors)
+
+    def test_form_prepares_existing_owned_classification_for_edit(self):
+        product = Product.objects.create(
+            business=self.business,
+            product_type=self.product_type,
+            name="Black trousers",
+            description="Classic black trousers.",
+        )
+        ProductTag.objects.create(
+            business=self.business,
+            product=product,
+            tag=self.tag,
+        )
+
+        form = ProductForm(instance=product, business=self.business)
+
+        self.assertEqual(form["product_type"].value(), self.product_type.pk)
+        self.assertEqual(list(form["tags"].value()), [self.tag.pk])
 
     def test_form_requires_name_and_description(self):
         form = ProductForm(
@@ -2270,7 +2641,8 @@ class ProductFormTests(TestCase):
                 "name": "Black trousers",
                 "description": "Classic black trousers.",
                 "lifecycle": Product.Lifecycle.ACTIVE,
-            }
+            },
+            business=self.business,
         )
 
         self.assertTrue(form.is_valid())
@@ -2531,6 +2903,30 @@ class ProductBundleTests(TestCase):
         self.color = color_value(self.business, "Black")
         self.other_size = size_value(self.other_business, "L")
         self.other_color = color_value(self.other_business, "Red")
+        self.product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        self.second_product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Shirt",
+        )
+        self.tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Classic",
+        )
+        self.second_tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Pockets",
+        )
+        self.other_product_type = BusinessProductType.objects.create(
+            business=self.other_business,
+            name="Private type",
+        )
+        self.other_tag = BusinessTag.objects.create(
+            business=self.other_business,
+            name="Private tag",
+        )
 
     def bundle_data(
         self,
@@ -2539,10 +2935,14 @@ class ProductBundleTests(TestCase):
         lifecycle=Product.Lifecycle.ACTIVE,
         initial_forms=0,
         name="Black trousers",
+        product_type="",
+        tags=(),
     ):
         data = {
             "name": name,
             "description": "Classic black trousers.",
+            "product_type": str(product_type or ""),
+            "tags": [str(tag) for tag in tags],
             "lifecycle": lifecycle,
             f"{self.prefix}-TOTAL_FORMS": str(len(rows)),
             f"{self.prefix}-INITIAL_FORMS": str(initial_forms),
@@ -2567,7 +2967,11 @@ class ProductBundleTests(TestCase):
     def test_valid_create_assigns_ownership_and_saves_one_bundle(self):
         bundle = ProductBundle(
             business=self.business,
-            data=self.bundle_data([self.active_choice_row()]),
+            data=self.bundle_data(
+                [self.active_choice_row()],
+                product_type=self.product_type.pk,
+                tags=(self.tag.pk, self.second_tag.pk),
+            ),
         )
 
         self.assertTrue(bundle.is_valid())
@@ -2575,6 +2979,14 @@ class ProductBundleTests(TestCase):
 
         self.assertEqual(product.business, self.business)
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
+        self.assertEqual(product.product_type, self.product_type)
+        self.assertEqual(set(product.tags.all()), {self.tag, self.second_tag})
+        self.assertTrue(
+            all(
+                link.business == self.business
+                for link in ProductTag.objects.filter(product=product)
+            )
+        )
         choice = ProductChoice.objects.get()
         self.assertEqual(choice.business, self.business)
         self.assertEqual(choice.product, product)
@@ -2610,6 +3022,30 @@ class ProductBundleTests(TestCase):
 
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
+        self.assertEqual(ProductTag.objects.count(), 0)
+
+    def test_cross_business_classification_is_rejected_without_writes(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data(
+                [self.active_choice_row()],
+                product_type=self.other_product_type.pk,
+                tags=(self.other_tag.pk,),
+            ),
+        )
+
+        self.assertFalse(bundle.is_valid())
+        self.assertIn("product_type", bundle.product_form.errors)
+        self.assertIn("tags", bundle.product_form.errors)
+        with self.assertRaisesMessage(
+            ValueError,
+            "Cannot save an invalid Product bundle.",
+        ):
+            bundle.save()
+
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+        self.assertEqual(ProductTag.objects.count(), 0)
 
     def test_choice_save_failure_rolls_back_product_and_choices(self):
         bundle = ProductBundle(
@@ -2630,6 +3066,31 @@ class ProductBundleTests(TestCase):
 
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_tag_save_failure_rolls_back_product_and_choices(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data(
+                [self.active_choice_row()],
+                product_type=self.product_type.pk,
+                tags=(self.tag.pk,),
+            ),
+        )
+        self.assertTrue(bundle.is_valid())
+
+        with patch(
+            "catalog.product_bundles.ProductTag.save",
+            side_effect=IntegrityError("simulated tag write failure"),
+        ):
+            with self.assertRaisesMessage(
+                IntegrityError,
+                "simulated tag write failure",
+            ):
+                bundle.save()
+
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+        self.assertEqual(ProductTag.objects.count(), 0)
 
     def test_normalized_duplicate_rows_persist_as_distinct_choices(self):
         rows = [
@@ -2724,6 +3185,7 @@ class ProductBundleTests(TestCase):
     def test_valid_update_saves_product_and_choice_changes(self):
         product = Product.objects.create(
             business=self.business,
+            product_type=self.product_type,
             name="Old trousers",
             description="Old description.",
             lifecycle=Product.Lifecycle.DRAFT,
@@ -2734,6 +3196,11 @@ class ProductBundleTests(TestCase):
             size=self.size,
             color=self.color,
             quantity=1,
+        )
+        ProductTag.objects.create(
+            business=self.business,
+            product=product,
+            tag=self.tag,
         )
         row = self.active_choice_row(
             id=str(choice.pk),
@@ -2748,6 +3215,8 @@ class ProductBundleTests(TestCase):
                 lifecycle=Product.Lifecycle.ACTIVE,
                 initial_forms=1,
                 name="Updated trousers",
+                product_type=self.second_product_type.pk,
+                tags=(self.second_tag.pk,),
             ),
         )
 
@@ -2758,8 +3227,41 @@ class ProductBundleTests(TestCase):
         choice.refresh_from_db()
         self.assertEqual(product.name, "Updated trousers")
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
+        self.assertEqual(product.product_type, self.second_product_type)
+        self.assertEqual(list(product.tags.all()), [self.second_tag])
         self.assertEqual(choice.size, self.large_size)
         self.assertEqual(choice.quantity, 5)
+
+    def test_valid_update_can_remove_type_and_all_tags(self):
+        product = Product.objects.create(
+            business=self.business,
+            product_type=self.product_type,
+            name="Draft trousers",
+            description="Draft description.",
+        )
+        ProductTag.objects.create(
+            business=self.business,
+            product=product,
+            tag=self.tag,
+        )
+        bundle = ProductBundle(
+            business=self.business,
+            instance=product,
+            data=self.bundle_data(
+                [{}],
+                lifecycle=Product.Lifecycle.DRAFT,
+                product_type="",
+                tags=(),
+            ),
+        )
+
+        self.assertTrue(bundle.is_valid())
+        bundle.save()
+
+        product.refresh_from_db()
+        self.assertIsNone(product.product_type)
+        self.assertFalse(product.tags.exists())
+        self.assertFalse(ProductTag.objects.filter(product=product).exists())
 
     def test_active_product_cannot_delete_its_last_active_choice(self):
         product = Product.objects.create(
@@ -2884,7 +3386,7 @@ class ProductListViewTests(TestCase):
         self.assertContains(response, owned_product.description)
         self.assertContains(response, "Active")
         self.assertContains(response, "Add product")
-        self.assertContains(response, "Manage size/color vocabulary")
+        self.assertContains(response, "Manage product vocabulary")
         self.assertContains(response, "Edit")
         self.assertContains(response, 'aria-current="page"')
         self.assertNotContains(response, "Red dress")
@@ -2994,11 +3496,38 @@ class ChoiceVocabularyViewTests(TestCase):
             color=inactive_color,
             alias="Black",
         )
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="პერანგი",
+            is_active=False,
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=product_type,
+            alias="Shirt",
+        )
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="საღამოს",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=tag,
+            alias="Party",
+        )
         other_size = size_value(self.other_business, "PRIVATE-OTHER-SIZE")
         BusinessSizeAlias.objects.create(
             business=self.other_business,
             size=other_size,
             alias="PRIVATE-OTHER-ALIAS",
+        )
+        BusinessProductType.objects.create(
+            business=self.other_business,
+            name="PRIVATE-OTHER-TYPE",
+        )
+        BusinessTag.objects.create(
+            business=self.other_business,
+            name="PRIVATE-OTHER-TAG",
         )
         self.client.force_login(self.owner)
 
@@ -3006,12 +3535,18 @@ class ChoiceVocabularyViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/choice_vocabulary.html")
-        self.assertContains(response, "Size and Color vocabulary")
+        self.assertContains(response, "Product vocabulary")
+        self.assertContains(response, "Product types")
+        self.assertContains(response, "Tags")
         self.assertContains(response, "M-ზომა")
         self.assertContains(response, "Black")
+        self.assertContains(response, "Shirt")
+        self.assertContains(response, "Party")
         self.assertContains(response, "Inactive")
         self.assertNotContains(response, "PRIVATE-OTHER-SIZE")
         self.assertNotContains(response, "PRIVATE-OTHER-ALIAS")
+        self.assertNotContains(response, "PRIVATE-OTHER-TYPE")
+        self.assertNotContains(response, "PRIVATE-OTHER-TAG")
 
     def test_vocabulary_page_adds_canonical_with_grouped_aliases(self):
         self.client.force_login(self.owner)
@@ -3031,6 +3566,120 @@ class ChoiceVocabularyViewTests(TestCase):
             set(size.aliases.values_list("alias", flat=True)),
             {"M-ზომა", "M size"},
         )
+
+    def test_vocabulary_page_adds_product_type_and_tag_with_aliases(self):
+        self.client.force_login(self.owner)
+
+        type_response = self.client.post(
+            self.url,
+            {
+                "add-product_type-name": " პერანგი ",
+                "add-product_type-aliases": "Shirt, party shirt",
+                "intent": "add_product_type_vocabulary",
+            },
+        )
+        tag_response = self.client.post(
+            self.url,
+            {
+                "add-tag-name": " საღამოს ",
+                "add-tag-aliases": "Party, partywear",
+                "intent": "add_tag_vocabulary",
+            },
+        )
+
+        self.assertRedirects(type_response, self.url)
+        self.assertRedirects(tag_response, self.url)
+        product_type = BusinessProductType.objects.get(
+            business=self.business,
+            name="პერანგი",
+        )
+        tag = BusinessTag.objects.get(
+            business=self.business,
+            name="საღამოს",
+        )
+        self.assertEqual(
+            set(product_type.aliases.values_list("alias", flat=True)),
+            {"Shirt", "party shirt"},
+        )
+        self.assertEqual(
+            set(tag.aliases.values_list("alias", flat=True)),
+            {"Party", "partywear"},
+        )
+
+    def test_vocabulary_page_updates_taxonomy_without_changing_product_truth(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Shirt",
+        )
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Party",
+        )
+        product = Product.objects.create(
+            business=self.business,
+            product_type=product_type,
+            name="Party shirt",
+            description="Party shirt.",
+        )
+        ProductTag.objects.create(
+            business=self.business,
+            product=product,
+            tag=tag,
+        )
+        self.client.force_login(self.owner)
+
+        type_response = self.client.post(
+            self.url,
+            {
+                f"edit-product_type-{product_type.pk}-name": "პერანგი",
+                f"edit-product_type-{product_type.pk}-aliases": "Shirt",
+                "intent": f"update_vocabulary:product_type:{product_type.pk}",
+            },
+        )
+        tag_response = self.client.post(
+            self.url,
+            {
+                f"edit-tag-{tag.pk}-name": "საღამოს",
+                f"edit-tag-{tag.pk}-aliases": "Party",
+                "intent": f"update_vocabulary:tag:{tag.pk}",
+            },
+        )
+
+        self.assertRedirects(type_response, self.url)
+        self.assertRedirects(tag_response, self.url)
+        product.refresh_from_db()
+        product_type.refresh_from_db()
+        tag.refresh_from_db()
+        self.assertEqual(product.product_type_id, product_type.pk)
+        self.assertTrue(
+            ProductTag.objects.filter(product=product, tag=tag).exists()
+        )
+        self.assertEqual(product_type.name, "პერანგი")
+        self.assertEqual(tag.name, "საღამოს")
+        self.assertFalse(product_type.is_active)
+        self.assertFalse(tag.is_active)
+
+    def test_vocabulary_page_cannot_update_another_business_taxonomy(self):
+        other_type = BusinessProductType.objects.create(
+            business=self.other_business,
+            name="Private type",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                f"edit-product_type-{other_type.pk}-name": "Changed",
+                f"edit-product_type-{other_type.pk}-aliases": "Private",
+                f"edit-product_type-{other_type.pk}-is_active": "on",
+                "intent": f"update_vocabulary:product_type:{other_type.pk}",
+            },
+        )
+
+        self.assertEqual(response.status_code, 404)
+        other_type.refresh_from_db()
+        self.assertEqual(other_type.name, "Private type")
+        self.assertFalse(other_type.aliases.exists())
 
     def test_vocabulary_page_updates_entry_without_changing_choice_identity(self):
         size = size_value(self.business, "M")
@@ -3229,10 +3878,14 @@ class ProductBundleViewTestMixin:
         initial_forms=0,
         name="Black trousers",
         description="Classic black trousers.",
+        product_type="",
+        tags=(),
     ):
         data = {
             "name": name,
             "description": description,
+            "product_type": str(product_type or ""),
+            "tags": [str(tag) for tag in tags],
             "lifecycle": lifecycle,
             f"{self.choice_prefix}-TOTAL_FORMS": str(len(rows)),
             f"{self.choice_prefix}-INITIAL_FORMS": str(initial_forms),
@@ -3345,6 +3998,15 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, "Add product")
         self.assertContains(response, 'name="name"')
         self.assertContains(response, 'name="description"')
+        self.assertContains(response, 'name="product_type"')
+        self.assertIn("tags", response.context["form"].fields)
+        self.assertContains(response, "Confirmed classification")
+        self.assertContains(response, "Recognition candidates remain suggestions")
+        self.assertContains(response, 'id="id_tags-label"')
+        self.assertContains(
+            response,
+            'role="group" aria-labelledby="id_tags-label"',
+        )
         self.assertContains(response, 'name="lifecycle"')
         self.assertContains(response, "Choices")
         self.assertContains(response, 'name="choices-TOTAL_FORMS"')
@@ -3365,6 +4027,143 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, "Preview recognition")
         self.assertContains(response, "Create product")
         self.assertNotContains(response, 'name="business"')
+
+    def test_product_create_classification_options_are_business_scoped(self):
+        owned_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        owned_tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Classic",
+        )
+        BusinessProductType.objects.create(
+            business=self.other_business,
+            name="PRIVATE-OTHER-TYPE",
+        )
+        BusinessTag.objects.create(
+            business=self.other_business,
+            name="PRIVATE-OTHER-TAG",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, owned_type.name)
+        self.assertContains(response, owned_tag.name)
+        self.assertNotContains(response, "PRIVATE-OTHER-TYPE")
+        self.assertNotContains(response, "PRIVATE-OTHER-TAG")
+
+    def test_product_create_explicitly_saves_owned_type_and_tags(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        classic = BusinessTag.objects.create(
+            business=self.business,
+            name="Classic",
+        )
+        pockets = BusinessTag.objects.create(
+            business=self.business,
+            name="Pockets",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [self.active_choice_row()],
+                product_type=product_type.pk,
+                tags=(classic.pk, pockets.pk),
+            ),
+        )
+
+        self.assertRedirects(response, self.list_url)
+        product = Product.objects.get(name="Black trousers")
+        self.assertEqual(product.product_type, product_type)
+        self.assertEqual(set(product.tags.all()), {classic, pockets})
+        self.assertEqual(
+            set(product.tag_links.values_list("business_id", flat=True)),
+            {self.business.pk},
+        )
+
+    def test_product_create_candidates_alone_do_not_attach_classification(self):
+        self.seed_preview_vocabulary(self.business)
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [{}],
+                lifecycle=Product.Lifecycle.DRAFT,
+                name="Unclassified trousers",
+                description="pants Classic",
+            ),
+        )
+
+        self.assertRedirects(response, self.list_url)
+        product = Product.objects.get(name="Unclassified trousers")
+        self.assertIsNone(product.product_type)
+        self.assertFalse(product.tags.exists())
+
+    def test_product_create_rejects_cross_business_classification(self):
+        other_type = BusinessProductType.objects.create(
+            business=self.other_business,
+            name="Private type",
+        )
+        other_tag = BusinessTag.objects.create(
+            business=self.other_business,
+            name="Private tag",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [self.active_choice_row()],
+                product_type=other_type.pk,
+                tags=(other_tag.pk,),
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Select a valid choice.", count=2)
+        self.assertFalse(Product.objects.exists())
+        self.assertFalse(ProductTag.objects.exists())
+
+    def test_product_create_error_preserves_owned_classification_selection(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Classic",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [self.active_choice_row(color="")],
+                description="Trousers Classic",
+                product_type=product_type.pk,
+                tags=(tag.pk,),
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["form"]["product_type"].value(),
+            str(product_type.pk),
+        )
+        self.assertEqual(
+            response.context["form"]["tags"].value(),
+            [str(tag.pk)],
+        )
+        self.assertContains(response, "Recognized candidates")
+        self.assertFalse(Product.objects.exists())
+        self.assertFalse(ProductTag.objects.exists())
 
     def test_product_create_htmx_adds_size_and_aliases_without_saving_product(self):
         data = self.bundle_post_data(
@@ -4050,6 +4849,29 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         )
 
     def test_product_edit_renders_form_for_owned_product(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Classic",
+        )
+        BusinessProductType.objects.create(
+            business=self.other_business,
+            name="PRIVATE-OTHER-TYPE",
+        )
+        BusinessTag.objects.create(
+            business=self.other_business,
+            name="PRIVATE-OTHER-TAG",
+        )
+        self.product.product_type = product_type
+        self.product.save(update_fields=["product_type"])
+        ProductTag.objects.create(
+            business=self.business,
+            product=self.product,
+            tag=tag,
+        )
         owned_choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
@@ -4073,12 +4895,94 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, "Edit Black trousers")
         self.assertContains(response, 'value="Black trousers"')
         self.assertContains(response, "Classic black trousers.")
+        self.assertEqual(
+            response.context["form"]["product_type"].value(),
+            product_type.pk,
+        )
+        self.assertEqual(response.context["form"]["tags"].value(), [tag.pk])
+        self.assertNotContains(response, "PRIVATE-OTHER-TYPE")
+        self.assertNotContains(response, "PRIVATE-OTHER-TAG")
         self.assertContains(response, 'name="choices-TOTAL_FORMS"')
         self.assertContains(response, f'value="{owned_choice.pk}"')
         self.assertContains(response, ">Black</option>")
         self.assertNotContains(response, "Private red")
         self.assertContains(response, "Save changes")
         self.assertNotContains(response, 'name="business"')
+
+    def test_product_edit_replaces_type_and_tags_atomically(self):
+        old_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        new_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Shirt",
+        )
+        old_tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Classic",
+        )
+        new_tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Pockets",
+        )
+        self.product.product_type = old_type
+        self.product.save(update_fields=["product_type"])
+        ProductTag.objects.create(
+            business=self.business,
+            product=self.product,
+            tag=old_tag,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [{}],
+                lifecycle=Product.Lifecycle.DRAFT,
+                product_type=new_type.pk,
+                tags=(new_tag.pk,),
+            ),
+        )
+
+        self.assertRedirects(response, self.list_url)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.product_type, new_type)
+        self.assertEqual(list(self.product.tags.all()), [new_tag])
+        self.assertFalse(
+            ProductTag.objects.filter(product=self.product, tag=old_tag).exists()
+        )
+
+    def test_product_edit_can_remove_type_and_all_tags(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Classic",
+        )
+        self.product.product_type = product_type
+        self.product.save(update_fields=["product_type"])
+        ProductTag.objects.create(
+            business=self.business,
+            product=self.product,
+            tag=tag,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [{}],
+                lifecycle=Product.Lifecycle.DRAFT,
+            ),
+        )
+
+        self.assertRedirects(response, self.list_url)
+        self.product.refresh_from_db()
+        self.assertIsNone(self.product.product_type)
+        self.assertFalse(self.product.tags.exists())
 
     def test_product_edit_get_previews_saved_description(self):
         self.seed_preview_vocabulary(self.business)

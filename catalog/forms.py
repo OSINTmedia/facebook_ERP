@@ -5,14 +5,35 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.forms import BaseInlineFormSet, inlineformset_factory
 
-from catalog.models import BusinessColor, BusinessSize, Product, ProductChoice
-from catalog.vocabulary import COLOR_VOCABULARY, SIZE_VOCABULARY
+from catalog.models import (
+    BusinessColor,
+    BusinessProductType,
+    BusinessSize,
+    BusinessTag,
+    Product,
+    ProductChoice,
+)
+from catalog.vocabulary import (
+    COLOR_VOCABULARY,
+    PRODUCT_TYPE_VOCABULARY,
+    SIZE_VOCABULARY,
+    TAG_VOCABULARY,
+)
 
 
 class ProductForm(forms.ModelForm):
+    tags = forms.ModelMultipleChoiceField(
+        queryset=BusinessTag.objects.none(),
+        required=False,
+        label="Confirmed tags",
+        widget=forms.CheckboxSelectMultiple(
+            attrs={"class": "classification-options"}
+        ),
+    )
+
     class Meta:
         model = Product
-        fields = ["name", "description", "lifecycle"]
+        fields = ["name", "description", "product_type", "tags", "lifecycle"]
         widgets = {
             "description": forms.Textarea(
                 attrs={
@@ -27,6 +48,43 @@ class ProductForm(forms.ModelForm):
                 }
             )
         }
+
+    def __init__(self, *args, business=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        product_types = BusinessProductType.objects.none()
+        tags = BusinessTag.objects.none()
+
+        if business is not None:
+            product_type_filter = Q(business=business, is_active=True)
+            tag_filter = Q(business=business, is_active=True)
+            if self.instance.pk and self.instance.business_id == business.pk:
+                product_type_filter = Q(business=business) & (
+                    Q(is_active=True) | Q(pk=self.instance.product_type_id)
+                )
+                tag_filter = Q(business=business) & (
+                    Q(is_active=True) | Q(products=self.instance)
+                )
+
+            product_types = BusinessProductType.objects.filter(
+                product_type_filter
+            ).order_by("name", "id")
+            tags = BusinessTag.objects.filter(tag_filter).distinct().order_by(
+                "name",
+                "id",
+            )
+            if (
+                not self.is_bound
+                and self.instance.pk
+                and self.instance.business_id == business.pk
+            ):
+                self.initial["tags"] = self.instance.tags.filter(
+                    product_links__business=business
+                )
+
+        self.fields["product_type"].queryset = product_types
+        self.fields["product_type"].empty_label = "No confirmed product type"
+        self.fields["product_type"].label = "Confirmed product type"
+        self.fields["tags"].queryset = tags
 
 
 class ProductChoiceForm(forms.ModelForm):
@@ -82,12 +140,18 @@ class ChoiceVocabularyForm(forms.Form):
     )
 
     def __init__(self, *args, kind, **kwargs):
-        if kind not in {SIZE_VOCABULARY, COLOR_VOCABULARY}:
-            raise ValueError("Choice vocabulary kind must be size or color.")
+        labels = {
+            SIZE_VOCABULARY: "Size",
+            COLOR_VOCABULARY: "Color",
+            PRODUCT_TYPE_VOCABULARY: "Product type",
+            TAG_VOCABULARY: "Tag",
+        }
+        if kind not in labels:
+            raise ValueError("Unsupported vocabulary kind.")
         self.kind = kind
         super().__init__(*args, **kwargs)
 
-        label = "Size" if kind == SIZE_VOCABULARY else "Color"
+        label = labels[kind]
         self.fields["name"].label = f"Canonical {label.lower()}"
         self.fields["name"].max_length = 40 if kind == SIZE_VOCABULARY else 80
         self.fields["aliases"].label = "Approved aliases"
@@ -102,7 +166,7 @@ class ChoiceVocabularyForm(forms.Form):
         raw_aliases = self.cleaned_data.get("aliases", "")
         aliases = []
         seen = set()
-        max_length = 80 if self.kind == SIZE_VOCABULARY else 120
+        max_length = 120 if self.kind == COLOR_VOCABULARY else 80
 
         for raw_alias in re.split(r"[,\n]+", raw_aliases):
             alias = raw_alias.strip()
@@ -147,6 +211,9 @@ class ChoiceVocabularyEditForm(ChoiceVocabularyForm):
         )
         initial.setdefault("is_active", instance.is_active)
         super().__init__(*args, kind=kind, **kwargs)
+        self.fields["is_active"].label = (
+            "Available for new selection and recognition"
+        )
 
 
 class BaseProductChoiceFormSet(BaseInlineFormSet):

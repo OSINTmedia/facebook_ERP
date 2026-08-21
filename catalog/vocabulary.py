@@ -1,4 +1,4 @@
-"""Business-scoped creation boundary for controlled Size/Color vocabulary."""
+"""Atomic Business-scoped mutation boundary for controlled product vocabulary."""
 
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -8,13 +8,36 @@ from businesses.models import Business
 from catalog.models import (
     BusinessColor,
     BusinessColorAlias,
+    BusinessProductType,
+    BusinessProductTypeAlias,
     BusinessSize,
     BusinessSizeAlias,
+    BusinessTag,
+    BusinessTagAlias,
 )
 
 
 SIZE_VOCABULARY = "size"
 COLOR_VOCABULARY = "color"
+PRODUCT_TYPE_VOCABULARY = "product_type"
+TAG_VOCABULARY = "tag"
+
+
+def vocabulary_models(kind):
+    configurations = {
+        SIZE_VOCABULARY: (BusinessSize, BusinessSizeAlias, "size"),
+        COLOR_VOCABULARY: (BusinessColor, BusinessColorAlias, "color"),
+        PRODUCT_TYPE_VOCABULARY: (
+            BusinessProductType,
+            BusinessProductTypeAlias,
+            "product_type",
+        ),
+        TAG_VOCABULARY: (BusinessTag, BusinessTagAlias, "tag"),
+    }
+    try:
+        return configurations[kind]
+    except KeyError as exc:
+        raise ValueError("Unsupported vocabulary kind.") from exc
 
 
 @transaction.atomic
@@ -25,16 +48,7 @@ def create_choice_vocabulary_entry(*, business, kind, name, aliases=()):
 
     business = Business.objects.select_for_update().get(pk=business.pk)
 
-    if kind == SIZE_VOCABULARY:
-        canonical_model = BusinessSize
-        alias_model = BusinessSizeAlias
-        relation_name = "size"
-    elif kind == COLOR_VOCABULARY:
-        canonical_model = BusinessColor
-        alias_model = BusinessColorAlias
-        relation_name = "color"
-    else:
-        raise ValueError("Choice vocabulary kind must be size or color.")
+    canonical_model, alias_model, relation_name = vocabulary_models(kind)
 
     try:
         normalized_name = (name or "").strip()
@@ -98,16 +112,7 @@ def update_choice_vocabulary_entry(
 
     business = Business.objects.select_for_update().get(pk=business.pk)
 
-    if kind == SIZE_VOCABULARY:
-        canonical_model = BusinessSize
-        alias_model = BusinessSizeAlias
-        relation_name = "size"
-    elif kind == COLOR_VOCABULARY:
-        canonical_model = BusinessColor
-        alias_model = BusinessColorAlias
-        relation_name = "color"
-    else:
-        raise ValueError("Choice vocabulary kind must be size or color.")
+    canonical_model, alias_model, relation_name = vocabulary_models(kind)
 
     try:
         canonical = canonical_model.objects.select_for_update().get(

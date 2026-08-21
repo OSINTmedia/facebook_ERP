@@ -11,12 +11,20 @@ from django.views.generic import TemplateView
 from businesses.selectors import MultipleBusinessesUnsupported, resolve_active_business
 from catalog.choice_transfers import transfer_choice_candidate
 from catalog.forms import ChoiceVocabularyEditForm, ChoiceVocabularyForm
-from catalog.models import BusinessColor, BusinessSize, Product
+from catalog.models import (
+    BusinessColor,
+    BusinessProductType,
+    BusinessSize,
+    BusinessTag,
+    Product,
+)
 from catalog.product_bundles import ProductBundle
 from catalog.recognition import recognize_product_preview_for_business
 from catalog.vocabulary import (
     COLOR_VOCABULARY,
+    PRODUCT_TYPE_VOCABULARY,
     SIZE_VOCABULARY,
+    TAG_VOCABULARY,
     create_choice_vocabulary_entry,
     update_choice_vocabulary_entry,
 )
@@ -25,8 +33,29 @@ from catalog.vocabulary import (
 RECOGNITION_PREVIEW_INTENT = "preview_recognition"
 ADD_SIZE_VOCABULARY_INTENT = "add_size_vocabulary"
 ADD_COLOR_VOCABULARY_INTENT = "add_color_vocabulary"
+ADD_PRODUCT_TYPE_VOCABULARY_INTENT = "add_product_type_vocabulary"
+ADD_TAG_VOCABULARY_INTENT = "add_tag_vocabulary"
 TRANSFER_CHOICE_CANDIDATE_INTENT = "transfer_choice_candidate"
 UPDATE_VOCABULARY_INTENT = "update_vocabulary"
+
+ADD_VOCABULARY_INTENTS = {
+    ADD_SIZE_VOCABULARY_INTENT: SIZE_VOCABULARY,
+    ADD_COLOR_VOCABULARY_INTENT: COLOR_VOCABULARY,
+    ADD_PRODUCT_TYPE_VOCABULARY_INTENT: PRODUCT_TYPE_VOCABULARY,
+    ADD_TAG_VOCABULARY_INTENT: TAG_VOCABULARY,
+}
+VOCABULARY_MODELS = {
+    SIZE_VOCABULARY: BusinessSize,
+    COLOR_VOCABULARY: BusinessColor,
+    PRODUCT_TYPE_VOCABULARY: BusinessProductType,
+    TAG_VOCABULARY: BusinessTag,
+}
+VOCABULARY_LABELS = {
+    SIZE_VOCABULARY: "Size",
+    COLOR_VOCABULARY: "Color",
+    PRODUCT_TYPE_VOCABULARY: "Product type",
+    TAG_VOCABULARY: "Tag",
+}
 
 
 def get_safe_product_return_url(request):
@@ -118,7 +147,7 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
             )
 
         intent = request.POST.get("intent", "")
-        if intent in {ADD_SIZE_VOCABULARY_INTENT, ADD_COLOR_VOCABULARY_INTENT}:
+        if intent in ADD_VOCABULARY_INTENTS:
             return self.handle_add(request, intent)
         if intent.startswith(f"{UPDATE_VOCABULARY_INTENT}:"):
             return self.handle_update(request, intent)
@@ -134,11 +163,7 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
         )
 
     def handle_add(self, request, intent):
-        kind = (
-            SIZE_VOCABULARY
-            if intent == ADD_SIZE_VOCABULARY_INTENT
-            else COLOR_VOCABULARY
-        )
+        kind = ADD_VOCABULARY_INTENTS[intent]
         form = ChoiceVocabularyForm(
             request.POST,
             kind=kind,
@@ -157,7 +182,7 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
             else:
                 messages.success(
                     request,
-                    f'{kind.title()} "{canonical.name}" saved.',
+                    f'{VOCABULARY_LABELS[kind]} "{canonical.name}" saved.',
                 )
                 return redirect(request.get_full_path())
 
@@ -185,11 +210,8 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
                 status=400,
             )
 
-        if kind == SIZE_VOCABULARY:
-            model = BusinessSize
-        elif kind == COLOR_VOCABULARY:
-            model = BusinessColor
-        else:
+        model = VOCABULARY_MODELS.get(kind)
+        if model is None:
             return render(
                 request,
                 self.template_name,
@@ -228,7 +250,7 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
             else:
                 messages.success(
                     request,
-                    f'{kind.title()} "{canonical.name}" updated.',
+                    f'{VOCABULARY_LABELS[kind]} "{canonical.name}" updated.',
                 )
                 return redirect(request.get_full_path())
 
@@ -256,14 +278,33 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
             "color_add_form",
             ChoiceVocabularyForm(kind=COLOR_VOCABULARY, prefix="add-color"),
         )
+        context.setdefault(
+            "product_type_add_form",
+            ChoiceVocabularyForm(
+                kind=PRODUCT_TYPE_VOCABULARY,
+                prefix="add-product_type",
+            ),
+        )
+        context.setdefault(
+            "tag_add_form",
+            ChoiceVocabularyForm(kind=TAG_VOCABULARY, prefix="add-tag"),
+        )
 
         size_entries = BusinessSize.objects.none()
         color_entries = BusinessColor.objects.none()
+        product_type_entries = BusinessProductType.objects.none()
+        tag_entries = BusinessTag.objects.none()
         if self.active_business is not None:
             size_entries = BusinessSize.objects.filter(
                 business=self.active_business
             ).prefetch_related("aliases")
             color_entries = BusinessColor.objects.filter(
+                business=self.active_business
+            ).prefetch_related("aliases")
+            product_type_entries = BusinessProductType.objects.filter(
+                business=self.active_business
+            ).prefetch_related("aliases")
+            tag_entries = BusinessTag.objects.filter(
                 business=self.active_business
             ).prefetch_related("aliases")
 
@@ -280,6 +321,99 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
             bound_kind=context.get("bound_edit_kind"),
             bound_entry_id=context.get("bound_edit_entry_id"),
             bound_form=context.get("bound_edit_form"),
+        )
+        context["product_type_entries"] = self.build_entry_rows(
+            product_type_entries,
+            kind=PRODUCT_TYPE_VOCABULARY,
+            bound_kind=context.get("bound_edit_kind"),
+            bound_entry_id=context.get("bound_edit_entry_id"),
+            bound_form=context.get("bound_edit_form"),
+        )
+        context["tag_entries"] = self.build_entry_rows(
+            tag_entries,
+            kind=TAG_VOCABULARY,
+            bound_kind=context.get("bound_edit_kind"),
+            bound_entry_id=context.get("bound_edit_entry_id"),
+            bound_form=context.get("bound_edit_form"),
+        )
+        context["vocabulary_groups"] = (
+            {
+                "kind": PRODUCT_TYPE_VOCABULARY,
+                "title": "Product types",
+                "description": (
+                    "Use one canonical product category and keep alternative wording "
+                    "as explicit aliases."
+                ),
+                "entries": context["product_type_entries"],
+                "add_form": context["product_type_add_form"],
+                "add_intent": ADD_PRODUCT_TYPE_VOCABULARY_INTENT,
+                "add_summary": "Add canonical product type",
+                "add_button": "Add product type",
+                "save_button": "Save product type",
+                "empty_message": "No canonical product types yet.",
+                "warning": (
+                    "Renaming updates the label on every Product that references it. "
+                    "Deactivation keeps existing Product truth but removes this value "
+                    "from new selection and recognition."
+                ),
+            },
+            {
+                "kind": TAG_VOCABULARY,
+                "title": "Tags",
+                "description": (
+                    "Use tags for approved product features or groupings and keep "
+                    "alternative wording as explicit aliases."
+                ),
+                "entries": context["tag_entries"],
+                "add_form": context["tag_add_form"],
+                "add_intent": ADD_TAG_VOCABULARY_INTENT,
+                "add_summary": "Add canonical tag",
+                "add_button": "Add tag",
+                "save_button": "Save tag",
+                "empty_message": "No canonical tags yet.",
+                "warning": (
+                    "Renaming updates the label on every Product that references it. "
+                    "Deactivation keeps existing Product truth but removes this value "
+                    "from new selection and recognition."
+                ),
+            },
+            {
+                "kind": SIZE_VOCABULARY,
+                "title": "Sizes",
+                "description": "Examples: M with aliases M-ზომა, M ზომა, or M size.",
+                "entries": context["size_entries"],
+                "add_form": context["size_add_form"],
+                "add_intent": ADD_SIZE_VOCABULARY_INTENT,
+                "add_summary": "Add canonical size",
+                "add_button": "Add size",
+                "save_button": "Save size",
+                "empty_message": "No canonical sizes yet.",
+                "warning": (
+                    "Renaming updates this label on every choice that references it. "
+                    "Deactivation keeps existing choices but removes this value from "
+                    "new selection and recognition."
+                ),
+            },
+            {
+                "kind": COLOR_VOCABULARY,
+                "title": "Colors",
+                "description": (
+                    "Prefer a seller-facing Georgian canonical label and keep English "
+                    "or inconsistent wording as aliases."
+                ),
+                "entries": context["color_entries"],
+                "add_form": context["color_add_form"],
+                "add_intent": ADD_COLOR_VOCABULARY_INTENT,
+                "add_summary": "Add canonical color",
+                "add_button": "Add color",
+                "save_button": "Save color",
+                "empty_message": "No canonical colors yet.",
+                "warning": (
+                    "Renaming updates this label on every choice that references it. "
+                    "Deactivation keeps existing choices but removes this value from "
+                    "new selection and recognition."
+                ),
+            },
         )
         return context
 

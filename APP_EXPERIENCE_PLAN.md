@@ -48,8 +48,7 @@ VALIDATED_PROTOTYPE_LESSON: The source prototype became useful because it placed
 | Product workspace | Daily catalog and stock operations | Product cards, search/filter, inline stock |
 | Product create | Add a new product truth bundle | Keep focused; avoid relation/admin concepts |
 | Product edit/correction | Correct product facts and choices | Consider focused correction paths later |
-| Size/Color vocabulary | Prepare and maintain approved choice wording | Show canonical values, grouped aliases, and active state without mixing Product Type/Tag administration |
-| Taxonomy management | Maintain approved types/tags if in V1 | OWNER_DECISION_REQUIRED |
+| Product vocabulary | Prepare and maintain approved Product Types, Tags, Sizes, and Colors | Show complete Business-scoped canonical lists, grouped aliases, and active state without automatic learning, deletion, or merge behavior |
 | Product detail | Focused inspection or remove from V1 | OWNER_DECISION_REQUIRED |
 
 DEFERRED_HYPOTHESIS: Public catalog, buyer inquiry, chatbot, orders, payment, delivery, and BI analytics are not V1 experience surfaces.
@@ -118,6 +117,8 @@ Rule: the card must not become the entire application.
 - Edit form responsibility: correct existing truth without losing origin context.
 - Required structure: description-first input, price/lifecycle if approved, recognition feedback for known type/tag/material terms, size/color-to-choice suggestions, choices/stock, optional product media, optional tags.
 - Recognition feedback: separate observed text, candidate meaning, and confirmed structured fact.
+- OWNER_PROVIDED_DIRECTION: Product Type and Tag candidates remain transient until the seller explicitly selects canonical confirmed values and saves a valid Product bundle.
+- OWNER_PROVIDED_DIRECTION: One authenticated Product vocabulary surface manages Product Types, Tags, Sizes, and Colors for the active Business, with grouped aliases, rename, explicit alias-list replacement, and activation/deactivation while preserving existing Product truth.
 - Progressive disclosure: secondary explanations, material confirmation details, advanced taxonomy, future relations, and detailed measurement capture.
 - Constraint: do not turn the product form into one huge fashion specification; material is a small typed semantic fact when confirmed, while detailed garment measurements remain a separate approved micro-slice.
 - Validation: errors must appear at the exact section and preserve data.
@@ -243,8 +244,7 @@ No full WCAG compliance claim is made by this draft.
 | Product card | One clear primary action hierarchy, compact stock controls, no stale critical facts after update |
 | Product create | Description-first input, recognition feedback remains lightweight, first valid product can be created without route confusion |
 | Product edit | Missing data can be corrected, validation preserves input, return path explicit |
-| Size/Color vocabulary | Canonical values and grouped aliases are visible; add/edit/deactivate is Business-scoped, recoverable, and mobile-readable |
-| Taxonomy management | If in scope, used items cannot be deleted silently, recovery links return to management |
+| Product vocabulary | Product Type, Tag, Size, and Color canonical values and grouped aliases are visible; add/edit/deactivate is Business-scoped, preserves existing Product truth, is recoverable, and is mobile-readable |
 | Product detail | If in scope, has a distinct job not duplicated by card |
 
 ## 21. UX Stop Gates

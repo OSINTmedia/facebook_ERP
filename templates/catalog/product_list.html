@@ -20,7 +20,7 @@
     {% elif products %}
       <div class="page-actions">
         <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ request.get_full_path|urlencode }}">Add product</a>
-        <a class="button button--secondary" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">Manage size/color vocabulary</a>
+        <a class="button button--secondary" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">Manage product vocabulary</a>
       </div>
       <ul class="product-list" aria-label="Products">
         {% for product in products %}
@@ -44,7 +44,7 @@
       </div>
       <div class="page-actions">
         <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ request.get_full_path|urlencode }}">Add product</a>
-        <a class="button button--secondary" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">Manage size/color vocabulary</a>
+        <a class="button button--secondary" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">Manage product vocabulary</a>
       </div>
     {% endif %}
   </section>

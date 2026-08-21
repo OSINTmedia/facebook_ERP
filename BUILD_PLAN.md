@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9c are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.9d Size/Color Candidate-to-Choice Transfer Baseline and its owner-approved P4.9d_expand Size/Color Vocabulary Management Surface passed the combined local integrity audit and required owner browser reviews; release remains pending. P4.9e and P4.9f remain `NOT_STARTED`. Inventory, availability, readiness, and buyer replies do not exist yet.
+- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9d, including P4.9d_expand, are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.9e Product Type and Tag Confirmation Attachment Baseline and its owner-approved P4.9e_expand vocabulary-management extension are locally implemented, integrity-audited, and owner-reviewed, with Prompt 5 release pending. P4.9f remains `NOT_STARTED`. Inventory, availability, readiness, and buyer replies do not exist yet.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -636,10 +636,10 @@ Avoid libraries that depend on:
 #### P4.9 Product Create/Edit Recognition and Choice Integration
 
 - Objective: connect released recognition candidates and the ProductChoice model into the seller create/edit workflow while keeping the form compact.
-- Execution rule: complete P4.9 through P4.9a through P4.9f plus the owner-approved P4.9d_expand extension below. P4.9d_expand is audited and released with the still-unreleased P4.9d implementation; it is not a post-push synchronization slice. Do not treat the P4.9 umbrella as one implementation-sized slice and do not skip controlled-vocabulary or confirmation boundaries between candidates and persisted facts.
+- Execution rule: complete P4.9 through P4.9a through P4.9f plus the owner-approved P4.9d_expand and P4.9e_expand extensions below. Each extension shares the audit/release boundary of its owning functional slice and is not a post-push synchronization slice. Do not treat the P4.9 umbrella as one implementation-sized slice and do not skip controlled-vocabulary or confirmation boundaries between candidates and persisted facts.
 - Shared exclusions: large clothing forms, measurement UI, buyer reply UI, dashboard/workspace work, inventory mutation behavior, computed availability, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
-- Shared stop gate: P4.9 is complete only after P4.9a through P4.9f and P4.9d_expand are released, remote-aligned, CI-passed, and the required owner decisions and browser verification have passed.
-- Status: IN_PROGRESS — completed: P4.9a, P4.9b, and P4.9c are `PASSED`; current: P4.9d plus P4.9d_expand are `IN_PROGRESS` inside one audit/release boundary; remaining: P4.9e and P4.9f are `NOT_STARTED`.
+- Shared stop gate: P4.9 is complete only after P4.9a through P4.9f plus P4.9d_expand and P4.9e_expand are released, remote-aligned, CI-passed, and the required owner decisions and browser verification have passed.
+- Status: IN_PROGRESS — completed: P4.9a through P4.9d, including P4.9d_expand, are `PASSED`; current: P4.9e plus P4.9e_expand are locally implemented, integrity-audited, and owner-reviewed with Prompt 5 release pending; remaining: P4.9f is `NOT_STARTED`.
 
 ##### P4.9a Product Choice Create/Edit Integration Baseline
 
@@ -683,34 +683,45 @@ Avoid libraries that depend on:
 - Acceptance criteria: unaccepted candidates remain transient; accepted canonical values remain editable before save; only a valid final bundle persists ProductChoice rows; duplicate size/color rows remain distinct.
 - Verification: focused transfer/formset/view tests, alias, tamper, and cross-Business tests, full Django suite, `git diff --check`, and owner/browser interaction review.
 - Proposed combined commit message: `feat: transfer candidates and manage choice vocabulary`.
-- Status: IN_PROGRESS — implementation, combined local integrity audit, and required owner browser review passed; combined release with P4.9d_expand remains pending.
+- Status: PASSED — combined implementation with P4.9d_expand was integrity-audited, owner-reviewed, released, remote-aligned, and CI-passed; exact delivery metadata remains Git/GitHub authority.
 
 ##### P4.9d_expand Size/Color Vocabulary Management Surface
 
 - Objective: let the seller inspect and safely maintain the complete Business-scoped Size/Color vocabulary, including which aliases resolve to each canonical value, before or during product entry.
-- Dependency: P4.9c released and CI-passed; P4.9d remains locally implemented but unreleased so this owner-approved extension can share one audit/release boundary.
+- Dependency: P4.9c released and CI-passed; this owner-approved extension shared one audit/release boundary with P4.9d.
 - Exact scope: authenticated full vocabulary route; active-Business Size and Color lists including inactive values; aliases visibly grouped under each canonical value; contextual canonical/alias creation; canonical rename; full explicit alias-list replacement; active/inactive toggle; safe return path from Product surfaces; server-side normalization, collision validation, atomic updates, and cross-Business isolation.
 - Explicit exclusions: canonical deletion, automatic alias learning, silent synonym inference, canonical merge, ProductChoice row merge, Product Type/Tag/material vocabulary management, global dictionaries, bulk import/export, inventory, availability, and buyer-facing behavior.
 - Acceptance criteria: the seller can see every Size/Color canonical value and its aliases; add and edit only the active Business vocabulary; rename without breaking ProductChoice foreign keys; replace/remove aliases atomically; deactivate a value without deleting existing choice truth; and receive field-level collision errors without partial writes.
 - Verification: focused form/service/view ownership and atomicity tests, existing candidate-transfer tests, catalog tests, full Django suite, `git diff --check`, and owner/browser review on desktop and approximately 390px width.
 - Proposed combined commit message: `feat: transfer candidates and manage choice vocabulary`.
-- Status: IN_PROGRESS — implementation, automated verification, combined local integrity audit, and required owner browser review passed; combined release remains pending.
+- Status: PASSED — combined implementation with P4.9d was integrity-audited, owner-reviewed, released, remote-aligned, and CI-passed; exact delivery metadata remains Git/GitHub authority.
 
 ##### P4.9e Product Type and Tag Confirmation Attachment Baseline
 
 - Objective: persist seller-confirmed Product Type and Tag candidates as Business-scoped Product truth.
 - Dependency: P4.9d and P4.9d_expand released and CI-passed; any required Product association schema is explicitly reviewed before migration creation.
 - Exact scope: approved Product-to-type/tag association boundary, explicit confirmation/correction, active-Business selection only, atomic persistence with the Product mutation, and retained observed/candidate context on errors.
-- Explicit exclusions: type/tag management pages, automatic vocabulary creation, alias learning, material confirmation, relations between products, readiness scoring, search UI, and buyer replies.
+- Explicit exclusions: automatic vocabulary creation from description text, alias learning, material confirmation, relations between products, readiness scoring, search UI, and buyer replies. Owner-approved Type/Tag vocabulary management is isolated in P4.9e_expand below.
 - Acceptance criteria: only explicit seller confirmation writes associations; cross-Business vocabulary is rejected; candidates alone never attach; correction and removal are deterministic and tested.
 - Verification: model/migration checks if required, focused form/service/view ownership tests, full Django suite, `git diff --check`, and owner/browser confirmation review.
-- Proposed commit message: `feat: confirm product type and tag candidates`.
-- Status: NOT_STARTED.
+- Proposed combined commit message: `feat: confirm and manage product classification`.
+- Status: AUDITED_READY — combined with P4.9e_expand; local implementation, automated verification, integrity audit, and required owner/browser confirmation passed; Prompt 5 release remains pending.
+
+##### P4.9e_expand Product Type and Tag Vocabulary Management Surface
+
+- Objective: let the seller create and safely maintain the Business-scoped Product Type and Tag vocabulary required for usable recognition and explicit P4.9e confirmation.
+- Dependency: P4.9e association and form boundaries are locally implemented; this owner-approved extension shares the P4.9e audit/release boundary.
+- Exact scope: extend the authenticated Product vocabulary route with active-Business Product Type and Tag lists including inactive values; visibly grouped aliases; canonical and alias creation; canonical rename; full explicit alias-list replacement; activation/deactivation; safe Product-surface return paths; server-side normalization and collision validation; atomic updates; and cross-Business isolation.
+- Explicit exclusions: canonical deletion or merge, automatic vocabulary or alias learning, material administration, Product Type/Tag readiness or search behavior, inventory, availability, and buyer replies.
+- Acceptance criteria: the seller can create vocabulary before Product entry; only active values appear in new Product confirmation and recognition; existing confirmed Product references survive rename/deactivation and remain editable; alias replacement is atomic; and tampered/cross-Business mutations are rejected.
+- Verification: local/test checks and migration checks; focused vocabulary, recognition, Product form/bundle/view, ownership, rollback, and reference-preservation tests; catalog tests; full Django suite; `git diff --check`; and owner/browser review.
+- Proposed combined commit message: `feat: confirm and manage product classification`.
+- Status: AUDITED_READY — combined with P4.9e; local implementation, automated verification, integrity audit, and required owner/browser confirmation passed; Prompt 5 release remains pending.
 
 ##### P4.9f Material Confirmation Attachment Baseline
 
 - Objective: persist an explicitly confirmed material candidate through the existing confirmed `ProductMaterialFact` boundary.
-- Dependency: P4.9e released and CI-passed; owner resolves the exact material confirmation UI and alias policy before implementation begins.
+- Dependency: P4.9e plus P4.9e_expand released and CI-passed; owner resolves the exact material confirmation UI and alias policy before implementation begins.
 - Exact scope: explicit confirm/correct/remove behavior for canonical material, optional approved percentage, original observed wording, source, confirmation state, Product, and active Business; atomic Product-form recovery on errors.
 - Explicit exclusions: silent material writes, universal textile ontology, label OCR, image analysis, measurements, scientific composition inference, readiness, and buyer replies.
 - Acceptance criteria: candidates stay transient until confirmation; persisted material facts preserve original wording and Business/Product scope; no unsupported composition claim is invented.
@@ -919,7 +930,6 @@ Do not choose a provider or claim a demo URL before owner approval and verificat
 - Whether product relations are V1 or deferred.
 - Whether clone and archive/restore are V1.
 - Exact clone stock-copy policy.
-- Whether type/tag management pages are V1 or mostly inline.
 - Whether tags affect readiness or only organization/search.
 - Price policy for zero, null, missing, and free products.
 - Direct stock set placement.

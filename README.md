@@ -51,7 +51,7 @@ Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User an
 - Minimal business-owned Product model and Product form baselines exist and are verified locally.
 - A read-only, business-scoped Product list route exists and is verified locally.
 - Business-scoped Product create/edit routes exist and are verified locally.
-- Visible seller app workflows include login/logout, the foundation shell, the Product list, Product create/edit with server-validated size/color/quantity choice rows, controlled Business-scoped Size/Color dropdowns, a full Size/Color vocabulary manager with grouped aliases, and an automatic suggestions-only recognition preview beside the description. Size/Color candidates can be explicitly transferred into unsaved choice rows for review, but the preview does not confirm or persist them; inventory mutations, computed availability, and full workspace behavior have not started.
+- Visible seller app workflows include login/logout, the foundation shell, the Product list, Product create/edit with server-validated size/color/quantity choice rows, explicit confirmed Product Type/Tag controls, a full Business-scoped Product Type/Tag/Size/Color vocabulary manager with grouped aliases and active state, and an automatic suggestions-only recognition preview beside the description. Size/Color candidates can be explicitly transferred into unsaved choice rows for review, while Product Type/Tag candidates require explicit canonical selection and a valid Product save; inventory mutations, computed availability, and full workspace behavior have not started.
 - GitHub repository already exists at `https://github.com/OSINTmedia/facebook_ERP`.
 - The GitHub repository is public, uses default branch `main`, and preserves the initial README commit `dce852b`.
 - Documentation baseline commit `549db75 docs: add portfolio rebuild planning baseline` has been pushed.
@@ -82,7 +82,7 @@ Frozen baseline scope:
 - tests for critical ownership, state, inventory, and reply behavior;
 - safe synthetic demo data and reset/reseed path before deployment.
 
-Some prototype behaviors, including Product Detail, product relations, clone modes, archive/restore, direct stock set, and separate type/tag management pages, remain owner-decision-required and are not included automatically in the frozen baseline scope.
+Some prototype behaviors, including Product Detail, product relations, clone modes, archive/restore, and direct stock set, remain owner-decision-required and are not included automatically in the frozen baseline scope.
 
 ## Explicit Non-Goals
 

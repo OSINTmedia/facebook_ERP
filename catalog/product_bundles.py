@@ -4,7 +4,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 
 from catalog.forms import ProductChoiceFormSet, ProductForm
-from catalog.models import Product, ProductChoice
+from catalog.models import Product, ProductChoice, ProductTag
 
 
 class ProductBundle:
@@ -13,7 +13,11 @@ class ProductBundle:
     def __init__(self, *, business, data=None, instance=None, choice_prefix="choices"):
         self.business = business
         self.product = instance or Product()
-        self.product_form = ProductForm(data=data, instance=self.product)
+        self.product_form = ProductForm(
+            data=data,
+            instance=self.product,
+            business=business,
+        )
         self.choice_formset = ProductChoiceFormSet(
             data=data,
             instance=self.product,
@@ -70,6 +74,10 @@ class ProductBundle:
                 choice.save()
 
             self.choice_formset.save_m2m()
+            self._replace_product_tags(
+                product,
+                tuple(self.product_form.cleaned_data["tags"]),
+            )
 
         return product
 
@@ -81,3 +89,35 @@ class ProductBundle:
             raise ValidationError(
                 "Choice must belong to the Product and active Business."
             )
+
+    def _replace_product_tags(self, product, selected_tags):
+        selected_tag_ids = set()
+        for tag in selected_tags:
+            if tag.business_id != self.business.pk:
+                raise ValidationError("Tag must belong to the active Business.")
+            selected_tag_ids.add(tag.pk)
+
+        existing_links = list(
+            ProductTag.objects.select_for_update().filter(product=product)
+        )
+        for link in existing_links:
+            if link.business_id != self.business.pk:
+                raise ValidationError(
+                    "Product tags must belong to the active Business."
+                )
+
+        existing_tag_ids = {link.tag_id for link in existing_links}
+        for link in existing_links:
+            if link.tag_id not in selected_tag_ids:
+                link.delete()
+
+        for tag in selected_tags:
+            if tag.pk in existing_tag_ids:
+                continue
+            link = ProductTag(
+                business=self.business,
+                product=product,
+                tag=tag,
+            )
+            link.full_clean()
+            link.save()

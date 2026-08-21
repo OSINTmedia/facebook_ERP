@@ -58,6 +58,34 @@
 
         {% include "catalog/_recognition_preview.html" %}
 
+        <fieldset class="classification-section">
+          <legend>Confirmed classification</legend>
+          <p class="classification-section__help">Recognition candidates remain suggestions until you select canonical values here and save the Product.</p>
+          <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">Manage Product Type and Tag vocabulary</a>
+
+          <div class="form-field">
+            <label for="{{ form.product_type.id_for_label }}">{{ form.product_type.label }}</label>
+            {{ form.product_type }}
+            {% if show_form_errors %}
+              {% for error in form.product_type.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            {% endif %}
+          </div>
+
+          <div class="form-field">
+            <span class="form-field__label" id="id_tags-label">{{ form.tags.label }}</span>
+            <div role="group" aria-labelledby="id_tags-label">
+              {{ form.tags }}
+            </div>
+            {% if show_form_errors %}
+              {% for error in form.tags.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </fieldset>
+
         <div class="form-field">
           <label for="{{ form.lifecycle.id_for_label }}">{{ form.lifecycle.label }}</label>
           {{ form.lifecycle }}

@@ -174,7 +174,8 @@ def product_type_terms_for_business(business) -> tuple[RecognitionTerm, ...]:
             aliases=tuple(alias.alias for alias in product_type.aliases.all()),
         )
         for product_type in BusinessProductType.objects.filter(
-            business=business
+            business=business,
+            is_active=True,
         ).prefetch_related("aliases")
     )
 
@@ -203,9 +204,10 @@ def tag_terms_for_business(business) -> tuple[RecognitionTerm, ...]:
             canonical_value=tag.name,
             aliases=tuple(alias.alias for alias in tag.aliases.all()),
         )
-        for tag in BusinessTag.objects.filter(business=business).prefetch_related(
-            "aliases"
-        )
+        for tag in BusinessTag.objects.filter(
+            business=business,
+            is_active=True,
+        ).prefetch_related("aliases")
     )
 
 

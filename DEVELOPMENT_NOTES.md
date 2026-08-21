@@ -312,6 +312,30 @@ Include the displayed canonical Size/Color meaning in the explicit candidate-tra
 Reason:
 Candidate index, semantic destination, and observed-text span alone did not detect a concurrent vocabulary rename or alias reassignment that preserved the same span but changed its canonical meaning. Binding the displayed meaning prevents the seller's explicit action from transferring a different current interpretation while retaining the no-write-before-bundle-save boundary.
 
+### 2026-08-21 - Confirmed Product classification uses explicit Business-owned associations
+
+Decision:
+Represent confirmed Product Type as one optional protected canonical reference and confirmed Tags through an explicit `ProductTag` association that carries Business ownership. Persist type/tag selection, correction, and removal only through the existing atomic Product bundle after explicit canonical form selection; never preselect or attach recognition candidates automatically.
+
+Reason:
+The nullable type reference preserves existing Products without inventing classification, while the explicit tag association lets the mutation boundary assign and validate Business ownership instead of relying on an implicit many-to-many write. Keeping recognition preview separate from confirmed controls preserves observed-to-candidate-to-confirmed truth, deterministic error recovery, and the existing inventory, availability, readiness, and buyer-reply boundaries.
+
+### 2026-08-21 - Product classification shares the controlled vocabulary manager
+
+Decision:
+Extend the authenticated Product vocabulary surface with Business-scoped Product Types and Tags instead of adding a separate taxonomy application. Use the same explicit canonical/alias creation, rename, full alias-list replacement, activation/deactivation, collision validation, and atomic Business-locking boundary as Size/Color while preserving destination-specific models and Product truth.
+
+Reason:
+P4.9e confirmation is not usable when a seller cannot create its vocabulary. A shared surface keeps navigation compact without merging semantic destinations: inactive Type/Tag values leave existing Product associations intact but disappear from new confirmation and recognition, and no description text creates vocabulary or confirmed truth automatically.
+
+### 2026-08-21 - Owner browser acceptance requires current local migration state
+
+Decision:
+Treat `migrate --check` against the local owner-review database as a required operational precondition before declaring a migration-bearing browser slice ready or accepted; test-database migration success alone is insufficient.
+
+Reason:
+P4.9e_expand tests passed on newly migrated test databases while the running local server still used a schema without the new Type/Tag activation fields, breaking Product Add with an undefined-column error. Applying the additive migration restored the route without data loss; explicit local migration-state verification prevents the same false PASS.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:

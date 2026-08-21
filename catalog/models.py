@@ -12,6 +12,7 @@ class BusinessProductType(models.Model):
         related_name="product_types",
     )
     name = models.CharField(max_length=80)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -60,6 +61,7 @@ class BusinessTag(models.Model):
         related_name="tags",
     )
     name = models.CharField(max_length=80)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -423,6 +425,19 @@ class Product(models.Model):
         on_delete=models.PROTECT,
         related_name="products",
     )
+    product_type = models.ForeignKey(
+        BusinessProductType,
+        on_delete=models.PROTECT,
+        related_name="products",
+        null=True,
+        blank=True,
+    )
+    tags = models.ManyToManyField(
+        BusinessTag,
+        through="ProductTag",
+        related_name="products",
+        blank=True,
+    )
     name = models.CharField(max_length=160)
     description = models.TextField()
     lifecycle = models.CharField(
@@ -436,8 +451,80 @@ class Product(models.Model):
     class Meta:
         ordering = ["name", "id"]
 
+    def clean(self):
+        super().clean()
+        self._validate_product_type_scope()
+
+    def save(self, *args, **kwargs):
+        self._validate_product_type_scope()
+        super().save(*args, **kwargs)
+
+    def _validate_product_type_scope(self):
+        if (
+            self.business_id
+            and self.product_type_id
+            and self.product_type.business_id != self.business_id
+        ):
+            raise ValidationError(
+                {"product_type": "Product type must belong to the same Business."}
+            )
+
     def __str__(self):
         return self.name
+
+
+class ProductTag(models.Model):
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.PROTECT,
+        related_name="product_tag_links",
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        related_name="tag_links",
+    )
+    tag = models.ForeignKey(
+        BusinessTag,
+        on_delete=models.PROTECT,
+        related_name="product_links",
+    )
+
+    class Meta:
+        ordering = ["product_id", "tag_id", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["product", "tag"],
+                name="unique_tag_per_product",
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        self._validate_business_scope()
+
+    def save(self, *args, **kwargs):
+        self._validate_business_scope()
+        super().save(*args, **kwargs)
+
+    def _validate_business_scope(self):
+        if (
+            self.business_id
+            and self.product_id
+            and self.product.business_id != self.business_id
+        ):
+            raise ValidationError(
+                {"product": "Product must belong to the same Business."}
+            )
+        if (
+            self.business_id
+            and self.tag_id
+            and self.tag.business_id != self.business_id
+        ):
+            raise ValidationError({"tag": "Tag must belong to the same Business."})
+
+    def __str__(self):
+        return f"{self.product}: {self.tag}"
 
 
 class ProductChoice(models.Model):
