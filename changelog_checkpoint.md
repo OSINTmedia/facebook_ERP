@@ -16,8 +16,7 @@
 - Phase 2 User and Business Ownership: `PASSED`.
 - Phase 3 Catalog Core: `PASSED`.
 - Phase 4 Semantic Recognition and Choice Model: `IN_PROGRESS`.
-- P4.1 through P4.9e, including P4.9d_expand and P4.9e_expand: released, remote-aligned, CI-passed, and `PASSED`.
-- P4.9f Material Confirmation Attachment Baseline: `IMPLEMENTED_UNCOMMITTED`; integrity audit and local automated verification passed, but required owner/browser acceptance is pending.
+- P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand: released, remote-aligned, CI-passed, owner/browser-reviewed, and `PASSED`.
 - Gate 3: not passed; inventory and computed availability remain later work.
 - Online demo: not deployed.
 
@@ -46,41 +45,30 @@ P4.9f adds explicit material confirmation to authenticated Product create/edit:
 - `git diff --check` passed.
 - Integrity result: `PASS` for scope, Business isolation, atomic recovery, candidate-versus-confirmed truth, accessibility baseline, HTMX server truth, hosted compatibility, and regression boundaries.
 - The last released branch state is aligned with the actual remote and has successful exact-SHA CI; Git/GitHub remain the metadata authority.
+- Owner/browser acceptance: `PASS WITH NOTES`; P4.9 is technically sound, while broader Product create/edit UX remains inconvenient and insufficiently assistant-like for a later UX-focused slice or phase.
 
 ## Current Gate and Next Work
 
-- Required owner test: create or edit a Product, transfer a recognized material, review/correct its fields, save, then edit and remove it; confirm no material fact persists before Product save and saved changes remain Business-scoped.
-- Ready for Prompt 5: `NO` until the owner reports that browser test passed.
-- After owner acceptance: Prompt 5 releases the exact approved P4.9f and recovery-sync set, then verifies clean Git/remote alignment and exact-SHA CI.
-- After P4.9f release closure: P4.10 Phase 4 audit is the next operational gate; do not begin inventory, availability, measurements, readiness, or buyer replies as part of P4.9f.
-- Post-CI governance closure required for P4.9f: no; routine successful delivery metadata remains in Git/GitHub.
+- Current gate: P4.10 Phase 4 Audit and Transition.
+- Next work: run the Phase 4 audit against the roadmap, clothing data spec, code, tests, Git alignment, and exact-SHA CI evidence before closing Phase 4.
+- Do not begin inventory, availability, measurements, readiness, buyer replies, deployment, or broad UX redesign as part of P4.10.
+- Routine successful delivery metadata remains in Git/GitHub.
 
 ## Active Blockers and Decisions
 
-- P4.9f release blocker: required owner/browser acceptance has not yet been reported.
+- P4.9 has no remaining technical or owner-acceptance blocker.
+- UX note: the current Product create/edit surface is functionally accepted but not yet the desired smart assistant-style operational experience; treat this as later UX work, not a Phase 4 semantic-recognition blocker.
 - Material confirmation placement and wording are resolved for P4.9f: compact editable rows follow recognition feedback.
 - Material alias policy is resolved for P4.9f only: no alias persistence or automatic learning; any future material vocabulary/alias manager needs a separately approved slice.
 - Unrelated later-phase owner decisions remain where recorded in controlling documents.
 
-## Prompt 5 Release Set
+## Current Documentation Sync Release Set
 
-- `.gitignore`
-- `APP_EXPERIENCE_PLAN.md`
 - `BUILD_PLAN.md`
 - `DEVELOPMENT_NOTES.md`
-- `README.md`
-- `catalog/forms.py`
-- `catalog/material_transfers.py`
-- `catalog/product_bundles.py`
-- `catalog/tests.py`
-- `catalog/views.py`
 - `changelog_checkpoint.md`
-- `static/css/app.css`
-- `templates/catalog/_material_section.html`
-- `templates/catalog/_recognition_preview.html`
-- `templates/catalog/product_form.html`
 
-Proposed commit: `feat: confirm product material candidates`
+Proposed commit: `docs: record p4.9 owner acceptance notes`
 
 ## Handoff Guardrails
 

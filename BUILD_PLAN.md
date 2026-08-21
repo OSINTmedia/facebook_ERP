@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9e, including P4.9d_expand and P4.9e_expand, are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.9f is implemented, integrity-audited, and locally verified, with required owner/browser acceptance and Prompt 5 release still pending. Inventory, availability, readiness, and buyer replies do not exist yet.
+- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.10 Phase 4 Audit and Transition is the current gate. Inventory, availability, readiness, and buyer replies do not exist yet.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -639,7 +639,7 @@ Avoid libraries that depend on:
 - Execution rule: complete P4.9 through P4.9a through P4.9f plus the owner-approved P4.9d_expand and P4.9e_expand extensions below. Each extension shares the audit/release boundary of its owning functional slice and is not a post-push synchronization slice. Do not treat the P4.9 umbrella as one implementation-sized slice and do not skip controlled-vocabulary or confirmation boundaries between candidates and persisted facts.
 - Shared exclusions: large clothing forms, measurement UI, buyer reply UI, dashboard/workspace work, inventory mutation behavior, computed availability, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
 - Shared stop gate: P4.9 is complete only after P4.9a through P4.9f plus P4.9d_expand and P4.9e_expand are released, remote-aligned, CI-passed, and the required owner decisions and browser verification have passed.
-- Status: IN_PROGRESS — completed: P4.9a through P4.9e, including P4.9d_expand and P4.9e_expand, are released and `PASSED`; current: P4.9f is implemented, integrity-audited, and locally verified, with required owner/browser acceptance and Prompt 5 release still pending.
+- Status: PASSED WITH NOTES — P4.9a through P4.9f, including P4.9d_expand and P4.9e_expand, are released, remote-aligned, CI-passed, owner/browser-reviewed, and technically accepted. Owner notes record that the Product create/edit UX remains inconvenient and not yet sufficiently assistant-like; address that through a later UX-focused slice or phase, not by reopening P4.9 technical acceptance.
 
 ##### P4.9a Product Choice Create/Edit Integration Baseline
 
@@ -727,7 +727,7 @@ Avoid libraries that depend on:
 - Acceptance criteria: candidates stay transient until confirmation; persisted material facts preserve original wording and Business/Product scope; no unsupported composition claim is invented.
 - Verification: focused material confirmation and ownership tests, error-recovery tests, full Django suite, `git diff --check`, and owner/browser confirmation review.
 - Proposed commit message: `feat: confirm product material candidates`.
-- Status: IMPLEMENTED_UNCOMMITTED — integrity audit and local automated verification passed; required owner/browser confirmation and Prompt 5 release/remote CI remain.
+- Status: PASSED WITH NOTES — integrity-audited, locally verified, released, remote-aligned, CI-passed, and owner/browser accepted. Owner notes record broader Product create/edit UX dissatisfaction as later UX work, not a P4.9f technical blocker.
 
 #### P4.10 Phase 4 Audit and Transition
 

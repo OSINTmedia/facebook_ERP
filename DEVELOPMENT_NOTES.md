@@ -344,6 +344,14 @@ Place compact confirmed-material rows immediately after Product recognition feed
 Reason:
 The candidate action reduces repeated typing without crossing the observed-to-candidate-to-confirmed boundary. Recomputing and binding candidate identity prevents stale or changed interpretations from being transferred, while deferring alias persistence avoids treating one Product correction as reusable Business vocabulary without a separately approved collision, maintenance, and deactivation policy.
 
+### 2026-08-21 - Technical acceptance is separate from assistant UX quality
+
+Decision:
+Accept P4.9f and the wider P4.9 Product create/edit recognition integration as technically correct after owner/browser review, while recording that the current Product create/edit surface is still inconvenient and does not yet feel like the intended smart assistant-style operational application.
+
+Reason:
+Phase 4 validates the semantic-recognition, controlled vocabulary, confirmed-fact, choice truth, and Business-isolation boundaries. The owner UX note is important, but it should drive a separately approved UX-focused slice or phase instead of reopening technically accepted P4.9 behavior or silently broadening P4.10 beyond audit and transition.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:
