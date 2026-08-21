@@ -1,0 +1,85 @@
+<section id="material-section" class="material-section" aria-labelledby="material-section-title">
+  <div class="material-section__heading">
+    <div>
+      <h2 id="material-section-title">Confirmed materials</h2>
+      <p>Review canonical material facts before saving. Percentages are optional.</p>
+    </div>
+  </div>
+
+  {% if material_transfer_feedback %}
+    <p class="form-feedback form-feedback--success" role="status">{{ material_transfer_feedback }}</p>
+  {% endif %}
+  {% if material_transfer_error %}
+    <p class="form-errors" role="alert">{{ material_transfer_error }}</p>
+  {% endif %}
+
+  {{ material_formset.management_form }}
+
+  {% if show_form_errors and material_formset.non_form_errors %}
+    <div class="form-errors" role="alert">
+      {% for error in material_formset.non_form_errors %}<p>{{ error }}</p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="material-rows">
+    {% for material_form in material_formset.forms %}
+      <fieldset class="material-row">
+        <legend>Material {{ forloop.counter }}</legend>
+        {{ material_form.id }}
+
+        {% if show_form_errors and material_form.id.errors %}
+          <div class="form-errors" role="alert">
+            {% for error in material_form.id.errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        {% if show_form_errors and material_form.non_field_errors %}
+          <div class="form-errors" role="alert">
+            {% for error in material_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+
+        <div class="material-row__grid">
+          <div class="form-field">
+            <label for="{{ material_form.canonical_material.id_for_label }}">{{ material_form.canonical_material.label }}</label>
+            {{ material_form.canonical_material }}
+            {% if show_form_errors %}
+              {% for error in material_form.canonical_material.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            {% endif %}
+          </div>
+
+          <div class="form-field">
+            <label for="{{ material_form.percentage.id_for_label }}">{{ material_form.percentage.label }}</label>
+            {{ material_form.percentage }}
+            {% if show_form_errors %}
+              {% for error in material_form.percentage.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            {% endif %}
+          </div>
+
+          <div class="form-field material-row__wording">
+            <label for="{{ material_form.original_text.id_for_label }}">{{ material_form.original_text.label }}</label>
+            {{ material_form.original_text }}
+            {% if show_form_errors %}
+              {% for error in material_form.original_text.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            {% endif %}
+          </div>
+
+          <div class="form-field">
+            <label for="{{ material_form.source.id_for_label }}">{{ material_form.source.label }}</label>
+            {{ material_form.source }}
+            {% if show_form_errors %}
+              {% for error in material_form.source.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="choice-option">
+          {{ material_form.DELETE }}
+          <label for="{{ material_form.DELETE.id_for_label }}">Remove material</label>
+        </div>
+      </fieldset>
+    {% endfor %}
+  </div>
+
+  <p class="material-section__help">A candidate remains a suggestion until this Product bundle saves successfully. No aliases are learned automatically.</p>
+</section>

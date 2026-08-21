@@ -11,6 +11,7 @@ from django.views.generic import TemplateView
 from businesses.selectors import MultipleBusinessesUnsupported, resolve_active_business
 from catalog.choice_transfers import transfer_choice_candidate
 from catalog.forms import ChoiceVocabularyEditForm, ChoiceVocabularyForm
+from catalog.material_transfers import transfer_material_candidate
 from catalog.models import (
     BusinessColor,
     BusinessProductType,
@@ -36,6 +37,7 @@ ADD_COLOR_VOCABULARY_INTENT = "add_color_vocabulary"
 ADD_PRODUCT_TYPE_VOCABULARY_INTENT = "add_product_type_vocabulary"
 ADD_TAG_VOCABULARY_INTENT = "add_tag_vocabulary"
 TRANSFER_CHOICE_CANDIDATE_INTENT = "transfer_choice_candidate"
+TRANSFER_MATERIAL_CANDIDATE_INTENT = "transfer_material_candidate"
 UPDATE_VOCABULARY_INTENT = "update_vocabulary"
 
 ADD_VOCABULARY_INTENTS = {
@@ -503,6 +505,7 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             request,
             form=bundle.product_form if bundle is not None else None,
             choice_formset=bundle.choice_formset if bundle is not None else None,
+            material_formset=bundle.material_formset if bundle is not None else None,
             preview_requested=preview_requested,
             recognition_preview=recognition_preview,
             show_form_errors=show_form_errors,
@@ -521,6 +524,10 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
     def is_choice_candidate_transfer_request(self, request):
         intent = request.POST.get("intent", "")
         return intent.startswith(f"{TRANSFER_CHOICE_CANDIDATE_INTENT}:")
+
+    def is_material_candidate_transfer_request(self, request):
+        intent = request.POST.get("intent", "")
+        return intent.startswith(f"{TRANSFER_MATERIAL_CANDIDATE_INTENT}:")
 
     def handle_choice_candidate_transfer(self, request, bundle, **context):
         intent = request.POST.get("intent", "")
@@ -558,6 +565,48 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             request,
             (
                 "catalog/_choice_section.html"
+                if request.htmx
+                else self.template_name
+            ),
+            rendered_context,
+        )
+
+    def handle_material_candidate_transfer(self, request, bundle, **context):
+        intent = request.POST.get("intent", "")
+        candidate_reference = intent.removeprefix(
+            f"{TRANSFER_MATERIAL_CANDIDATE_INTENT}:"
+        )
+        transfer_feedback = None
+        transfer_error = None
+
+        try:
+            transfer = transfer_material_candidate(
+                data=request.POST,
+                business=self.active_business,
+                candidate_reference=candidate_reference,
+            )
+        except ValidationError as error:
+            transfer_error = " ".join(error.messages)
+        else:
+            bundle = ProductBundle(
+                business=self.active_business,
+                data=transfer.data,
+                instance=bundle.product,
+            )
+            transfer_feedback = transfer.feedback
+
+        bundle.is_valid()
+        rendered_context = self.bundle_context(
+            request,
+            bundle,
+            material_transfer_feedback=transfer_feedback,
+            material_transfer_error=transfer_error,
+            **context,
+        )
+        return render(
+            request,
+            (
+                "catalog/_material_section.html"
                 if request.htmx
                 else self.template_name
             ),
@@ -703,6 +752,14 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
                 submit_label="Create product",
             )
 
+        if self.is_material_candidate_transfer_request(request):
+            return self.handle_material_candidate_transfer(
+                request,
+                bundle,
+                page_title="Add product",
+                submit_label="Create product",
+            )
+
         if bundle.is_valid():
             bundle.save()
             messages.success(request, "Product created.")
@@ -799,6 +856,15 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
 
         if self.is_choice_candidate_transfer_request(request):
             return self.handle_choice_candidate_transfer(
+                request,
+                bundle,
+                page_title=f"Edit {product.name}",
+                product=product,
+                submit_label="Save changes",
+            )
+
+        if self.is_material_candidate_transfer_request(request):
+            return self.handle_material_candidate_transfer(
                 request,
                 bundle,
                 page_title=f"Edit {product.name}",

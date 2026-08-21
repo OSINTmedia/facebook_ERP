@@ -60,5 +60,8 @@ CODEX_LOCAL_NOTES.md
 WORKFLOW_LOCAL.md
 codex_prompt.txt
 codex_prompt_ERP.txt
+codex_prompt_ERP.txt.kate-swp
+docs/CONTEXT.md
+docs/HOOK.md
 *.local.md
 *.private.md

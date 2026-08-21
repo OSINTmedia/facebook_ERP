@@ -1,16 +1,28 @@
-"""Atomic Product and ProductChoice validation and persistence boundary."""
+"""Atomic Product, ProductChoice, and material-fact persistence boundary."""
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
 
-from catalog.forms import ProductChoiceFormSet, ProductForm
-from catalog.models import Product, ProductChoice, ProductTag
+from catalog.forms import (
+    ProductChoiceFormSet,
+    ProductForm,
+    ProductMaterialFactFormSet,
+)
+from catalog.models import Product, ProductChoice, ProductMaterialFact, ProductTag
 
 
 class ProductBundle:
-    """Coordinate Product and choice forms without trusting ownership input."""
+    """Coordinate Product, choice, and material forms at one atomic boundary."""
 
-    def __init__(self, *, business, data=None, instance=None, choice_prefix="choices"):
+    def __init__(
+        self,
+        *,
+        business,
+        data=None,
+        instance=None,
+        choice_prefix="choices",
+        material_prefix="materials",
+    ):
         self.business = business
         self.product = instance or Product()
         self.product_form = ProductForm(
@@ -23,6 +35,13 @@ class ProductBundle:
             instance=self.product,
             prefix=choice_prefix,
             queryset=ProductChoice.objects.filter(business=business),
+            form_kwargs={"business": business},
+        )
+        self.material_formset = ProductMaterialFactFormSet(
+            data=data,
+            instance=self.product,
+            prefix=material_prefix,
+            queryset=ProductMaterialFact.objects.filter(business=business),
             form_kwargs={"business": business},
         )
         self._validated = False
@@ -43,8 +62,11 @@ class ProductBundle:
             product_is_valid = False
 
         choices_are_valid = self.choice_formset.is_valid()
+        materials_are_valid = self.material_formset.is_valid()
         self._validated = True
-        self._is_valid = product_is_valid and choices_are_valid
+        self._is_valid = (
+            product_is_valid and choices_are_valid and materials_are_valid
+        )
         return self._is_valid
 
     def save(self):
@@ -78,6 +100,21 @@ class ProductBundle:
                 product,
                 tuple(self.product_form.cleaned_data["tags"]),
             )
+            self.material_formset.instance = product
+            material_facts = self.material_formset.save(commit=False)
+
+            for material_fact in self.material_formset.deleted_objects:
+                self._validate_material_scope(material_fact, product)
+                material_fact.delete()
+
+            for material_fact in material_facts:
+                material_fact.business = self.business
+                material_fact.product = product
+                material_fact.confirmation_state = (
+                    ProductMaterialFact.ConfirmationState.CONFIRMED
+                )
+                material_fact.full_clean()
+                material_fact.save()
 
         return product
 
@@ -88,6 +125,15 @@ class ProductBundle:
         ):
             raise ValidationError(
                 "Choice must belong to the Product and active Business."
+            )
+
+    def _validate_material_scope(self, material_fact, product):
+        if (
+            material_fact.product_id != product.pk
+            or material_fact.business_id != self.business.pk
+        ):
+            raise ValidationError(
+                "Material fact must belong to the Product and active Business."
             )
 
     def _replace_product_tags(self, product, selected_tags):

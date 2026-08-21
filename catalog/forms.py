@@ -12,6 +12,7 @@ from catalog.models import (
     BusinessTag,
     Product,
     ProductChoice,
+    ProductMaterialFact,
 )
 from catalog.vocabulary import (
     COLOR_VOCABULARY,
@@ -125,6 +126,56 @@ class ProductChoiceForm(forms.ModelForm):
                 not str(size or "").strip()
                 and not str(color or "").strip()
                 and quantity in (None, "", "0", 0)
+            ):
+                return False
+        return super().has_changed()
+
+
+class ProductMaterialFactForm(forms.ModelForm):
+    class Meta:
+        model = ProductMaterialFact
+        fields = ["canonical_material", "percentage", "original_text", "source"]
+        labels = {
+            "canonical_material": "Canonical material",
+            "percentage": "Percentage",
+            "original_text": "Original seller wording",
+            "source": "Source",
+        }
+        widgets = {
+            "percentage": forms.NumberInput(attrs={"min": 1, "max": 100}),
+        }
+
+    def __init__(self, *args, business=None, **kwargs):
+        self.business = business
+        super().__init__(*args, **kwargs)
+        self.fields["percentage"].widget.attrs.update({"min": 1, "max": 100})
+        if not self.is_bound and not self.instance.pk:
+            self.initial.setdefault("source", ProductMaterialFact.Source.MANUAL)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if (
+            self.business is not None
+            and self.instance.pk
+            and self.instance.business_id != self.business.pk
+        ):
+            raise ValidationError(
+                "Material fact must belong to the active Business."
+            )
+        return cleaned_data
+
+    def has_changed(self):
+        """Ignore untouched extra rows even when Manual is the displayed source."""
+        if self.is_bound and not self.instance.pk:
+            material = self.data.get(self.add_prefix("canonical_material"))
+            percentage = self.data.get(self.add_prefix("percentage"))
+            original_text = self.data.get(self.add_prefix("original_text"))
+            delete = self.data.get(self.add_prefix("DELETE"))
+            if (
+                not str(material or "").strip()
+                and not str(percentage or "").strip()
+                and not str(original_text or "").strip()
+                and str(delete or "").casefold() not in {"1", "true", "on", "yes"}
             ):
                 return False
         return super().has_changed()
@@ -251,5 +302,24 @@ ProductChoiceFormSet = inlineformset_factory(
     formset=BaseProductChoiceFormSet,
     fields=["size", "color", "quantity", "is_active"],
     extra=1,
+    can_delete=True,
+)
+
+
+class BaseProductMaterialFactFormSet(BaseInlineFormSet):
+    """Keep material fact identity scoped to the active Product bundle."""
+
+    def add_fields(self, form, index):
+        super().add_fields(form, index)
+        form.fields["id"].queryset = self.get_queryset()
+
+
+ProductMaterialFactFormSet = inlineformset_factory(
+    Product,
+    ProductMaterialFact,
+    form=ProductMaterialFactForm,
+    formset=BaseProductMaterialFactFormSet,
+    fields=["canonical_material", "percentage", "original_text", "source"],
+    extra=2,
     can_delete=True,
 )

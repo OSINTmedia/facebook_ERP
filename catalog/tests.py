@@ -17,7 +17,10 @@ from catalog.forms import (
     ProductChoiceForm,
     ProductChoiceFormSet,
     ProductForm,
+    ProductMaterialFactForm,
+    ProductMaterialFactFormSet,
 )
+from catalog.material_transfers import transfer_material_candidate
 from catalog.models import (
     BusinessColor,
     BusinessColorAlias,
@@ -1606,6 +1609,185 @@ class ProductMaterialFactModelTests(TestCase):
         self.assertEqual(str(fact), "ბამბა")
 
 
+class ProductMaterialFactFormTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="material-form-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="material-form-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(owner=self.owner, name="Studio")
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="Trousers",
+            description="Cotton trousers.",
+        )
+
+    def test_form_exposes_only_editable_material_fact_fields(self):
+        form = ProductMaterialFactForm(business=self.business)
+
+        self.assertEqual(
+            list(form.fields),
+            ["canonical_material", "percentage", "original_text", "source"],
+        )
+        self.assertNotIn("business", form.fields)
+        self.assertNotIn("product", form.fields)
+        self.assertNotIn("confirmation_state", form.fields)
+        self.assertEqual(form.fields["percentage"].widget.attrs["min"], 1)
+        self.assertEqual(form.fields["percentage"].widget.attrs["max"], 100)
+
+    def test_form_validates_optional_percentage_and_source(self):
+        form = ProductMaterialFactForm(
+            data={
+                "canonical_material": "Cotton",
+                "percentage": "70",
+                "original_text": "70% cotton",
+                "source": ProductMaterialFact.Source.DESCRIPTION,
+            },
+            business=self.business,
+        )
+
+        self.assertTrue(form.is_valid(), form.errors)
+        self.assertEqual(form.cleaned_data["percentage"], 70)
+
+    def test_form_rejects_existing_fact_from_another_business(self):
+        other_product = Product.objects.create(
+            business=self.other_business,
+            name="Other dress",
+            description="Other description.",
+        )
+        fact = ProductMaterialFact.objects.create(
+            business=self.other_business,
+            product=other_product,
+            canonical_material="Silk",
+            original_text="Silk",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+        form = ProductMaterialFactForm(
+            data={
+                "canonical_material": "Silk",
+                "percentage": "",
+                "original_text": "Silk",
+                "source": ProductMaterialFact.Source.MANUAL,
+            },
+            instance=fact,
+            business=self.business,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Material fact must belong to the active Business.",
+            form.non_field_errors(),
+        )
+
+    def test_bound_empty_extra_form_is_ignored(self):
+        form = ProductMaterialFactForm(
+            data={
+                "materials-0-canonical_material": "",
+                "materials-0-percentage": "",
+                "materials-0-original_text": "",
+                "materials-0-source": ProductMaterialFact.Source.MANUAL,
+            },
+            prefix="materials-0",
+            business=self.business,
+        )
+
+        self.assertFalse(form.has_changed())
+
+
+class MaterialCandidateTransferTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="material-transfer-owner@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(owner=self.owner, name="Studio")
+        source_product = Product.objects.create(
+            business=self.business,
+            name="Material source",
+            description="Stored material vocabulary.",
+        )
+        ProductMaterialFact.objects.create(
+            business=self.business,
+            product=source_product,
+            canonical_material="Cotton",
+            original_text="Cotton",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+
+    @staticmethod
+    def candidate_reference(canonical_value="Cotton"):
+        return (
+            "0:material:0:6:"
+            f"{quote(canonical_value, safe='')}"
+        )
+
+    @staticmethod
+    def transfer_data(description="Cotton"):
+        return {
+            "description": description,
+            "materials-TOTAL_FORMS": "1",
+            "materials-INITIAL_FORMS": "0",
+            "materials-MIN_NUM_FORMS": "0",
+            "materials-MAX_NUM_FORMS": "1000",
+            "materials-0-canonical_material": "",
+            "materials-0-percentage": "",
+            "materials-0-original_text": "",
+            "materials-0-source": ProductMaterialFact.Source.MANUAL,
+        }
+
+    def test_transfer_places_current_candidate_in_unsaved_material_row(self):
+        fact_count = ProductMaterialFact.objects.count()
+
+        transfer = transfer_material_candidate(
+            data=self.transfer_data(),
+            business=self.business,
+            candidate_reference=self.candidate_reference(),
+        )
+
+        self.assertEqual(
+            transfer.data["materials-0-canonical_material"],
+            "Cotton",
+        )
+        self.assertEqual(transfer.data["materials-0-original_text"], "Cotton")
+        self.assertEqual(
+            transfer.data["materials-0-source"],
+            ProductMaterialFact.Source.DESCRIPTION,
+        )
+        self.assertEqual(ProductMaterialFact.objects.count(), fact_count)
+
+    def test_transfer_rejects_tampered_canonical_meaning(self):
+        with self.assertRaisesMessage(
+            ValidationError,
+            "That candidate is no longer available.",
+        ):
+            transfer_material_candidate(
+                data=self.transfer_data(),
+                business=self.business,
+                candidate_reference=self.candidate_reference("Silk"),
+            )
+
+    def test_transfer_rejects_missing_material_management_state(self):
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Material form state is invalid.",
+        ):
+            transfer_material_candidate(
+                data={"description": "Cotton"},
+                business=self.business,
+                candidate_reference=self.candidate_reference(),
+            )
+
+
 class MaterialRecognitionTests(TestCase):
     def setUp(self):
         user_model = get_user_model()
@@ -2879,6 +3061,7 @@ class ProductChoiceFormSetTests(TestCase):
 
 class ProductBundleTests(TestCase):
     prefix = "choices"
+    material_prefix = "materials"
 
     def setUp(self):
         user_model = get_user_model()
@@ -2937,6 +3120,8 @@ class ProductBundleTests(TestCase):
         name="Black trousers",
         product_type="",
         tags=(),
+        material_rows=(),
+        material_initial_forms=0,
     ):
         data = {
             "name": name,
@@ -2948,10 +3133,17 @@ class ProductBundleTests(TestCase):
             f"{self.prefix}-INITIAL_FORMS": str(initial_forms),
             f"{self.prefix}-MIN_NUM_FORMS": "0",
             f"{self.prefix}-MAX_NUM_FORMS": "1000",
+            f"{self.material_prefix}-TOTAL_FORMS": str(len(material_rows)),
+            f"{self.material_prefix}-INITIAL_FORMS": str(material_initial_forms),
+            f"{self.material_prefix}-MIN_NUM_FORMS": "0",
+            f"{self.material_prefix}-MAX_NUM_FORMS": "1000",
         }
         for index, row in enumerate(rows):
             for field, value in row.items():
                 data[f"{self.prefix}-{index}-{field}"] = value
+        for index, row in enumerate(material_rows):
+            for field, value in row.items():
+                data[f"{self.material_prefix}-{index}-{field}"] = value
         return data
 
     def active_choice_row(self, **overrides):
@@ -2960,6 +3152,17 @@ class ProductBundleTests(TestCase):
             "color": str(self.color.pk),
             "quantity": "2",
             "is_active": "on",
+        }
+        row.update(overrides)
+        return row
+
+    @staticmethod
+    def material_row(**overrides):
+        row = {
+            "canonical_material": "Cotton",
+            "percentage": "70",
+            "original_text": "70% cotton",
+            "source": ProductMaterialFact.Source.DESCRIPTION,
         }
         row.update(overrides)
         return row
@@ -2993,6 +3196,52 @@ class ProductBundleTests(TestCase):
         self.assertEqual(choice.size, self.size)
         self.assertEqual(choice.color, self.color)
         self.assertEqual(choice.quantity, 2)
+
+    def test_valid_create_saves_explicit_confirmed_material_fact(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data(
+                [self.active_choice_row()],
+                material_rows=[self.material_row()],
+            ),
+        )
+
+        self.assertTrue(bundle.is_valid(), bundle.material_formset.errors)
+        product = bundle.save()
+
+        fact = product.material_facts.get()
+        self.assertEqual(fact.business, self.business)
+        self.assertEqual(fact.canonical_material, "Cotton")
+        self.assertEqual(fact.percentage, 70)
+        self.assertEqual(fact.original_text, "70% cotton")
+        self.assertEqual(fact.source, ProductMaterialFact.Source.DESCRIPTION)
+        self.assertEqual(
+            fact.confirmation_state,
+            ProductMaterialFact.ConfirmationState.CONFIRMED,
+        )
+
+    def test_invalid_material_does_not_partially_persist_bundle(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data(
+                [self.active_choice_row()],
+                tags=(self.tag.pk,),
+                material_rows=[self.material_row(percentage="101")],
+            ),
+        )
+
+        self.assertFalse(bundle.is_valid())
+        self.assertIn("percentage", bundle.material_formset.forms[0].errors)
+        with self.assertRaisesMessage(
+            ValueError,
+            "Cannot save an invalid Product bundle.",
+        ):
+            bundle.save()
+
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+        self.assertEqual(ProductTag.objects.count(), 0)
+        self.assertEqual(ProductMaterialFact.objects.count(), 0)
 
     def test_draft_product_can_save_without_choices(self):
         bundle = ProductBundle(
@@ -3091,6 +3340,32 @@ class ProductBundleTests(TestCase):
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
         self.assertEqual(ProductTag.objects.count(), 0)
+
+    def test_material_save_failure_rolls_back_product_choices_and_tags(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data(
+                [self.active_choice_row()],
+                tags=(self.tag.pk,),
+                material_rows=[self.material_row()],
+            ),
+        )
+        self.assertTrue(bundle.is_valid())
+
+        with patch(
+            "catalog.product_bundles.ProductMaterialFact.save",
+            side_effect=IntegrityError("simulated material write failure"),
+        ):
+            with self.assertRaisesMessage(
+                IntegrityError,
+                "simulated material write failure",
+            ):
+                bundle.save()
+
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+        self.assertEqual(ProductTag.objects.count(), 0)
+        self.assertEqual(ProductMaterialFact.objects.count(), 0)
 
     def test_normalized_duplicate_rows_persist_as_distinct_choices(self):
         rows = [
@@ -3262,6 +3537,110 @@ class ProductBundleTests(TestCase):
         self.assertIsNone(product.product_type)
         self.assertFalse(product.tags.exists())
         self.assertFalse(ProductTag.objects.filter(product=product).exists())
+
+    def test_valid_update_corrects_and_removes_material_facts(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Draft trousers",
+            description="Draft description.",
+        )
+        corrected_fact = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=product,
+            canonical_material="Cottn",
+            original_text="cottn",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+        removed_fact = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=product,
+            canonical_material="Silk",
+            original_text="silk",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+        material_rows = [
+            self.material_row(
+                id=str(corrected_fact.pk),
+                canonical_material="Cotton",
+                percentage="80",
+                original_text="80% cotton",
+            ),
+            self.material_row(
+                id=str(removed_fact.pk),
+                canonical_material="Silk",
+                percentage="",
+                original_text="silk",
+                source=ProductMaterialFact.Source.MANUAL,
+                DELETE="on",
+            ),
+        ]
+        bundle = ProductBundle(
+            business=self.business,
+            instance=product,
+            data=self.bundle_data(
+                [{}],
+                lifecycle=Product.Lifecycle.DRAFT,
+                material_rows=material_rows,
+                material_initial_forms=2,
+            ),
+        )
+
+        self.assertTrue(bundle.is_valid(), bundle.material_formset.errors)
+        bundle.save()
+
+        corrected_fact.refresh_from_db()
+        self.assertEqual(corrected_fact.canonical_material, "Cotton")
+        self.assertEqual(corrected_fact.percentage, 80)
+        self.assertEqual(corrected_fact.original_text, "80% cotton")
+        self.assertFalse(ProductMaterialFact.objects.filter(pk=removed_fact.pk).exists())
+
+    def test_forged_material_id_cannot_mutate_another_business_fact(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Owned trousers",
+            description="Owned description.",
+        )
+        owned_fact = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=product,
+            canonical_material="Cotton",
+            original_text="Cotton",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+        other_product = Product.objects.create(
+            business=self.other_business,
+            name="Other dress",
+            description="Other description.",
+        )
+        other_fact = ProductMaterialFact.objects.create(
+            business=self.other_business,
+            product=other_product,
+            canonical_material="Silk",
+            original_text="Silk",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+        bundle = ProductBundle(
+            business=self.business,
+            instance=product,
+            data=self.bundle_data(
+                [{}],
+                lifecycle=Product.Lifecycle.DRAFT,
+                material_rows=[
+                    self.material_row(
+                        id=str(other_fact.pk),
+                        canonical_material="Leaked",
+                    )
+                ],
+                material_initial_forms=1,
+            ),
+        )
+
+        self.assertFalse(bundle.is_valid())
+        self.assertIn("id", bundle.material_formset.forms[0].errors)
+        owned_fact.refresh_from_db()
+        other_fact.refresh_from_db()
+        self.assertEqual(owned_fact.canonical_material, "Cotton")
+        self.assertEqual(other_fact.canonical_material, "Silk")
 
     def test_active_product_cannot_delete_its_last_active_choice(self):
         product = Product.objects.create(
@@ -3856,6 +4235,7 @@ class ChoiceVocabularyViewTests(TestCase):
 
 class ProductBundleViewTestMixin:
     choice_prefix = "choices"
+    material_prefix = "materials"
 
     @staticmethod
     def transfer_intent(
@@ -3870,6 +4250,18 @@ class ProductBundleViewTestMixin:
             f"{span_start}:{span_end}:{quote(canonical_value, safe='')}"
         )
 
+    @staticmethod
+    def material_transfer_intent(
+        index,
+        span_start,
+        span_end,
+        canonical_value,
+    ):
+        return (
+            f"transfer_material_candidate:{index}:material:"
+            f"{span_start}:{span_end}:{quote(canonical_value, safe='')}"
+        )
+
     def bundle_post_data(
         self,
         rows,
@@ -3880,6 +4272,8 @@ class ProductBundleViewTestMixin:
         description="Classic black trousers.",
         product_type="",
         tags=(),
+        material_rows=(),
+        material_initial_forms=0,
     ):
         data = {
             "name": name,
@@ -3891,10 +4285,17 @@ class ProductBundleViewTestMixin:
             f"{self.choice_prefix}-INITIAL_FORMS": str(initial_forms),
             f"{self.choice_prefix}-MIN_NUM_FORMS": "0",
             f"{self.choice_prefix}-MAX_NUM_FORMS": "1000",
+            f"{self.material_prefix}-TOTAL_FORMS": str(len(material_rows)),
+            f"{self.material_prefix}-INITIAL_FORMS": str(material_initial_forms),
+            f"{self.material_prefix}-MIN_NUM_FORMS": "0",
+            f"{self.material_prefix}-MAX_NUM_FORMS": "1000",
         }
         for index, row in enumerate(rows):
             for field, value in row.items():
                 data[f"{self.choice_prefix}-{index}-{field}"] = value
+        for index, row in enumerate(material_rows):
+            for field, value in row.items():
+                data[f"{self.material_prefix}-{index}-{field}"] = value
         return data
 
     def active_choice_row(self, **overrides):
@@ -3903,6 +4304,17 @@ class ProductBundleViewTestMixin:
             "color": str(self.color.pk),
             "quantity": "2",
             "is_active": "on",
+        }
+        row.update(overrides)
+        return row
+
+    @staticmethod
+    def material_row(**overrides):
+        row = {
+            "canonical_material": "Cotton",
+            "percentage": "70",
+            "original_text": "70% cotton",
+            "source": ProductMaterialFact.Source.DESCRIPTION,
         }
         row.update(overrides)
         return row
@@ -4001,6 +4413,12 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, 'name="product_type"')
         self.assertIn("tags", response.context["form"].fields)
         self.assertContains(response, "Confirmed classification")
+        self.assertContains(response, "Confirmed materials")
+        self.assertContains(response, 'name="materials-TOTAL_FORMS"')
+        self.assertContains(response, 'name="materials-0-canonical_material"')
+        self.assertContains(response, 'name="materials-0-percentage"')
+        self.assertContains(response, 'name="materials-0-original_text"')
+        self.assertContains(response, 'name="materials-0-source"')
         self.assertContains(response, "Recognition candidates remain suggestions")
         self.assertContains(response, 'id="id_tags-label"')
         self.assertContains(
@@ -4027,6 +4445,9 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, "Preview recognition")
         self.assertContains(response, "Create product")
         self.assertNotContains(response, 'name="business"')
+        self.assertNotContains(response, 'name="materials-0-business"')
+        self.assertNotContains(response, 'name="materials-0-product"')
+        self.assertNotContains(response, 'name="materials-0-confirmation_state"')
 
     def test_product_create_classification_options_are_business_scoped(self):
         owned_type = BusinessProductType.objects.create(
@@ -4087,6 +4508,28 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
             {self.business.pk},
         )
 
+    def test_product_create_explicitly_saves_confirmed_material(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [self.active_choice_row()],
+                material_rows=[self.material_row()],
+            ),
+        )
+
+        self.assertRedirects(response, self.list_url)
+        product = Product.objects.get(name="Black trousers")
+        fact = product.material_facts.get()
+        self.assertEqual(fact.business, self.business)
+        self.assertEqual(fact.canonical_material, "Cotton")
+        self.assertEqual(fact.percentage, 70)
+        self.assertEqual(
+            fact.confirmation_state,
+            ProductMaterialFact.ConfirmationState.CONFIRMED,
+        )
+
     def test_product_create_candidates_alone_do_not_attach_classification(self):
         self.seed_preview_vocabulary(self.business)
         self.client.force_login(self.owner)
@@ -4105,6 +4548,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         product = Product.objects.get(name="Unclassified trousers")
         self.assertIsNone(product.product_type)
         self.assertFalse(product.tags.exists())
+        self.assertFalse(product.material_facts.exists())
 
     def test_product_create_rejects_cross_business_classification(self):
         other_type = BusinessProductType.objects.create(
@@ -4281,6 +4725,11 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, "Choice color")
         self.assertContains(response, "Needs confirmation", count=5)
         self.assertContains(response, "Use in choices", count=2)
+        self.assertContains(response, "Review as material", count=1)
+        self.assertContains(
+            response,
+            'value="transfer_material_candidate:2:material:14:20:Cotton"',
+        )
         self.assertContains(
             response,
             'value="transfer_choice_candidate:3:choice_size:21:22:M"',
@@ -4312,6 +4761,77 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertFalse(
             Product.objects.filter(name="Unsaved preview product").exists()
         )
+
+    def test_product_create_htmx_transfers_material_without_saving(self):
+        self.seed_preview_vocabulary(self.business)
+        fact_count = ProductMaterialFact.objects.count()
+        data = self.bundle_post_data(
+            [self.active_choice_row()],
+            name="Unsaved material product",
+            description="Cotton",
+            material_rows=[{}],
+        )
+        data["intent"] = self.material_transfer_intent(0, 0, 6, "Cotton")
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_material_section.html")
+        transferred_form = response.context["material_formset"].forms[0]
+        self.assertEqual(
+            transferred_form["canonical_material"].value(),
+            "Cotton",
+        )
+        self.assertEqual(transferred_form["original_text"].value(), "Cotton")
+        self.assertEqual(
+            transferred_form["source"].value(),
+            ProductMaterialFact.Source.DESCRIPTION,
+        )
+        self.assertEqual(
+            response.context["material_transfer_feedback"],
+            'Material "Cotton" added to Material 1. Review the fact before saving.',
+        )
+        self.assertEqual(Product.objects.filter(name="Unsaved material product").count(), 0)
+        self.assertEqual(ProductMaterialFact.objects.count(), fact_count)
+
+    def test_product_create_rejects_stale_material_candidate_transfer(self):
+        self.seed_preview_vocabulary(self.business)
+        data = self.bundle_post_data(
+            [self.active_choice_row()],
+            description="Cotton",
+            material_rows=[{}],
+        )
+        data["intent"] = self.material_transfer_intent(0, 0, 6, "Silk")
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_material_section.html")
+        self.assertContains(response, "That candidate is no longer available")
+        self.assertEqual(Product.objects.count(), 1)
+
+    def test_product_create_invalid_material_preserves_input_without_writes(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [self.active_choice_row()],
+                material_rows=[self.material_row(percentage="101")],
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Material percentage must be between 1 and 100.",
+        )
+        self.assertContains(response, 'value="Cotton"')
+        self.assertFalse(Product.objects.exists())
+        self.assertFalse(ProductChoice.objects.exists())
+        self.assertFalse(ProductMaterialFact.objects.exists())
 
     def test_product_create_htmx_transfers_size_without_saving(self):
         row = self.active_choice_row(
@@ -4879,12 +5399,27 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
             color=self.color,
             quantity=2,
         )
+        owned_material = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=self.product,
+            canonical_material="Cotton",
+            percentage=70,
+            original_text="70% cotton",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
         ProductChoice.objects.create(
             business=self.other_business,
             product=self.other_product,
             size=self.other_size,
             color=self.other_color,
             quantity=8,
+        )
+        ProductMaterialFact.objects.create(
+            business=self.other_business,
+            product=self.other_product,
+            canonical_material="PRIVATE-OTHER-MATERIAL",
+            original_text="PRIVATE-OTHER-MATERIAL",
+            source=ProductMaterialFact.Source.MANUAL,
         )
         self.client.force_login(self.owner)
 
@@ -4904,6 +5439,12 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, "PRIVATE-OTHER-TAG")
         self.assertContains(response, 'name="choices-TOTAL_FORMS"')
         self.assertContains(response, f'value="{owned_choice.pk}"')
+        self.assertContains(response, 'name="materials-TOTAL_FORMS"')
+        self.assertContains(response, f'value="{owned_material.pk}"')
+        self.assertContains(response, 'value="Cotton"')
+        self.assertContains(response, 'value="70"')
+        self.assertContains(response, 'value="70% cotton"')
+        self.assertNotContains(response, "PRIVATE-OTHER-MATERIAL")
         self.assertContains(response, ">Black</option>")
         self.assertNotContains(response, "Private red")
         self.assertContains(response, "Save changes")
@@ -4983,6 +5524,96 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.product.refresh_from_db()
         self.assertIsNone(self.product.product_type)
         self.assertFalse(self.product.tags.exists())
+
+    def test_product_edit_corrects_and_removes_confirmed_materials(self):
+        corrected_fact = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=self.product,
+            canonical_material="Cottn",
+            original_text="cottn",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+        removed_fact = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=self.product,
+            canonical_material="Silk",
+            original_text="silk",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+        material_rows = [
+            self.material_row(
+                id=str(corrected_fact.pk),
+                canonical_material="Cotton",
+                percentage="80",
+                original_text="80% cotton",
+            ),
+            self.material_row(
+                id=str(removed_fact.pk),
+                canonical_material="Silk",
+                percentage="",
+                original_text="silk",
+                source=ProductMaterialFact.Source.MANUAL,
+                DELETE="on",
+            ),
+        ]
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [{}],
+                lifecycle=Product.Lifecycle.DRAFT,
+                material_rows=material_rows,
+                material_initial_forms=2,
+            ),
+        )
+
+        self.assertRedirects(response, self.list_url)
+        corrected_fact.refresh_from_db()
+        self.assertEqual(corrected_fact.canonical_material, "Cotton")
+        self.assertEqual(corrected_fact.percentage, 80)
+        self.assertFalse(
+            ProductMaterialFact.objects.filter(pk=removed_fact.pk).exists()
+        )
+
+    def test_product_edit_rejects_another_business_material_id(self):
+        owned_fact = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=self.product,
+            canonical_material="Cotton",
+            original_text="Cotton",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+        other_fact = ProductMaterialFact.objects.create(
+            business=self.other_business,
+            product=self.other_product,
+            canonical_material="Silk",
+            original_text="Silk",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [{}],
+                lifecycle=Product.Lifecycle.DRAFT,
+                material_rows=[
+                    self.material_row(
+                        id=str(other_fact.pk),
+                        canonical_material="Leaked",
+                    )
+                ],
+                material_initial_forms=1,
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Select a valid choice.")
+        owned_fact.refresh_from_db()
+        other_fact.refresh_from_db()
+        self.assertEqual(owned_fact.canonical_material, "Cotton")
+        self.assertEqual(other_fact.canonical_material, "Silk")
 
     def test_product_edit_get_previews_saved_description(self):
         self.seed_preview_vocabulary(self.business)

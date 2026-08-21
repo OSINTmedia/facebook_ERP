@@ -45,6 +45,26 @@
                     role="status"
                   >Adding…</span>
                 </div>
+              {% elif candidate.destination.value == "material" %}
+                <div class="recognition-candidate__actions">
+                  <button
+                    class="button button--secondary button--compact recognition-candidate__action"
+                    type="submit"
+                    name="intent"
+                    value="transfer_material_candidate:{{ forloop.counter0 }}:{{ candidate.destination.value }}:{{ candidate.span_start }}:{{ candidate.span_end }}:{{ candidate.canonical_value|urlencode }}"
+                    hx-post="."
+                    hx-target="#material-section"
+                    hx-swap="outerHTML"
+                    hx-include="closest form"
+                    hx-indicator="#material-transfer-loading-{{ forloop.counter0 }}"
+                    hx-disabled-elt="this"
+                  >Review as material</button>
+                  <span
+                    id="material-transfer-loading-{{ forloop.counter0 }}"
+                    class="htmx-indicator recognition-candidate__loading"
+                    role="status"
+                  >Adding…</span>
+                </div>
               {% endif %}
             </li>
           {% endfor %}

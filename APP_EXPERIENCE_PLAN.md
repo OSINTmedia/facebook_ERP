@@ -119,7 +119,8 @@ Rule: the card must not become the entire application.
 - Recognition feedback: separate observed text, candidate meaning, and confirmed structured fact.
 - OWNER_PROVIDED_DIRECTION: Product Type and Tag candidates remain transient until the seller explicitly selects canonical confirmed values and saves a valid Product bundle.
 - OWNER_PROVIDED_DIRECTION: One authenticated Product vocabulary surface manages Product Types, Tags, Sizes, and Colors for the active Business, with grouped aliases, rename, explicit alias-list replacement, and activation/deactivation while preserving existing Product truth.
-- Progressive disclosure: secondary explanations, material confirmation details, advanced taxonomy, future relations, and detailed measurement capture.
+- OWNER_PROVIDED_DIRECTION: Material candidates use an explicit “Review as material” action into a compact editable section immediately after recognition feedback; material facts remain unsaved until the valid Product bundle saves, and this surface does not learn aliases automatically.
+- Progressive disclosure: secondary material guidance, advanced taxonomy, future relations, and detailed measurement capture.
 - Constraint: do not turn the product form into one huge fashion specification; material is a small typed semantic fact when confirmed, while detailed garment measurements remain a separate approved micro-slice.
 - Validation: errors must appear at the exact section and preserve data.
 - Actions: save, cancel/return, and no ambiguous destructive action in primary path.
@@ -278,10 +279,8 @@ No full WCAG compliance claim is made by this draft.
 - Ready reply placement.
 - Product Detail existence and purpose.
 - Product Relations inclusion or deferral.
-- Material confirmation placement and wording.
 - Measurement capture timing, method wording, and product/choice boundary for a later approved micro-slice.
 - Fit guidance placement and wording if included later.
-- Type/tag management page inclusion.
 - Card tag toggle inclusion.
 - Direct stock set placement.
 - Clone inclusion and clone-mode UI.

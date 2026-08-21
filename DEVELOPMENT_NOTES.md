@@ -336,6 +336,14 @@ Treat `migrate --check` against the local owner-review database as a required op
 Reason:
 P4.9e_expand tests passed on newly migrated test databases while the running local server still used a schema without the new Type/Tag activation fields, breaking Product Add with an undefined-column error. Applying the additive migration restored the route without data loss; explicit local migration-state verification prevents the same false PASS.
 
+### 2026-08-21 - Material confirmation stays explicit and does not learn aliases
+
+Decision:
+Place compact confirmed-material rows immediately after Product recognition feedback. A seller may explicitly transfer a freshly recomputed material candidate into an unsaved row, then correct or remove the canonical material, optional percentage, original wording, and source before the atomic Product bundle saves it as confirmed. Do not add a material-alias model or learn an alias from corrected wording in P4.9f.
+
+Reason:
+The candidate action reduces repeated typing without crossing the observed-to-candidate-to-confirmed boundary. Recomputing and binding candidate identity prevents stale or changed interpretations from being transferred, while deferring alias persistence avoids treating one Product correction as reusable Business vocabulary without a separately approved collision, maintenance, and deactivation policy.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:

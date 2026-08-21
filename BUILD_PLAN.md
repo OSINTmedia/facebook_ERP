@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9d, including P4.9d_expand, are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.9e Product Type and Tag Confirmation Attachment Baseline and its owner-approved P4.9e_expand vocabulary-management extension are locally implemented, integrity-audited, and owner-reviewed, with Prompt 5 release pending. P4.9f remains `NOT_STARTED`. Inventory, availability, readiness, and buyer replies do not exist yet.
+- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9e, including P4.9d_expand and P4.9e_expand, are released and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.9f is implemented, integrity-audited, and locally verified, with required owner/browser acceptance and Prompt 5 release still pending. Inventory, availability, readiness, and buyer replies do not exist yet.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -639,7 +639,7 @@ Avoid libraries that depend on:
 - Execution rule: complete P4.9 through P4.9a through P4.9f plus the owner-approved P4.9d_expand and P4.9e_expand extensions below. Each extension shares the audit/release boundary of its owning functional slice and is not a post-push synchronization slice. Do not treat the P4.9 umbrella as one implementation-sized slice and do not skip controlled-vocabulary or confirmation boundaries between candidates and persisted facts.
 - Shared exclusions: large clothing forms, measurement UI, buyer reply UI, dashboard/workspace work, inventory mutation behavior, computed availability, public catalog, chatbot, orders, payments, delivery, broad ERP, and LLM-owned truth.
 - Shared stop gate: P4.9 is complete only after P4.9a through P4.9f plus P4.9d_expand and P4.9e_expand are released, remote-aligned, CI-passed, and the required owner decisions and browser verification have passed.
-- Status: IN_PROGRESS — completed: P4.9a through P4.9d, including P4.9d_expand, are `PASSED`; current: P4.9e plus P4.9e_expand are locally implemented, integrity-audited, and owner-reviewed with Prompt 5 release pending; remaining: P4.9f is `NOT_STARTED`.
+- Status: IN_PROGRESS — completed: P4.9a through P4.9e, including P4.9d_expand and P4.9e_expand, are released and `PASSED`; current: P4.9f is implemented, integrity-audited, and locally verified, with required owner/browser acceptance and Prompt 5 release still pending.
 
 ##### P4.9a Product Choice Create/Edit Integration Baseline
 
@@ -705,7 +705,7 @@ Avoid libraries that depend on:
 - Acceptance criteria: only explicit seller confirmation writes associations; cross-Business vocabulary is rejected; candidates alone never attach; correction and removal are deterministic and tested.
 - Verification: model/migration checks if required, focused form/service/view ownership tests, full Django suite, `git diff --check`, and owner/browser confirmation review.
 - Proposed combined commit message: `feat: confirm and manage product classification`.
-- Status: AUDITED_READY — combined with P4.9e_expand; local implementation, automated verification, integrity audit, and required owner/browser confirmation passed; Prompt 5 release remains pending.
+- Status: PASSED — combined with P4.9e_expand; integrity-audited, owner-reviewed, released, remote-aligned, and CI-passed; exact delivery metadata remains Git/GitHub authority.
 
 ##### P4.9e_expand Product Type and Tag Vocabulary Management Surface
 
@@ -716,20 +716,20 @@ Avoid libraries that depend on:
 - Acceptance criteria: the seller can create vocabulary before Product entry; only active values appear in new Product confirmation and recognition; existing confirmed Product references survive rename/deactivation and remain editable; alias replacement is atomic; and tampered/cross-Business mutations are rejected.
 - Verification: local/test checks and migration checks; focused vocabulary, recognition, Product form/bundle/view, ownership, rollback, and reference-preservation tests; catalog tests; full Django suite; `git diff --check`; and owner/browser review.
 - Proposed combined commit message: `feat: confirm and manage product classification`.
-- Status: AUDITED_READY — combined with P4.9e; local implementation, automated verification, integrity audit, and required owner/browser confirmation passed; Prompt 5 release remains pending.
+- Status: PASSED — combined with P4.9e; integrity-audited, owner-reviewed, released, remote-aligned, and CI-passed; exact delivery metadata remains Git/GitHub authority.
 
 ##### P4.9f Material Confirmation Attachment Baseline
 
 - Objective: persist an explicitly confirmed material candidate through the existing confirmed `ProductMaterialFact` boundary.
-- Dependency: P4.9e plus P4.9e_expand released and CI-passed; owner resolves the exact material confirmation UI and alias policy before implementation begins.
-- Exact scope: explicit confirm/correct/remove behavior for canonical material, optional approved percentage, original observed wording, source, confirmation state, Product, and active Business; atomic Product-form recovery on errors.
-- Explicit exclusions: silent material writes, universal textile ontology, label OCR, image analysis, measurements, scientific composition inference, readiness, and buyer replies.
+- Dependency: P4.9e plus P4.9e_expand released and CI-passed; owner approved a compact inline confirmation section after recognition feedback, explicit candidate transfer into an unsaved row, and no material-alias model or automatic alias learning in this slice.
+- Exact scope: explicit candidate-to-unsaved-row transfer plus confirm/correct/remove behavior for canonical material, optional approved percentage, original observed wording, source, confirmation state, Product, and active Business; atomic Product-form recovery on errors.
+- Explicit exclusions: silent material writes, material-alias persistence or automatic alias learning, universal textile ontology, label OCR, image analysis, measurements, scientific composition inference, readiness, and buyer replies.
 - Acceptance criteria: candidates stay transient until confirmation; persisted material facts preserve original wording and Business/Product scope; no unsupported composition claim is invented.
 - Verification: focused material confirmation and ownership tests, error-recovery tests, full Django suite, `git diff --check`, and owner/browser confirmation review.
 - Proposed commit message: `feat: confirm product material candidates`.
-- Status: NOT_STARTED — `OWNER_DECISION_REQUIRED` for exact confirmation UI and alias behavior.
+- Status: IMPLEMENTED_UNCOMMITTED — integrity audit and local automated verification passed; required owner/browser confirmation and Prompt 5 release/remote CI remain.
 
-#### P4.10 Phase 4 Audit and Gate 3 Closure
+#### P4.10 Phase 4 Audit and Transition
 
 - Objective: audit Phase 4 against `BUILD_PLAN.md` and `docs/domain/CLOTHING_DATA_SPEC_V1.md` before closing the semantic recognition and choice model phase.
 - Dependency: P4.1 through P4.9 complete, released, aligned with remote, and latest relevant CI successful.
@@ -741,10 +741,10 @@ Avoid libraries that depend on:
 - Automated verification: Django system check, migration dry-run check, focused Phase 4 tests, full Django test suite, `git diff --check`, Git branch/remote alignment check, latest relevant GitHub Actions result.
 - Manual user verification where UI changes: owner confirms create/edit recognition flow, compactness, validation recovery, and no unapproved measurement or buyer-reply UI if those surfaces changed.
 - Failure cases: tests fail; CI fails or is pending; working tree is dirty; Phase 4 scope includes measurements, public catalog, chatbot, orders, reservations, payments, delivery, broad ERP, or LLM truth; buyer replies consume unconfirmed candidates; choice bundle validation permits partial invalid state.
-- Documentation updates: update `changelog_checkpoint.md` for Phase 4 and Gate 3 closure only when closure criteria pass; no routine post-push documentation sync; no new `.1 Post-Push...` micro-slice.
+- Documentation updates: update `changelog_checkpoint.md` for Phase 4 closure only when closure criteria pass; no routine post-push documentation sync; no new `.1 Post-Push...` micro-slice.
 - Proposed commit message: `chore: audit phase 4 semantic recognition`.
 - Rollback/recovery note: if audit fails, record the real blocker and recovery requirement instead of marking Phase 4 passed.
-- Stop gate relation: closes Phase 4 and Gate 3 only after all criteria pass.
+- Stop gate relation: closes Phase 4 only after all criteria pass; Gate 3 remains open until Phase 5 inventory and computed-availability criteria also pass.
 - Status: NOT_STARTED.
 
 ### Phase 5: Inventory and Computed Availability
@@ -919,11 +919,9 @@ Do not choose a provider or claim a demo URL before owner approval and verificat
 
 ## 20. Owner Decisions Required
 
-- Owner approval before implementing P1.1.
 - Final public project/repository name.
 - License choice.
-- Exact V1 behavior for recognizing observed text, candidate meaning, and confirmed facts.
-- Material confirmation UI and alias policy.
+- Future material vocabulary/alias maintenance policy beyond P4.9f.
 - Detailed measurement micro-slice timing, including measurement type, value, unit, method, and product/choice boundary.
 - Whether fit guidance appears in a later approved measurement/fit micro-slice.
 - Whether Product Detail remains in Portfolio V1.
