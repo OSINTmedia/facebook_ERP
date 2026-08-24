@@ -384,6 +384,14 @@ Allow compact `+1`/`-1` controls beside a persisted ProductChoice on Product edi
 Reason:
 Co-location lets a seller correct a saved choice without a premature workspace/dashboard redesign, while the separate route preserves the one-service, immutable-ledger, Business-scoped stock boundary. The explicit server response avoids client-owned quantity and stale control state. Owner/browser testing confirmed the behavior but exposed a reusable UX lesson: requiring a new Product or choice to be saved at zero before quantity controls appear creates avoidable workflow friction. A later approved correction must improve that transition without treating an unsaved row as stock identity or bypassing the ledger.
 
+### 2026-08-24 - Starting stock is a one-time creation transition
+
+Decision:
+Allow a seller to enter non-negative starting stock for an unsaved choice in the final Product create/edit submission. ProductBundle must persist that choice at zero first, then use a dedicated operation inside the centralized inventory mutation boundary to record one atomic `0 -> N` adjustment for a positive start. Existing choices remain read-only and use only the established `-1`/`+1` controls.
+
+Reason:
+This removes the owner-observed save-then-adjust burden without inventing stock identity for an unsaved row or writing quantity outside the ledger. Replaying `+1` N times would misrepresent one seller action and scale poorly, while directly assigning N would lose the adjustment fact. A narrowly guarded, creation-only initialization preserves one-save UX, Business/actor ownership, rollback safety, and an exact audit trail without approving general direct set.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:
