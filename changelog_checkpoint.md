@@ -19,7 +19,7 @@
 - Phase 5 Inventory and Computed Availability: `IN_PROGRESS`.
 - P5.1 Pure Product Availability Service Baseline: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.2 Business-Scoped Inventory Adjustment Ledger Baseline: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
-- P5.3 Atomic Inventory Increment/Decrement Service: implemented, integrity-audited, and `AUDITED_READY` pending Prompt 5 release.
+- P5.3 Atomic Inventory Increment/Decrement Service: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - Gate 3: not passed; stock routes/UI, Product-bundle integration, and the remaining Phase 5 acceptance work remain later Phase 5 work.
 - Online demo: not deployed.
 
@@ -55,8 +55,8 @@ P5.2 establishes the inventory adjustment fact boundary:
 
 ## Current Gate and Next Work
 
-- Current gate: Prompt 5 release of audited P5.3; Gate 3 remains open because stock routes/UI and the remaining Phase 5 acceptance work are not complete.
-- After successful release: return to Prompt 2 to select the next smallest Phase 5 functional slice; stock route/HTMX behavior remains later approved work.
+- Current gate: Phase 5 functional continuation; Gate 3 remains open because ProductBundle integration, stock route/HTMX behavior, and transition/regression readiness are not complete.
+- Next functional slice: P5.4 ProductBundle Quantity Mutation Integration; after P5.7, run the Phase 5 audit and Gate 3 transition workflow.
 
 ## Active Blockers and Decisions
 
@@ -68,13 +68,9 @@ P5.2 establishes the inventory adjustment fact boundary:
 
 ## Current Audited Release Set
 
-- `inventory/mutations.py`
-- `inventory/tests.py`
 - `BUILD_PLAN.md`
-- `DEVELOPMENT_NOTES.md`
-- `README.md`
 - `changelog_checkpoint.md`
-- Proposed commit: `feat: add atomic inventory delta service`
+- Proposed commit: `docs: plan remaining phase 5 slices`
 
 ## Handoff Guardrails
 

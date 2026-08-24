@@ -752,8 +752,8 @@ Avoid libraries that depend on:
 - Objective: centralize quantity mutations and availability computation.
 - Dependency: Phase 4.
 - Scope boundary: inventory service, adjustment ledger, +1/-1 and owner-approved direct set, computed availability, concurrency strategy.
-- Current implementation state: `IN_PROGRESS`; P5.1 and P5.2 are released and exact-SHA CI-passed, and P5.3 is locally implemented and integrity-audited with release pending Prompt 5. The centralized mutation service now pairs stock writes with ledger facts; stock route and HTMX stock behavior remain later work.
-- Expected micro-slices: pure availability service baseline, adjustment-ledger baseline, centralized mutation service and concurrency handling, stock route, HTMX response, transition tests.
+- Current implementation state: `IN_PROGRESS`; P5.1, P5.2, and P5.3 are released and exact-SHA CI-passed. Four controlled functional micro-slices remain before the Phase 5 transition audit: ProductBundle integration, authenticated stock route, HTMX stock response/controls, and end-to-end transition/regression readiness. Gate 3 remains open until all stock writes use the centralized service and the remaining inventory acceptance evidence passes.
+- Expected micro-slices: P5.1 availability baseline, P5.2 adjustment-ledger baseline, P5.3 atomic mutation service, P5.4 ProductBundle integration, P5.5 stock route, P5.6 HTMX stock response/controls, and P5.7 transition/regression readiness before the Phase 5 audit and Gate 3 closure.
 - Stop gate: all stock changes go through one service and create a complete audit trail.
 
 #### P5.1 Pure Product Availability Service Baseline
@@ -808,7 +808,47 @@ Avoid libraries that depend on:
 - Proposed commit message: `feat: add atomic inventory delta service`.
 - Rollback/recovery note: remove the service and focused tests together if the audited release cannot proceed; preserve the P5.1 availability and P5.2 ledger boundaries.
 - Stop gate relation: centralizes the first quantity mutation and ledger pairing but does not complete stock UI, workspace behavior, or Gate 3.
-- Status: `AUDITED_READY` pending Prompt 5 release and exact-SHA CI.
+- Status: `CLOSED` after release, remote alignment, and exact-SHA CI success; delivery metadata remains in Git/GitHub.
+
+#### P5.4 ProductBundle Quantity Mutation Integration
+
+- Objective: route existing ProductBundle choice-quantity mutations through the centralized atomic inventory service while preserving the ProductBundle transaction boundary.
+- Dependency: P5.3 `CLOSED`.
+- Scope boundary: integrate validated Business-owned ProductChoice quantity changes with `apply_choice_quantity_delta`; preserve choice identity, lifecycle, activation, material, tag, and Business isolation behavior.
+- Explicit exclusions: direct stock set, arbitrary deltas, reason codes, stock route, HTMX response, dashboard, readiness, buyer replies, reservations, orders, and deployment work.
+- Source whitelist: `catalog/product_bundles.py`, `catalog/tests.py`, `inventory/mutations.py` only if directly required by acceptance.
+- Acceptance: ProductBundle quantity writes cannot bypass the mutation service; valid transitions create exactly one immutable adjustment fact; invalid/cross-Business/underflow writes remain atomic and leave no partial state; existing ProductBundle regressions remain green.
+- Status: `PLANNED`.
+
+#### P5.5 Authenticated Stock Mutation Route
+
+- Objective: expose a seller-authenticated, Business-scoped route for one approved choice-level stock increment/decrement action.
+- Dependency: P5.4 `CLOSED`.
+- Scope boundary: thin Django view calling the centralized service with server validation, safe return path, and ownership enforcement.
+- Explicit exclusions: direct-set UI, arbitrary quantity input, reason codes, dashboard, public catalog, buyer replies, and new architecture/dependencies.
+- Source whitelist: `inventory/urls.py`, `inventory/views.py`, `inventory/tests.py`, and route configuration only if directly required.
+- Acceptance: authenticated owner can mutate only an owned ProductChoice; unauthenticated, cross-Business, invalid, and underflow requests are rejected without writes; success/error responses preserve server truth and safe navigation.
+- Status: `PLANNED`.
+
+#### P5.6 HTMX Stock Response and Controls
+
+- Objective: add the approved server-rendered HTMX response and compact choice-level control surface for the stock route.
+- Dependency: P5.5 `CLOSED` and owner-approved UX responsibility for the affected surface.
+- Scope boundary: HTMX partial response, loading/recovery feedback, accessibility labels, and mobile-reviewable choice-level controls using server truth.
+- Explicit exclusions: workspace/dashboard redesign, client-owned stock state, Alpine replacement of server truth, direct set, reason codes, and unrelated UX cleanup.
+- Source whitelist: inventory templates/static assets and directly related tests only.
+- Acceptance: HTMX success/error responses update the correct Business-scoped choice state, preserve return context, expose accessible action/status feedback, and do not claim stock state before the server response.
+- Status: `PLANNED`.
+
+#### P5.7 Inventory Transition and Regression Readiness
+
+- Objective: prove the complete Phase 5 stock boundary and prepare the evidence required for the Phase 5 audit and Gate 3 transition.
+- Dependency: P5.4, P5.5, and P5.6 `CLOSED`.
+- Scope boundary: integrated Business-isolation, mutation, ledger, availability, ProductBundle, route, HTMX, concurrency, rollback, and regression coverage; no new product behavior.
+- Explicit exclusions: new inventory policy, direct-set approval, reason-code policy, orders, reservations, deployment, and broad UX redesign.
+- Source whitelist: directly related source/tests from P5.4–P5.6 only; governance docs are updated in Prompt 4 after acceptance.
+- Acceptance: all stock writes use the centralized service; every accepted transition has one immutable fact; availability remains computed; full PostgreSQL regression and targeted route/HTMX checks pass; Gate 3 evidence is complete for audit.
+- Status: `PLANNED`.
 
 ### Phase 6: Operational Product Workspace
 
