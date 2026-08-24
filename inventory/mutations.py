@@ -15,6 +15,13 @@ class ChoiceQuantityDeltaResult:
     is_available: bool
 
 
+@dataclass(frozen=True, slots=True)
+class ChoiceQuantityInitializationResult:
+    choice: ProductChoice
+    adjustment: InventoryAdjustment
+    is_available: bool
+
+
 def apply_choice_quantity_delta(*, business, choice, actor, delta):
     """Atomically apply one +1/-1 choice mutation and record its audit fact."""
     if business is None or business.pk is None:
@@ -63,6 +70,65 @@ def apply_choice_quantity_delta(*, business, choice, actor, delta):
         )
 
     return ChoiceQuantityDeltaResult(
+        choice=locked_choice,
+        adjustment=adjustment,
+        is_available=is_available,
+    )
+
+
+def initialize_choice_quantity(*, business, choice, actor, quantity):
+    """Record one guarded initial 0-to-N transition for a persisted choice."""
+    if business is None or business.pk is None:
+        raise ValueError("An existing Business is required.")
+    if choice is None or choice.pk is None:
+        raise ValueError("An existing ProductChoice is required.")
+    if actor is None or actor.pk is None:
+        raise ValueError("An authenticated actor is required.")
+    if type(quantity) is not int or quantity <= 0:
+        raise ValidationError("Initial quantity must be a positive integer.")
+    if choice.business_id != business.pk:
+        raise ValidationError("Choice must belong to the active Business.")
+    if business.owner_id != actor.pk:
+        raise ValidationError("Actor must own the active Business.")
+
+    with transaction.atomic():
+        try:
+            locked_choice = (
+                ProductChoice.objects.select_for_update()
+                .select_related("product")
+                .get(pk=choice.pk, business=business)
+            )
+        except ProductChoice.DoesNotExist as error:
+            raise ValidationError(
+                "Choice must belong to the active Business."
+            ) from error
+
+        if locked_choice.quantity != 0:
+            raise ValidationError(
+                "Choice quantity must be zero before initialization."
+            )
+        if InventoryAdjustment.objects.filter(
+            business=business,
+            choice=locked_choice,
+        ).exists():
+            raise ValidationError("Choice stock has already been adjusted.")
+
+        locked_choice.quantity = quantity
+        locked_choice.save(update_fields=["quantity", "updated_at"])
+        adjustment = InventoryAdjustment.objects.create(
+            business=business,
+            choice=locked_choice,
+            actor=actor,
+            quantity_before=0,
+            quantity_after=quantity,
+            delta=quantity,
+        )
+        is_available = compute_product_availability(
+            business=business,
+            product=locked_choice.product,
+        )
+
+    return ChoiceQuantityInitializationResult(
         choice=locked_choice,
         adjustment=adjustment,
         is_available=is_available,

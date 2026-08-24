@@ -115,17 +115,34 @@ class ProductChoiceForm(forms.ModelForm):
         self.fields["size"].empty_label = "Select size"
         self.fields["color"].queryset = color_queryset
         self.fields["color"].empty_label = "Select color"
-        self.fields["quantity"].disabled = True
-        self.fields["quantity"].help_text = (
-            "Stock is managed separately. New choices start at 0."
-        )
+        if self.instance.pk:
+            self.fields["quantity"].disabled = True
+            self.fields["quantity"].label = "Current stock"
+            self.fields["quantity"].help_text = (
+                "Use the -1 and +1 controls for later stock changes."
+            )
+        else:
+            self.fields["quantity"].label = "Starting stock"
+            self.fields["quantity"].help_text = (
+                "Set stock for this new choice now. Later changes use -1 and +1."
+            )
+            self.fields["quantity"].widget.attrs.update(
+                {"min": "0", "step": "1", "inputmode": "numeric"}
+            )
 
     def has_changed(self):
         """Ignore untouched extra rows whose only values are model defaults."""
         if self.is_bound and not self.instance.pk:
             size = self.data.get(self.add_prefix("size"))
             color = self.data.get(self.add_prefix("color"))
-            if not str(size or "").strip() and not str(color or "").strip():
+            quantity = str(
+                self.data.get(self.add_prefix("quantity")) or ""
+            ).strip()
+            if (
+                not str(size or "").strip()
+                and not str(color or "").strip()
+                and quantity in ("", "0")
+            ):
                 return False
         return super().has_changed()
 

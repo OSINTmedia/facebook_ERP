@@ -157,15 +157,9 @@
           </div>
 
           <div class="form-field">
-            <label for="{{ choice_form.quantity.id_for_label }}">Stock quantity</label>
+            <label for="{{ choice_form.quantity.id_for_label }}">{{ choice_form.quantity.label }}</label>
             {{ choice_form.quantity }}
-            <p class="field-help">
-              {% if choice_form.instance.pk %}
-                Stock is managed separately from product details.
-              {% else %}
-                New choices start with 0 stock. Stock is managed separately.
-              {% endif %}
-            </p>
+            <p class="field-help">{{ choice_form.quantity.help_text }}</p>
             {% if choice_form.instance.pk %}
               {% include "inventory/_choice_stock_controls.html" with choice=choice_form.instance return_url=return_url only %}
             {% endif %}

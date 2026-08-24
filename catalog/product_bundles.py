@@ -9,6 +9,7 @@ from catalog.forms import (
     ProductMaterialFactFormSet,
 )
 from catalog.models import Product, ProductChoice, ProductMaterialFact, ProductTag
+from inventory.mutations import initialize_choice_quantity
 
 
 class ProductBundle:
@@ -69,7 +70,7 @@ class ProductBundle:
         )
         return self._is_valid
 
-    def save(self):
+    def save(self, *, actor=None):
         """Persist a previously validated bundle as one database transaction."""
         if not self._validated:
             raise ValueError("Validate the Product bundle before saving it.")
@@ -103,11 +104,19 @@ class ProductBundle:
                         ]
                     )
                 else:
+                    starting_quantity = choice.quantity
                     choice.business = self.business
                     choice.product = product
                     choice.quantity = 0
                     choice.full_clean()
                     choice.save()
+                    if starting_quantity > 0:
+                        initialize_choice_quantity(
+                            business=self.business,
+                            choice=choice,
+                            actor=actor,
+                            quantity=starting_quantity,
+                        )
 
             self.choice_formset.save_m2m()
             self._replace_product_tags(

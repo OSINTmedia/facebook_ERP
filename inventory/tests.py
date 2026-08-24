@@ -20,7 +20,10 @@ from catalog.models import (
 )
 from inventory.availability import compute_product_availability
 from inventory.models import InventoryAdjustment
-from inventory.mutations import apply_choice_quantity_delta
+from inventory.mutations import (
+    apply_choice_quantity_delta,
+    initialize_choice_quantity,
+)
 
 
 class ProductAvailabilityTests(TestCase):
@@ -496,6 +499,121 @@ class InventoryMutationTests(TestCase):
         }
         values.update(overrides)
         return apply_choice_quantity_delta(**values)
+
+    def initialize_quantity(self, quantity, **overrides):
+        values = {
+            "business": self.business,
+            "choice": self.choice,
+            "actor": self.owner,
+            "quantity": quantity,
+        }
+        values.update(overrides)
+        return initialize_choice_quantity(**values)
+
+    def test_initial_quantity_records_one_adjustment_and_returns_availability(self):
+        result = self.initialize_quantity(7)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 7)
+        self.assertEqual(result.choice.pk, self.choice.pk)
+        self.assertEqual(result.choice.quantity, 7)
+        self.assertTrue(result.is_available)
+        self.assertEqual(result.adjustment.business, self.business)
+        self.assertEqual(result.adjustment.choice, self.choice)
+        self.assertEqual(result.adjustment.actor, self.owner)
+        self.assertEqual(result.adjustment.quantity_before, 0)
+        self.assertEqual(result.adjustment.quantity_after, 7)
+        self.assertEqual(result.adjustment.delta, 7)
+        self.assertEqual(InventoryAdjustment.objects.count(), 1)
+
+    def test_invalid_initial_quantity_leaves_choice_and_ledger_unchanged(self):
+        for quantity in (0, -1, True, 1.0, "1", None):
+            with self.subTest(quantity=quantity):
+                with self.assertRaisesMessage(
+                    ValidationError,
+                    "Initial quantity must be a positive integer.",
+                ):
+                    self.initialize_quantity(quantity)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_initial_quantity_rejects_unsaved_choice_without_writes(self):
+        unsaved_choice = ProductChoice(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=0,
+        )
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "An existing ProductChoice is required.",
+        ):
+            self.initialize_quantity(3, choice=unsaved_choice)
+
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_initial_quantity_rejects_nonzero_choice_without_writes(self):
+        self.choice.quantity = 2
+        self.choice.save(update_fields=["quantity", "updated_at"])
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Choice quantity must be zero before initialization.",
+        ):
+            self.initialize_quantity(3)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 2)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_initial_quantity_rejects_previously_adjusted_choice(self):
+        self.apply_delta(1)
+        self.apply_delta(-1)
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Choice stock has already been adjusted.",
+        ):
+            self.initialize_quantity(3)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertEqual(InventoryAdjustment.objects.count(), 2)
+
+    def test_initial_quantity_rejects_cross_business_choice_and_wrong_actor(self):
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Choice must belong to the active Business.",
+        ):
+            self.initialize_quantity(3, choice=self.other_choice)
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Actor must own the active Business.",
+        ):
+            self.initialize_quantity(3, actor=self.other_owner)
+
+        self.choice.refresh_from_db()
+        self.other_choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertEqual(self.other_choice.quantity, 5)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_initial_adjustment_failure_rolls_back_quantity_write(self):
+        with patch(
+            "inventory.mutations.InventoryAdjustment.objects.create",
+            side_effect=IntegrityError("ledger write failed"),
+        ):
+            with self.assertRaises(IntegrityError):
+                self.initialize_quantity(4)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
 
     def test_increment_records_adjustment_and_returns_available_transition(self):
         original_state = (self.choice.is_active, self.product.lifecycle)
@@ -1003,6 +1121,46 @@ class InventoryMutationConcurrencyTests(TransactionTestCase):
             color=color,
             quantity=1,
         )
+
+    def test_concurrent_initializations_allow_one_exact_transition(self):
+        self.choice.quantity = 0
+        self.choice.save(update_fields=["quantity", "updated_at"])
+        start = Barrier(2)
+
+        def initialize(quantity):
+            close_old_connections()
+            try:
+                business = Business.objects.get(pk=self.business.pk)
+                choice = ProductChoice.objects.get(pk=self.choice.pk)
+                actor = get_user_model().objects.get(pk=self.owner.pk)
+                start.wait(timeout=5)
+                try:
+                    result = initialize_choice_quantity(
+                        business=business,
+                        choice=choice,
+                        actor=actor,
+                        quantity=quantity,
+                    )
+                    return "applied", result.adjustment.pk
+                except ValidationError as error:
+                    return "rejected", str(error)
+            finally:
+                close_old_connections()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(initialize, (5, 7)))
+
+        self.choice.refresh_from_db()
+        adjustments = list(InventoryAdjustment.objects.all())
+        self.assertCountEqual(
+            [result[0] for result in results],
+            ["applied", "rejected"],
+        )
+        self.assertIn(self.choice.quantity, (5, 7))
+        self.assertEqual(len(adjustments), 1)
+        self.assertEqual(adjustments[0].quantity_before, 0)
+        self.assertEqual(adjustments[0].quantity_after, self.choice.quantity)
+        self.assertEqual(adjustments[0].delta, self.choice.quantity)
 
     def test_concurrent_decrements_serialize_without_lost_update(self):
         start = Barrier(2)

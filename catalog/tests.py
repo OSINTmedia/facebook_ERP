@@ -2869,7 +2869,10 @@ class ProductChoiceFormTests(TestCase):
             list(form.fields),
             ["size", "color", "quantity", "is_active"],
         )
-        self.assertTrue(form.fields["quantity"].disabled)
+        self.assertFalse(form.fields["quantity"].disabled)
+        self.assertEqual(form.fields["quantity"].label, "Starting stock")
+        self.assertEqual(form.fields["quantity"].widget.attrs["min"], "0")
+        self.assertEqual(form.fields["quantity"].widget.attrs["step"], "1")
 
     def test_form_ignores_submitted_business_and_product(self):
         form = ProductChoiceForm(
@@ -2888,7 +2891,51 @@ class ProductChoiceFormTests(TestCase):
         choice = form.save(commit=False)
         self.assertIsNone(choice.business_id)
         self.assertIsNone(choice.product_id)
-        self.assertEqual(choice.quantity, 0)
+        self.assertEqual(choice.quantity, 2)
+
+    def test_saved_choice_quantity_stays_disabled_and_ignores_submission(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Saved product",
+            description="Saved description.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=self.size,
+            color=self.color,
+            quantity=4,
+        )
+        form = ProductChoiceForm(
+            data={
+                "size": self.size.pk,
+                "color": self.color.pk,
+                "quantity": 99,
+                "is_active": True,
+            },
+            instance=choice,
+            business=self.business,
+        )
+
+        self.assertTrue(form.fields["quantity"].disabled)
+        self.assertEqual(form.fields["quantity"].label, "Current stock")
+        self.assertTrue(form.is_valid())
+        self.assertEqual(form.save(commit=False).quantity, 4)
+
+    def test_new_choice_rejects_negative_starting_stock(self):
+        form = ProductChoiceForm(
+            data={
+                "size": self.size.pk,
+                "color": self.color.pk,
+                "quantity": -1,
+                "is_active": True,
+            },
+            business=self.business,
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("quantity", form.errors)
 
     def test_form_dropdowns_include_only_active_values_from_the_business(self):
         inactive_size = size_value(self.business, "XL")
@@ -3190,7 +3237,7 @@ class ProductBundleTests(TestCase):
         row = {
             "size": str(self.size.pk),
             "color": str(self.color.pk),
-            "quantity": "2",
+            "quantity": "0",
             "is_active": "on",
         }
         row.update(overrides)
@@ -3237,6 +3284,25 @@ class ProductBundleTests(TestCase):
         self.assertEqual(choice.color, self.color)
         self.assertEqual(choice.quantity, 0)
         self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_valid_create_records_positive_starting_stock_once(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data([self.active_choice_row(quantity="6")]),
+        )
+
+        self.assertTrue(bundle.is_valid())
+        product = bundle.save(actor=self.owner)
+
+        choice = product.choices.get()
+        adjustment = InventoryAdjustment.objects.get()
+        self.assertEqual(choice.quantity, 6)
+        self.assertEqual(adjustment.business, self.business)
+        self.assertEqual(adjustment.choice, choice)
+        self.assertEqual(adjustment.actor, self.owner)
+        self.assertEqual(adjustment.quantity_before, 0)
+        self.assertEqual(adjustment.quantity_after, 6)
+        self.assertEqual(adjustment.delta, 6)
 
     def test_valid_create_saves_explicit_confirmed_material_fact(self):
         bundle = ProductBundle(
@@ -3357,6 +3423,50 @@ class ProductBundleTests(TestCase):
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
 
+    def test_initial_stock_failure_rolls_back_the_complete_bundle(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data(
+                [self.active_choice_row(quantity="4")],
+                tags=(self.tag.pk,),
+                material_rows=[self.material_row()],
+            ),
+        )
+        self.assertTrue(bundle.is_valid())
+
+        with patch(
+            "catalog.product_bundles.initialize_choice_quantity",
+            side_effect=IntegrityError("simulated initialization failure"),
+        ):
+            with self.assertRaisesMessage(
+                IntegrityError,
+                "simulated initialization failure",
+            ):
+                bundle.save(actor=self.owner)
+
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+        self.assertEqual(ProductTag.objects.count(), 0)
+        self.assertEqual(ProductMaterialFact.objects.count(), 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_initial_stock_wrong_actor_rolls_back_the_complete_bundle(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data([self.active_choice_row(quantity="4")]),
+        )
+        self.assertTrue(bundle.is_valid())
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Actor must own the active Business.",
+        ):
+            bundle.save(actor=self.other_owner)
+
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
     def test_tag_save_failure_rolls_back_product_and_choices(self):
         bundle = ProductBundle(
             business=self.business,
@@ -3386,7 +3496,7 @@ class ProductBundleTests(TestCase):
         bundle = ProductBundle(
             business=self.business,
             data=self.bundle_data(
-                [self.active_choice_row()],
+                [self.active_choice_row(quantity="4")],
                 tags=(self.tag.pk,),
                 material_rows=[self.material_row()],
             ),
@@ -3401,12 +3511,13 @@ class ProductBundleTests(TestCase):
                 IntegrityError,
                 "simulated material write failure",
             ):
-                bundle.save()
+                bundle.save(actor=self.owner)
 
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
         self.assertEqual(ProductTag.objects.count(), 0)
         self.assertEqual(ProductMaterialFact.objects.count(), 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
 
     def test_normalized_duplicate_rows_persist_as_distinct_choices(self):
         rows = [
@@ -3419,13 +3530,21 @@ class ProductBundleTests(TestCase):
         )
 
         self.assertTrue(bundle.is_valid())
-        product = bundle.save()
+        product = bundle.save(actor=self.owner)
 
         choices = list(product.choices.order_by("id"))
         self.assertEqual(len(choices), 2)
         self.assertNotEqual(choices[0].pk, choices[1].pk)
-        self.assertEqual([choice.quantity for choice in choices], [0, 0])
-        self.assertFalse(InventoryAdjustment.objects.exists())
+        self.assertEqual([choice.quantity for choice in choices], [1, 3])
+        adjustments = list(InventoryAdjustment.objects.order_by("choice_id"))
+        self.assertEqual(
+            [adjustment.choice_id for adjustment in adjustments],
+            [choice.pk for choice in choices],
+        )
+        self.assertEqual(
+            [adjustment.delta for adjustment in adjustments],
+            [1, 3],
+        )
 
     def test_existing_product_from_another_business_is_rejected(self):
         other_product = Product.objects.create(
@@ -4552,8 +4671,11 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, '<input type="text" name="choices-0-color"')
         self.assertContains(response, 'name="choices-0-quantity"')
         self.assertContains(response, 'name="choices-0-quantity" value="0"')
-        self.assertContains(response, 'min="0" disabled')
-        self.assertContains(response, "New choices start with 0 stock")
+        self.assertContains(response, "Starting stock")
+        self.assertContains(response, 'min="0"')
+        self.assertContains(response, 'step="1"')
+        self.assertNotContains(response, 'min="0" disabled')
+        self.assertContains(response, "Set stock for this new choice now")
         self.assertContains(response, "Discard new choice")
         self.assertContains(response, 'name="choices-0-is_active"')
         self.assertContains(response, 'hx-post="."')
@@ -4979,7 +5101,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         transferred_form = response.context["choice_formset"].forms[0]
         self.assertEqual(transferred_form["size"].value(), str(self.size.pk))
         self.assertEqual(transferred_form["color"].value(), str(self.color.pk))
-        self.assertEqual(transferred_form["quantity"].value(), 0)
+        self.assertEqual(transferred_form["quantity"].value(), "7")
         self.assertEqual(
             response.context["choice_transfer_feedback"],
             'Size "M" added to Choice 1. Review the row before saving.',
@@ -5096,7 +5218,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         formset = response.context["choice_formset"]
         self.assertEqual(formset.total_form_count(), 2)
         self.assertEqual(formset.forms[0]["size"].value(), str(self.size.pk))
-        self.assertEqual(formset.forms[0]["quantity"].value(), 0)
+        self.assertEqual(formset.forms[0]["quantity"].value(), "5")
         self.assertEqual(formset.forms[1]["size"].value(), str(self.size.pk))
         self.assertEqual(formset.forms[1]["color"].value(), "")
         self.assertEqual(Product.objects.count(), 0)
@@ -5363,7 +5485,35 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(choice.product, product)
         self.assertEqual(choice.size, self.size)
         self.assertEqual(choice.color, self.color)
-        self.assertEqual(choice.quantity, 0)
+        self.assertEqual(choice.quantity, 2)
+        adjustment = InventoryAdjustment.objects.get()
+        self.assertEqual(adjustment.business, self.business)
+        self.assertEqual(adjustment.choice, choice)
+        self.assertEqual(adjustment.actor, self.owner)
+        self.assertEqual(adjustment.quantity_before, 0)
+        self.assertEqual(adjustment.quantity_after, 2)
+        self.assertEqual(adjustment.delta, 2)
+
+    def test_product_create_rejects_negative_starting_stock_without_writes(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [self.active_choice_row(quantity="-1")],
+                name="Invalid stock product",
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="-1"')
+        self.assertContains(
+            response,
+            "Ensure this value is greater than or equal to 0.",
+        )
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
 
     def test_product_create_active_requires_an_active_choice(self):
         self.client.force_login(self.owner)
@@ -5836,6 +5986,10 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
             response.context["vocabulary_feedback"],
             'Color "Blue" saved.',
         )
+        self.assertEqual(
+            response.context["choice_formset"].forms[0]["quantity"].value(),
+            "2",
+        )
         self.assertContains(response, ">Blue</option>")
         self.assertContains(response, f'value="{self.color.pk}" selected')
         self.product.refresh_from_db()
@@ -5869,6 +6023,10 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertTemplateUsed(response, "catalog/_recognition_preview.html")
         self.assertContains(response, "Recognized candidates")
         self.assertNotContains(response, "<form")
+        self.assertEqual(
+            response.context["choice_formset"].forms[0]["quantity"].value(),
+            "9",
+        )
         self.product.refresh_from_db()
         self.assertEqual(self.product.name, "Black trousers")
         self.assertEqual(self.product.description, "Classic black trousers.")
@@ -5948,7 +6106,14 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         choice = self.product.choices.get()
         self.assertEqual(choice.business, self.business)
         self.assertEqual(choice.size, self.large_size)
-        self.assertEqual(choice.quantity, 0)
+        self.assertEqual(choice.quantity, 5)
+        adjustment = InventoryAdjustment.objects.get()
+        self.assertEqual(adjustment.business, self.business)
+        self.assertEqual(adjustment.choice, choice)
+        self.assertEqual(adjustment.actor, self.owner)
+        self.assertEqual(adjustment.quantity_before, 0)
+        self.assertEqual(adjustment.quantity_after, 5)
+        self.assertEqual(adjustment.delta, 5)
 
     def test_product_edit_updates_and_deactivates_existing_choice(self):
         choice = ProductChoice.objects.create(

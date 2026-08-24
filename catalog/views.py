@@ -761,7 +761,7 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
             )
 
         if bundle.is_valid():
-            bundle.save()
+            bundle.save(actor=request.user)
             messages.success(request, "Product created.")
             return redirect(get_safe_product_return_url(request))
 
@@ -873,7 +873,7 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
             )
 
         if bundle.is_valid():
-            bundle.save()
+            bundle.save(actor=request.user)
             messages.success(request, "Product updated.")
             return redirect(get_safe_product_return_url(request))
 
