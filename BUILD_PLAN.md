@@ -156,7 +156,7 @@ Successful commit, push, Git/remote alignment, and CI success are operational cl
 | Phase 1 | Django/PostgreSQL Foundation and CI | Create minimal clean Django project, settings, test harness, and CI | PASSED | Gate 1 | Scaffold commits, CI workflow, reproducible setup |
 | Phase 2 | User and Business Ownership | Implement authentication and business ownership boundary | PASSED | Gate 2 | User/business tests, access-control tests |
 | Phase 3 | Catalog Core | Implement product core facts and lifecycle | PASSED | Gate 3 | Product model/forms/views/tests |
-| Phase 4 | Semantic Recognition and Choice Model | Implement description-first recognition for type/tag/material candidates plus stock-bearing choices | IN_PROGRESS | Gate 3 | Recognition contract, alias tests, choice validation |
+| Phase 4 | Semantic Recognition and Choice Model | Implement description-first recognition for type/tag/material candidates plus stock-bearing choices | AUDITED_READY | Gate 3 | Recognition contract, alias tests, choice validation |
 | Phase 5 | Inventory and Computed Availability | Centralize stock mutations and computed availability | NOT_STARTED | Gate 3 | Inventory service tests and ledger tests |
 | Phase 6 | Operational Product Workspace | Build seller product workspace with compact product cards | NOT_STARTED | Gate 4 | Workspace UI, HTMX stock checks, UX audit notes |
 | Phase 7 | Dashboard and Attention Signals | Build daily attention surface from shared domain truth | NOT_STARTED | Gate 4 | Dashboard signal tests and manual workflow proof |
@@ -450,7 +450,7 @@ Avoid libraries that depend on:
 - Dependency: Gate 1.
 - Scope boundary: User, Business, login/logout, active business policy, access tests.
 - Expected micro-slices: auth model, business model, login flow, owner-scoped query helper, cross-business access tests.
-- Current dependency state: Gate 1 and Gate 2 are passed. P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are released and `PASSED`. Phase 3 is `PASSED`; Phase 4 is `IN_PROGRESS`.
+- Current dependency state: Gate 1 and Gate 2 are passed. P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are released and `PASSED`. Phase 3 is `PASSED`; Phase 4 is `AUDITED_READY` pending the P4.10 Prompt 5 release and successful exact-SHA CI.
 - Stop gate: every seller-owned object created later has a business boundary and test pattern.
 
 ### Phase 3: Catalog Core
@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `IN_PROGRESS`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; exact delivery metadata remains Git/GitHub authority. P4.10 Phase 4 Audit and Transition is the current gate. Inventory, availability, readiness, and buyer replies do not exist yet.
+- Current implementation state: Phase 4 is `AUDITED_READY`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit and local PostgreSQL verification without source repair. Phase closure awaits the P4.10 Prompt 5 release and successful exact-SHA CI; exact delivery metadata remains Git/GitHub authority. Inventory, availability, readiness, and buyer replies do not exist yet.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -745,7 +745,7 @@ Avoid libraries that depend on:
 - Proposed commit message: `chore: audit phase 4 semantic recognition`.
 - Rollback/recovery note: if audit fails, record the real blocker and recovery requirement instead of marking Phase 4 passed.
 - Stop gate relation: closes Phase 4 only after all criteria pass; Gate 3 remains open until Phase 5 inventory and computed-availability criteria also pass.
-- Status: NOT_STARTED.
+- Status: AUDITED_READY — the code-first scope/integrity audit, focused 240-test catalog/Phase 4 suite, full 278-test regression suite, Django checks, migration checks, and local Git drift checks passed without source repair; Phase 4 closure awaits the Prompt 5 release and successful exact-SHA CI.
 
 ### Phase 5: Inventory and Computed Availability
 

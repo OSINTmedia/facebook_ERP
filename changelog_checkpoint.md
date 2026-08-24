@@ -8,15 +8,16 @@
 - Rebuild workspace: `/home/giga/Desktop/OSINT/GITHUB_MVP_ERP/`
 - Source prototype: read-only evidence at `/home/giga/Desktop/OSINT/facebook_MVP/`
 - Authority rule: exact branch, hash, remote, and CI metadata live in Git/GitHub, not this file
-- Last updated: 2026-08-21
+- Last updated: 2026-08-24
 
 ## Current State
 
 - Phase 1 Django/PostgreSQL Foundation and CI: `PASSED`.
 - Phase 2 User and Business Ownership: `PASSED`.
 - Phase 3 Catalog Core: `PASSED`.
-- Phase 4 Semantic Recognition and Choice Model: `IN_PROGRESS`.
+- Phase 4 Semantic Recognition and Choice Model: `AUDITED_READY`; closure awaits the P4.10 Prompt 5 release and successful exact-SHA CI.
 - P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand: released, remote-aligned, CI-passed, owner/browser-reviewed, and `PASSED`.
+- P4.10 Phase 4 Audit and Transition: code-first scope and integrity audit plus local verification `PASSED`; no source repair was required.
 - Gate 3: not passed; inventory and computed availability remain later work.
 - Online demo: not deployed.
 
@@ -42,33 +43,36 @@ P4.9f adds explicit material confirmation to authenticated Product create/edit:
 - Local and test migration-state checks passed.
 - The 79-test focused P4.9f run passed after slice-local assertion/rendering repair; the affected material-form tests re-passed after final percentage-input hardening.
 - The final PostgreSQL-backed full suite passed: 278 tests.
+- The P4.10 PostgreSQL-backed focused Phase 4/catalog suite passed: 240 tests.
+- The P4.10 PostgreSQL-backed full regression suite passed: 278 tests.
 - `git diff --check` passed.
-- Integrity result: `PASS` for scope, Business isolation, atomic recovery, candidate-versus-confirmed truth, accessibility baseline, HTMX server truth, hosted compatibility, and regression boundaries.
+- P4.10 integrity result: `PASS` for Phase 4 scope, Business isolation, atomic recovery, candidate-versus-confirmed truth, choice-level stock truth, lifecycle separation, accessibility baseline, HTMX server truth, hosted compatibility, and regression boundaries.
+- No measurement subsystem, inventory/availability behavior, readiness, buyer reply path, LLM truth, public catalog, or commerce workflow was found; the measurement semantic destination remains only the approved recognition-contract enum value.
 - The last released branch state is aligned with the actual remote and has successful exact-SHA CI; Git/GitHub remain the metadata authority.
 - Owner/browser acceptance: `PASS WITH NOTES`; P4.9 is technically sound, while broader Product create/edit UX remains inconvenient and insufficiently assistant-like for a later UX-focused slice or phase.
 
 ## Current Gate and Next Work
 
-- Current gate: P4.10 Phase 4 Audit and Transition.
-- Next work: run the Phase 4 audit against the roadmap, clothing data spec, code, tests, Git alignment, and exact-SHA CI evidence before closing Phase 4.
-- Do not begin inventory, availability, measurements, readiness, buyer replies, deployment, or broad UX redesign as part of P4.10.
-- Routine successful delivery metadata remains in Git/GitHub.
+- Current gate: Prompt 5 release for P4.10 Phase 4 Audit and Transition.
+- Next work: release the exact audited documentation set, require clean remote alignment and successful exact-SHA CI, then complete the approved post-CI Phase 4 governance closure inside Prompt 5.
+- After verified Phase 4 closure, return to Prompt 2 to select the first Phase 5 functional micro-slice; do not treat the closure commit as a new slice.
 
 ## Active Blockers and Decisions
 
-- P4.9 has no remaining technical or owner-acceptance blocker.
+- Phase 4 has no remaining local technical or owner-acceptance blocker; exact-SHA release CI is the remaining operational closure gate.
 - UX note: the current Product create/edit surface is functionally accepted but not yet the desired smart assistant-style operational experience; treat this as later UX work, not a Phase 4 semantic-recognition blocker.
 - Material confirmation placement and wording are resolved for P4.9f: compact editable rows follow recognition feedback.
 - Material alias policy is resolved for P4.9f only: no alias persistence or automatic learning; any future material vocabulary/alias manager needs a separately approved slice.
 - Unrelated later-phase owner decisions remain where recorded in controlling documents.
+- Post-CI governance closure required: yes — Phase 4 Semantic Recognition and Choice Model; allowed files are `changelog_checkpoint.md`, `BUILD_PLAN.md`, and `README.md`; successful release CI transitions Phase 4 and P4.10 to `PASSED` and hands off to Prompt 2 for Phase 5 functional-slice selection.
 
 ## Current Documentation Sync Release Set
 
 - `BUILD_PLAN.md`
-- `DEVELOPMENT_NOTES.md`
+- `README.md`
 - `changelog_checkpoint.md`
 
-Proposed commit: `docs: record p4.9 owner acceptance notes`
+Proposed commit: `chore: audit phase 4 semantic recognition`
 
 ## Handoff Guardrails
 
