@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.db import IntegrityError, transaction
+from django.db.models.deletion import ProtectedError
 from django.test import TestCase
 
 from businesses.models import Business
@@ -10,6 +12,7 @@ from catalog.models import (
     ProductChoice,
 )
 from inventory.availability import compute_product_availability
+from inventory.models import InventoryAdjustment
 
 
 class ProductAvailabilityTests(TestCase):
@@ -172,3 +175,243 @@ class ProductAvailabilityTests(TestCase):
             (choice.quantity, choice.is_active, choice.updated_at),
             choice_snapshot,
         )
+
+
+class InventoryAdjustmentTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="ledger-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="ledger-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Ledger Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Ledger Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="Ledger trousers",
+            description="Ledger test product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        self.other_product = Product.objects.create(
+            business=self.other_business,
+            name="Other ledger trousers",
+            description="Other ledger test product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        self.size = BusinessSize.objects.create(
+            business=self.business,
+            name="M",
+        )
+        self.color = BusinessColor.objects.create(
+            business=self.business,
+            name="Black",
+        )
+        self.other_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="M",
+        )
+        self.other_color = BusinessColor.objects.create(
+            business=self.other_business,
+            name="Black",
+        )
+        self.choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=3,
+        )
+        self.other_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=self.other_product,
+            size=self.other_size,
+            color=self.other_color,
+            quantity=8,
+        )
+
+    def create_adjustment(self, **overrides):
+        values = {
+            "business": self.business,
+            "choice": self.choice,
+            "actor": self.owner,
+            "quantity_before": 3,
+            "quantity_after": 2,
+            "delta": -1,
+        }
+        values.update(overrides)
+        return InventoryAdjustment.objects.create(**values)
+
+    def test_owned_adjustment_records_transition_without_changing_stock(self):
+        choice_snapshot = (
+            self.choice.quantity,
+            self.choice.is_active,
+            self.choice.updated_at,
+        )
+
+        adjustment = self.create_adjustment()
+
+        self.choice.refresh_from_db()
+        self.assertEqual(adjustment.business, self.business)
+        self.assertEqual(adjustment.choice, self.choice)
+        self.assertEqual(adjustment.actor, self.owner)
+        self.assertEqual(adjustment.quantity_before, 3)
+        self.assertEqual(adjustment.quantity_after, 2)
+        self.assertEqual(adjustment.delta, -1)
+        self.assertIsNotNone(adjustment.created_at)
+        self.assertEqual(
+            (
+                self.choice.quantity,
+                self.choice.is_active,
+                self.choice.updated_at,
+            ),
+            choice_snapshot,
+        )
+
+    def test_adjustment_targets_one_distinct_choice_row(self):
+        duplicate_choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=3,
+        )
+
+        adjustment = self.create_adjustment()
+
+        self.assertEqual(list(self.choice.inventory_adjustments.all()), [adjustment])
+        self.assertFalse(duplicate_choice.inventory_adjustments.exists())
+
+    def test_cross_business_choice_is_rejected(self):
+        adjustment = InventoryAdjustment(
+            business=self.business,
+            choice=self.other_choice,
+            actor=self.owner,
+            quantity_before=8,
+            quantity_after=7,
+            delta=-1,
+        )
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Choice must belong to the active Business.",
+        ):
+            adjustment.full_clean()
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Choice must belong to the active Business.",
+        ):
+            adjustment.save()
+
+    def test_actor_must_own_business(self):
+        adjustment = InventoryAdjustment(
+            business=self.business,
+            choice=self.choice,
+            actor=self.other_owner,
+            quantity_before=3,
+            quantity_after=4,
+            delta=1,
+        )
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Actor must own the active Business.",
+        ):
+            adjustment.full_clean()
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Actor must own the active Business.",
+        ):
+            adjustment.save()
+
+    def test_negative_quantities_zero_delta_and_inconsistent_math_are_rejected(self):
+        invalid_values = (
+            ({"quantity_before": -1, "quantity_after": 0, "delta": 1}, "Starting"),
+            ({"quantity_after": -1, "delta": -4}, "Resulting"),
+            ({"quantity_after": 3, "delta": 0}, "cannot be zero"),
+            ({"quantity_after": 1, "delta": -1}, "must be consistent"),
+        )
+
+        for overrides, message in invalid_values:
+            with self.subTest(overrides=overrides):
+                adjustment = InventoryAdjustment(
+                    business=self.business,
+                    choice=self.choice,
+                    actor=self.owner,
+                    quantity_before=3,
+                    quantity_after=2,
+                    delta=-1,
+                )
+                for field_name, value in overrides.items():
+                    setattr(adjustment, field_name, value)
+
+                with self.assertRaisesMessage(ValidationError, message):
+                    adjustment.save()
+
+    def test_database_rejects_invalid_transition_when_model_save_is_bypassed(self):
+        invalid_values = (
+            {"quantity_before": -1, "quantity_after": 0, "delta": 1},
+            {"quantity_before": 3, "quantity_after": -1, "delta": -4},
+            {"quantity_before": 3, "quantity_after": 3, "delta": 0},
+            {"quantity_before": 3, "quantity_after": 1, "delta": -1},
+        )
+
+        for values in invalid_values:
+            with self.subTest(values=values):
+                invalid_adjustment = InventoryAdjustment(
+                    business=self.business,
+                    choice=self.choice,
+                    actor=self.owner,
+                    **values,
+                )
+
+                with self.assertRaises(IntegrityError):
+                    with transaction.atomic():
+                        InventoryAdjustment.objects.bulk_create([invalid_adjustment])
+
+    def test_adjustment_cannot_be_changed_or_deleted_through_model_api(self):
+        adjustment = self.create_adjustment()
+        adjustment.quantity_after = 1
+        adjustment.delta = -2
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Inventory adjustments cannot be changed.",
+        ):
+            adjustment.save()
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Inventory adjustments cannot be changed.",
+        ):
+            InventoryAdjustment.objects.filter(pk=adjustment.pk).update(delta=-2)
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Inventory adjustments cannot be deleted.",
+        ):
+            adjustment.delete()
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Inventory adjustments cannot be deleted.",
+        ):
+            InventoryAdjustment.objects.filter(pk=adjustment.pk).delete()
+
+        adjustment.refresh_from_db()
+        self.assertEqual(adjustment.quantity_after, 2)
+        self.assertEqual(adjustment.delta, -1)
+
+    def test_adjustment_protects_business_choice_and_actor_history(self):
+        self.create_adjustment()
+
+        for protected_object in (self.business, self.choice, self.owner):
+            with self.subTest(protected_object=protected_object):
+                with self.assertRaises(ProtectedError):
+                    protected_object.delete()

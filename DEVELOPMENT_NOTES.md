@@ -352,6 +352,14 @@ Accept P4.9f and the wider P4.9 Product create/edit recognition integration as t
 Reason:
 Phase 4 validates the semantic-recognition, controlled vocabulary, confirmed-fact, choice truth, and Business-isolation boundaries. The owner UX note is important, but it should drive a separately approved UX-focused slice or phase instead of reopening technically accepted P4.9 behavior or silently broadening P4.10 beyond audit and transition.
 
+### 2026-08-24 - Inventory adjustments are immutable transition facts
+
+Decision:
+Record each inventory adjustment against one Business, exact ProductChoice row, and authenticated Business-owner actor with before quantity, after quantity, nonzero delta, and creation time. Enforce consistent nonnegative arithmetic in PostgreSQL, reject cross-Business facts in the model boundary, and block application-level update/delete behavior. Do not let the ledger baseline mutate stock or introduce reason codes; a later transaction-safe inventory service must atomically pair the stock write with record creation.
+
+Reason:
+An immutable before/after fact makes stock history independently auditable and preserves the identity of duplicate-looking choice rows. Separating record integrity from the later concurrency-sensitive mutation service avoids silently resolving direct-set or movement-reason policy while ensuring the service has a trustworthy destination.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:
