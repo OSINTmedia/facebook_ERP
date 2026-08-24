@@ -2,12 +2,14 @@ from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from unittest.mock import patch
 
+from django.contrib.messages import get_messages
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, close_old_connections, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.db.models.deletion import ProtectedError
-from django.test import TestCase, TransactionTestCase
+from django.test import Client, TestCase, TransactionTestCase
+from django.urls import reverse
 
 from businesses.models import Business
 from catalog.models import (
@@ -627,6 +629,254 @@ class InventoryMutationTests(TestCase):
 
         self.choice.refresh_from_db()
         self.assertEqual(self.choice.quantity, 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+
+class InventoryMutationRouteTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="route-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="route-other@example.com",
+            password="test-password",
+        )
+        self.owner_without_business = user_model.objects.create_user(
+            email="route-no-business@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Route Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Route Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="Route trousers",
+            description="Route test product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        self.other_product = Product.objects.create(
+            business=self.other_business,
+            name="Other route trousers",
+            description="Other route test product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        self.size = BusinessSize.objects.create(
+            business=self.business,
+            name="M",
+        )
+        self.color = BusinessColor.objects.create(
+            business=self.business,
+            name="Black",
+        )
+        other_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="M",
+        )
+        other_color = BusinessColor.objects.create(
+            business=self.other_business,
+            name="Black",
+        )
+        self.choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=1,
+        )
+        self.other_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=self.other_product,
+            size=other_size,
+            color=other_color,
+            quantity=4,
+        )
+        self.url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": self.choice.pk},
+        )
+        self.return_url = f"{reverse('catalog:product_list')}?from=stock"
+
+    def response_messages(self, response):
+        return [str(message) for message in get_messages(response.wsgi_request)]
+
+    def test_owner_increment_uses_service_and_safe_return(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {"delta": "1", "next": self.return_url},
+        )
+
+        self.assertRedirects(
+            response,
+            self.return_url,
+            fetch_redirect_response=False,
+        )
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 2)
+        adjustment = InventoryAdjustment.objects.get()
+        self.assertEqual(adjustment.business, self.business)
+        self.assertEqual(adjustment.choice, self.choice)
+        self.assertEqual(adjustment.actor, self.owner)
+        self.assertEqual(adjustment.delta, 1)
+        self.assertEqual(adjustment.quantity_before, 1)
+        self.assertEqual(adjustment.quantity_after, 2)
+        self.assertIn("Stock updated to 2.", self.response_messages(response))
+
+    def test_owner_decrement_records_exact_transition(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, {"delta": "-1"})
+
+        self.assertRedirects(
+            response,
+            reverse("catalog:product_list"),
+            fetch_redirect_response=False,
+        )
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        adjustment = InventoryAdjustment.objects.get()
+        self.assertEqual(adjustment.delta, -1)
+        self.assertEqual(adjustment.quantity_before, 1)
+        self.assertEqual(adjustment.quantity_after, 0)
+
+    def test_unauthenticated_post_redirects_to_login_without_writes(self):
+        response = self.client.post(self.url, {"delta": "1"})
+
+        self.assertRedirects(
+            response,
+            f"{reverse('accounts:login')}?next={self.url}",
+            fetch_redirect_response=False,
+        )
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_get_is_not_an_allowed_mutation_method(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 405)
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_post_requires_csrf_token(self):
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.owner)
+
+        response = csrf_client.post(self.url, {"delta": "1"})
+
+        self.assertEqual(response.status_code, 403)
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_cross_business_choice_is_not_exposed_or_mutated(self):
+        self.client.force_login(self.owner)
+        other_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": self.other_choice.pk},
+        )
+
+        response = self.client.post(other_url, {"delta": "1"})
+
+        self.assertEqual(response.status_code, 404)
+        self.choice.refresh_from_db()
+        self.other_choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertEqual(self.other_choice.quantity, 4)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_invalid_delta_redirects_with_error_without_writes(self):
+        self.client.force_login(self.owner)
+
+        for delta in ("", "0", "2", "-2", "1.0", "true"):
+            with self.subTest(delta=delta):
+                response = self.client.post(
+                    self.url,
+                    {"delta": delta, "next": self.return_url},
+                )
+                self.assertRedirects(
+                    response,
+                    self.return_url,
+                    fetch_redirect_response=False,
+                )
+                self.assertIn(
+                    "Stock adjustment must be +1 or -1.",
+                    self.response_messages(response),
+                )
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_underflow_redirects_with_error_without_writes(self):
+        self.choice.quantity = 0
+        self.choice.save(update_fields=["quantity", "updated_at"])
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {"delta": "-1", "next": self.return_url},
+        )
+
+        self.assertRedirects(
+            response,
+            self.return_url,
+            fetch_redirect_response=False,
+        )
+        self.assertIn(
+            "Choice quantity cannot be negative.",
+            self.response_messages(response),
+        )
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_external_return_url_falls_back_to_product_list(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {"delta": "1", "next": "https://example.com/escape"},
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("catalog:product_list"),
+            fetch_redirect_response=False,
+        )
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 2)
+
+    def test_missing_active_business_returns_conflict_without_writes(self):
+        self.client.force_login(self.owner_without_business)
+
+        response = self.client.post(self.url, {"delta": "1"})
+
+        self.assertEqual(response.status_code, 409)
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_multiple_businesses_return_conflict_without_writes(self):
+        Business.objects.create(owner=self.owner, name="Second Route Studio")
+        self.client.force_login(self.owner)
+
+        response = self.client.post(self.url, {"delta": "1"})
+
+        self.assertEqual(response.status_code, 409)
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
         self.assertFalse(InventoryAdjustment.objects.exists())
 
 

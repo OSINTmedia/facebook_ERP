@@ -7,6 +7,7 @@ from config.views import ShellHomeView
 urlpatterns = [
     path("", ShellHomeView.as_view(), name="shell_home"),
     path("accounts/", include("accounts.urls")),
+    path("inventory/", include("inventory.urls")),
     path("", include("catalog.urls")),
     path("admin/", admin.site.urls),
 ]
