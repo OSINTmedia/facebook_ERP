@@ -57,6 +57,7 @@ from catalog.vocabulary import (
     create_choice_vocabulary_entry,
     update_choice_vocabulary_entry,
 )
+from inventory.availability import compute_product_availability
 from inventory.models import InventoryAdjustment
 from inventory.mutations import apply_choice_quantity_delta
 
@@ -5493,6 +5494,106 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(adjustment.quantity_before, 0)
         self.assertEqual(adjustment.quantity_after, 2)
         self.assertEqual(adjustment.delta, 2)
+
+    def test_initial_stock_continues_through_htmx_mutations_and_ledger(self):
+        other_product = Product.objects.create(
+            business=self.other_business,
+            name="Other stock product",
+            description="Other Business stock must remain isolated.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        other_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=other_product,
+            size=self.other_size,
+            color=self.other_color,
+            quantity=9,
+        )
+        self.client.force_login(self.owner)
+
+        create_response = self.client.post(
+            self.url,
+            self.bundle_post_data([self.active_choice_row(quantity="2")]),
+        )
+
+        self.assertRedirects(create_response, self.list_url)
+        product = Product.objects.get(business=self.business)
+        choice = product.choices.get()
+        stock_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": choice.pk},
+        )
+        self.assertTrue(
+            compute_product_availability(
+                business=self.business,
+                product=product,
+            )
+        )
+
+        expected_quantities = (1, 0, 1)
+        for delta, expected_quantity in zip((-1, -1, 1), expected_quantities):
+            response = self.client.post(
+                stock_url,
+                {"delta": str(delta), "next": self.list_url},
+                HTTP_HX_REQUEST="true",
+            )
+
+            self.assertEqual(response.status_code, 200)
+            self.assertTemplateUsed(
+                response,
+                "inventory/_choice_stock_controls.html",
+            )
+            self.assertContains(response, f">{expected_quantity}</output>")
+            choice.refresh_from_db()
+            self.assertEqual(choice.quantity, expected_quantity)
+            self.assertEqual(
+                compute_product_availability(
+                    business=self.business,
+                    product=product,
+                ),
+                expected_quantity > 0,
+            )
+
+        other_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": other_choice.pk},
+        )
+        cross_business_response = self.client.post(
+            other_url,
+            {"delta": "1"},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(cross_business_response.status_code, 404)
+        product.refresh_from_db()
+        choice.refresh_from_db()
+        other_choice.refresh_from_db()
+        self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
+        self.assertTrue(choice.is_active)
+        self.assertEqual(choice.quantity, 1)
+        self.assertEqual(other_choice.quantity, 9)
+        self.assertFalse(other_choice.inventory_adjustments.exists())
+        adjustments = list(
+            InventoryAdjustment.objects.filter(choice=choice).order_by("id")
+        )
+        self.assertEqual(
+            [
+                (
+                    adjustment.quantity_before,
+                    adjustment.quantity_after,
+                    adjustment.delta,
+                )
+                for adjustment in adjustments
+            ],
+            [(0, 2, 2), (2, 1, -1), (1, 0, -1), (0, 1, 1)],
+        )
+        self.assertTrue(
+            all(
+                adjustment.business_id == self.business.pk
+                and adjustment.actor_id == self.owner.pk
+                for adjustment in adjustments
+            )
+        )
 
     def test_product_create_rejects_negative_starting_stock_without_writes(self):
         self.client.force_login(self.owner)

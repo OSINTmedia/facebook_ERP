@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 through P5.6 are released, owner-reviewed where required, and exact-SHA CI-passed. P5.6A is locally implemented, integrity-audited, and PostgreSQL-verified; its required owner/browser test remains pending before release. Gate 3 remains open pending P5.6A closure and P5.7 evidence. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
+- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 through P5.6 and P5.6A are released, owner-reviewed where required, and exact-SHA CI-passed. P5.7 is locally implemented, integrity-audited, and PostgreSQL-verified; release and exact-SHA CI remain before the Phase 5 audit/transition gate. Gate 3 remains open pending P5.7 closure and Phase 5 evidence. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -752,7 +752,7 @@ Avoid libraries that depend on:
 - Objective: centralize quantity mutations and availability computation.
 - Dependency: Phase 4.
 - Scope boundary: inventory service, adjustment ledger, +1/-1 and owner-approved direct set, computed availability, concurrency strategy.
-- Current implementation state: `IN_PROGRESS`; P5.1 through P5.6 are released and exact-SHA CI-passed. P5.6A now implements the owner-approved one-save starting-stock flow and passed local integrity plus PostgreSQL regression verification; required owner/browser acceptance remains before Prompt 5. P5.7 remains a no-new-behavior transition/regression slice after P5.6A closes.
+- Current implementation state: `IN_PROGRESS`; P5.1 through P5.6A are released and exact-SHA CI-passed. P5.7 now provides the integrated transition/regression evidence and passed local integrity plus PostgreSQL verification; release and exact-SHA CI remain before the Phase 5 audit/transition gate.
 - Expected micro-slices: P5.1 availability baseline, P5.2 adjustment-ledger baseline, P5.3 atomic mutation service, P5.4 ProductBundle stock boundary, P5.5 stock route, P5.6 HTMX stock response/controls, P5.6A one-save initial-stock capture, and P5.7 transition/regression readiness before the Phase 5 audit and Gate 3 closure.
 - Stop gate: all stock changes go through one service and create a complete audit trail.
 
@@ -842,7 +842,7 @@ Avoid libraries that depend on:
 - Acceptance: only persisted choices render controls; the stock input remains disabled; each control sends one exact delta through P5.5 and cannot choose Business or actor; HTMX success/error responses replace only the correct Business-scoped choice state with current server quantity and accessible status/alert feedback; both controls disable while a request is pending; native fallback preserves the safe return path; unsaved and cross-Business choices gain no control; lifecycle, availability, and adjustment-fact truth remain unchanged except through the established service.
 - Automated verification: focused HTMX increment/underflow/invalid-delta tests; route plus Product create/edit regression; complete inventory suite; Django system and migration dry-run checks; full PostgreSQL-backed suite; diff checks.
 - Manual owner verification: required — on Product edit, confirm the quantity input stays read-only; `+1` and `-1` update a saved choice in place and persist after refresh; decrement at zero shows an inline error with no quantity change.
-- Owner-observed UX limitation: functional behavior passed, but requiring a new Product or newly added choice to be saved at zero before quantity can be increased creates an inconvenient two-step workflow that does not meet the intended modern assistant-style UX. P5.6A owns the approved correction before Phase 5 audit/Gate 3 closure while preserving persisted choice identity, centralized mutation, and immutable adjustment truth.
+- Owner-observed UX limitation: resolved by P5.6A's one-save starting-stock flow; the broader Product create/edit surface still remains a later assistant-style UX improvement area.
 - Status: `CLOSED` after owner/browser acceptance with the save-before-stock UX limitation transferred to P5.6A, release, remote alignment, and exact-SHA CI success; delivery metadata remains in Git/GitHub.
 
 #### P5.6A One-Save Initial Stock Capture
@@ -857,8 +857,8 @@ Avoid libraries that depend on:
 - Acceptance: Product create and Product edit-with-new-choice each accept zero or positive starting stock in one final save; a positive value produces the exact saved quantity and one Business/choice/actor-scoped immutable `0 -> N` fact; zero produces quantity zero and no fact; multiple new choices retain distinct quantities/facts; negative, non-integer, forged, wrong-Business, wrong-actor, nonzero-current, or previously-adjusted initialization attempts make no partial write; existing quantities and P5.6 controls behave unchanged; invalid forms preserve entered values; no-write HTMX helper actions preserve input without stock/ledger writes; availability is computed from committed server truth.
 - Automated verification: focused initialization-service precondition/rollback tests; Product create and edit integration for positive/zero/multiple/invalid starting stock; existing-row forgery and Business-isolation tests; preview/transfer/vocabulary no-write and value-preservation regression; P5.4 ProductBundle, P5.5 route, P5.6 HTMX controls, availability, adjustment-ledger, and concurrency regressions; Django system and migration dry-run checks; full PostgreSQL-backed suite; diff checks.
 - Manual owner verification: required — create a Product with starting stock greater than zero and add another stocked choice to an existing Product, each with one save; confirm the saved quantities immediately show P5.6 controls, persist after refresh, and still change through `-1`/`+1`; also confirm invalid input stays visible with an inline error and creates nothing.
-- Documentation on acceptance: checkpoint always; retire the active P5.6 UX-gap note in the UX plan and Build Plan only after owner/browser PASS; record the one-time-initialization decision in Development Notes; update README only when implementation and verification make the one-save behavior public reality.
-- Status: `AUDITED — required owner/browser test pending`; local focused, inventory, full PostgreSQL, system, migration, and diff verification passed; not ready for release until the owner reports PASS.
+- Documentation on acceptance: checkpoint always; retire the resolved P5.6 UX-gap note in the UX plan and Build Plan after owner/browser PASS; retain the one-time-initialization decision in Development Notes; update README because the one-save behavior is now public reality.
+- Status: `CLOSED` after owner/browser acceptance, release, remote alignment, and exact-SHA CI success; delivery metadata remains in Git/GitHub.
 
 #### P5.7 Inventory Transition and Regression Readiness
 
@@ -866,9 +866,12 @@ Avoid libraries that depend on:
 - Dependency: P5.4, P5.5, P5.6, and P5.6A `CLOSED`.
 - Scope boundary: integrated Business-isolation, increment/decrement and one-time initialization mutation, ledger, availability, ProductBundle, route, HTMX, concurrency, rollback, and regression coverage; no new product behavior.
 - Explicit exclusions: new inventory policy, direct-set approval, reason-code policy, orders, reservations, deployment, and broad UX redesign.
-- Source whitelist: directly related source/tests from P5.4–P5.6A only; governance docs are updated in Prompt 4 after acceptance.
-- Acceptance: all stock writes use the centralized service; every accepted transition has one immutable fact; availability remains computed; full PostgreSQL regression and targeted route/HTMX checks pass; Gate 3 evidence is complete for audit.
-- Status: `PLANNED`.
+- Source whitelist: `catalog/tests.py`; governance docs are updated in Prompt 4 after acceptance.
+- Acceptance: the integrated Product create → one-save initialization → authenticated HTMX `-1/+1` transition path produces one ordered immutable fact per transition; availability flips only at the computed quantity boundary; lifecycle and activation remain unchanged; cross-Business mutation is rejected without writes; focused Phase 5 and full PostgreSQL regressions pass.
+- Automated verification: integrated transition test 1/1; focused Phase 5 regression 113/113; complete inventory suite 46/46; full PostgreSQL suite 336/336; Django system check, migration dry-run, and diff checks pass.
+- Manual owner verification: advisory — create with starting stock `2`, decrement to `0`, increment to `1`, and refresh to confirm persisted server truth.
+- Post-CI governance closure: required — after successful P5.7 exact-SHA CI, update the Phase 5 audit/transition and Gate 3 state in the allowed governance docs; no new functional slice is created.
+- Status: `AUDITED — ready for release`; no production source changes.
 
 ### Phase 6: Operational Product Workspace
 

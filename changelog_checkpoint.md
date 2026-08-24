@@ -23,8 +23,9 @@
 - P5.4 ProductBundle Stock Boundary Enforcement: released, owner-reviewed, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.5 Authenticated Stock Mutation Route: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.6 HTMX Stock Response and Controls: released, owner/browser-tested, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
-- P5.6A One-Save Initial Stock Capture: locally implemented, integrity-audited, and PostgreSQL-verified; required owner/browser test pending.
-- Gate 3: not passed; P5.6A owner acceptance/release and Phase 5 transition/regression readiness remain.
+- P5.6A One-Save Initial Stock Capture: released, owner/browser-tested, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
+- P5.7 Inventory Transition and Regression Readiness: locally implemented and integrity-audited; release and exact-SHA CI remain before the Phase 5 audit gate.
+- Gate 3: not passed; P5.7 release evidence and Phase 5 audit/transition remain.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
@@ -39,20 +40,20 @@ P5.6A removes the save-before-stock implementation gap while retaining one stock
 ## Verification and Audit
 
 - Django system and migration dry-run checks passed with no schema changes.
-- The focused P5.6A service/form/ProductBundle/create-edit/concurrency suite passed: 104 tests; the complete inventory suite passed: 46 tests.
-- The PostgreSQL-backed full regression suite passed: 335 tests; the audit hardening rollback checks passed: 2 tests.
+- The focused P5.6A service/form/ProductBundle/create-edit/concurrency suite passed: 104 tests; the integrated P5.7 transition regression passed: 1 test; the complete inventory suite passed: 46 tests.
+- The focused Phase 5 regression passed: 113 tests; the PostgreSQL-backed full regression suite passed: 336 tests.
 - Source and documentation diff checks passed.
 - Integrity audit passed for Business-scoped vocabulary and choice identity, authenticated actor ownership, row locking, one-time initialization preconditions, immutable adjustment truth, full ProductBundle rollback, lifecycle/availability separation, P5.6 control preservation, no-write helper behavior, hosted compatibility, and approved scope.
-- Required owner/browser testing has not yet been reported for P5.6A.
+- Required P5.6A owner/browser testing passed: one-save positive/zero/invalid starting stock, persisted controls, refresh persistence, and `-1`/`+1` behavior.
 
 ## Current Gate and Next Work
 
-- Current gate: complete the required P5.6A owner/browser scenario; after owner PASS, proceed to Prompt 5 release and exact-SHA CI. Gate 3 remains open.
-- Next functional slice after P5.6A release closure: P5.7 Inventory Transition and Regression Readiness.
+- Current gate: release P5.7 and verify its exact-SHA CI; then proceed to the Phase 5 audit/transition and Gate 3 evidence review.
+- Next functional slice after P5.7 closure: Phase 5 audit/transition gate; no additional inventory behavior is authorized in P5.7.
 
 ## Active Blockers and Decisions
 
-- P5.6A has no known technical blocker; required owner/browser acceptance is the only open release prerequisite.
+- P5.6A has no known technical or owner-acceptance blocker; its one-save starting-stock behavior is released and verified.
 - Existing choices retain read-only quantity plus P5.6 controls; one-time initialization is not approval for ongoing direct set or arbitrary subsequent deltas.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
 - UX note: the current Product create/edit surface is functionally accepted but not yet the desired smart assistant-style operational experience; treat this as later UX work, not a Phase 4 semantic-recognition blocker.
@@ -60,16 +61,13 @@ P5.6A removes the save-before-stock implementation gap while retaining one stock
 
 ## Current Audited Release Set
 
+- `APP_EXPERIENCE_PLAN.md`
 - `BUILD_PLAN.md`
-- `catalog/forms.py`
-- `catalog/product_bundles.py`
+- `DEVELOPMENT_NOTES.md`
+- `README.md`
 - `catalog/tests.py`
-- `catalog/views.py`
 - `changelog_checkpoint.md`
-- `inventory/mutations.py`
-- `inventory/tests.py`
-- `templates/catalog/_choice_section.html`
-- Proposed commit: `feat: add one-save initial stock`
+- Proposed commit: `test: add phase 5 inventory transition coverage`
 
 ## Handoff Guardrails
 

@@ -371,10 +371,10 @@ The adjustment ledger is only trustworthy when the stock write and its transitio
 ### 2026-08-24 - ProductBundle does not own stock mutation
 
 Decision:
-Keep ProductBundle responsible for ProductChoice identity, activation, and Business/Product validation, but remove quantity mutation from the Product edit boundary. New choices are initialized at zero without an adjustment fact; existing quantities are excluded from ProductBundle updates; persisted choices cannot be deleted and must be deactivated instead; unsaved extra rows may be discarded. Stock changes remain the responsibility of the centralized inventory mutation service.
+Keep ProductBundle responsible for ProductChoice identity, activation, and Business/Product validation, but remove ongoing quantity mutation from the Product edit boundary. New choices without a Starting stock transition initialize at zero without an adjustment fact; P5.6A permits one positive creation-time `0 -> N` transition through the centralized inventory service. Existing quantities are excluded from ProductBundle updates; persisted choices cannot be deleted and must be deactivated instead; unsaved extra rows may be discarded.
 
 Reason:
-The Product form can carry stale or forged values and must not become a second stock-write path. Excluding quantity from existing-row updates preserves concurrent service changes and the immutable adjustment trail, while zero initialization avoids inventing a stock transition for a newly created choice. Blocking persisted deletion preserves exact choice identity and its stock history without preventing normal deactivation.
+The Product form can carry stale or forged values and must not become a second stock-write path. Excluding quantity from existing-row updates preserves concurrent service changes and the immutable adjustment trail, while zero initialization remains the no-stock-transition path for a newly created choice. The narrowly guarded P5.6A initialization records a single positive starting-stock fact without approving general direct set. Blocking persisted deletion preserves exact choice identity and its stock history without preventing normal deactivation.
 
 ### 2026-08-24 - Product edit may host separate stock controls for saved choices
 
