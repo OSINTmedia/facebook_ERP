@@ -157,7 +157,7 @@ Successful commit, push, Git/remote alignment, and CI success are operational cl
 | Phase 2 | User and Business Ownership | Implement authentication and business ownership boundary | PASSED | Gate 2 | User/business tests, access-control tests |
 | Phase 3 | Catalog Core | Implement product core facts and lifecycle | PASSED | Gate 3 | Product model/forms/views/tests |
 | Phase 4 | Semantic Recognition and Choice Model | Implement description-first recognition for type/tag/material candidates plus stock-bearing choices | PASSED | Gate 3 | Recognition contract, alias tests, choice validation |
-| Phase 5 | Inventory and Computed Availability | Centralize stock mutations and computed availability | NOT_STARTED | Gate 3 | Inventory service tests and ledger tests |
+| Phase 5 | Inventory and Computed Availability | Centralize stock mutations and computed availability | IN_PROGRESS | Gate 3 | Inventory service tests and ledger tests |
 | Phase 6 | Operational Product Workspace | Build seller product workspace with compact product cards | NOT_STARTED | Gate 4 | Workspace UI, HTMX stock checks, UX audit notes |
 | Phase 7 | Dashboard and Attention Signals | Build daily attention surface from shared domain truth | NOT_STARTED | Gate 4 | Dashboard signal tests and manual workflow proof |
 | Phase 8 | Deterministic Buyer Replies | Generate seller-side ready replies from verified facts | NOT_STARTED | Gate 4 | Reply service tests and copy workflow |
@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Gate 3 remains open pending Phase 5 inventory and computed-availability work; exact delivery metadata remains Git/GitHub authority. Inventory, availability, readiness, and buyer replies do not exist yet.
+- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS` with P5.1 locally implemented and audited; Gate 3 remains open pending centralized inventory mutations and their complete audit trail. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -752,8 +752,27 @@ Avoid libraries that depend on:
 - Objective: centralize quantity mutations and availability computation.
 - Dependency: Phase 4.
 - Scope boundary: inventory service, adjustment ledger, +1/-1 and owner-approved direct set, computed availability, concurrency strategy.
-- Expected micro-slices: inventory models, service tests, stock route, HTMX response, transition tests.
+- Current implementation state: `IN_PROGRESS`; P5.1 is locally implemented and integrity-audited, with release pending Prompt 5. No stock mutation service, adjustment ledger, stock route, or HTMX stock behavior is included yet.
+- Expected micro-slices: pure availability service baseline, adjustment-ledger baseline, centralized mutation service and concurrency handling, stock route, HTMX response, transition tests.
 - Stop gate: all stock changes go through one service and create a complete audit trail.
+
+#### P5.1 Pure Product Availability Service Baseline
+
+- Objective: provide one Business-scoped, side-effect-free service that computes Product availability from approved lifecycle and choice-level stock truth.
+- Dependency: Phase 4 `PASSED`.
+- Scope boundary: add the `inventory` app boundary and `compute_product_availability(*, business, product)`; return available only for an active Product with at least one active, positive-quantity choice owned by the active Business; reject Business/Product mismatch; never store availability or mutate state.
+- Explicit exclusions: quantity mutation, adjustment ledger, direct stock set, stock routes or HTMX UI, Product form changes, totals, readiness, buyer replies, reservations, orders, measurements, and LLM interpretation.
+- Source whitelist: `config/settings/base.py`, `inventory/__init__.py`, `inventory/apps.py`, `inventory/availability.py`, and `inventory/tests.py`.
+- Backend acceptance criteria: active Product plus an active positive-quantity owned choice returns true; draft, no-choice, zero-only, and inactive-only cases return false; unrelated Product stock cannot affect the result; cross-Business Products are rejected; computation performs no writes.
+- UX acceptance criteria: none; this slice has no route, template, HTMX, or Alpine behavior.
+- Automated verification: Django system check; migration dry-run and migration-state checks; focused availability tests; Product choice/bundle regression tests; full PostgreSQL-backed Django suite; diff checks.
+- Manual owner verification: not required for this backend-only slice.
+- Failure cases: stored availability, lifecycle mutation, quantity mutation, cross-Business reads, unrelated Product choices affecting the result, a model/migration change, or any excluded later-phase behavior.
+- Documentation updates: `changelog_checkpoint.md` always; `BUILD_PLAN.md` for Phase 5 transition and the approved slice contract; `README.md` for material public-status accuracy; no frozen-document, UX-plan, or decision-log update.
+- Proposed commit message: `feat: add product availability service`.
+- Rollback/recovery note: remove the app registration and service/tests together if the audited release cannot proceed; do not leave an undocumented partial boundary.
+- Stop gate relation: establishes computed availability only; it does not centralize stock mutation, create the adjustment audit trail, or pass Gate 3.
+- Status: `AUDITED_READY` pending Prompt 5 release and exact-SHA CI.
 
 ### Phase 6: Operational Product Workspace
 

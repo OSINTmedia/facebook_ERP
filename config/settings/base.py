@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "accounts",
     "businesses",
     "catalog",
+    "inventory",
     "django_htmx",
     "django.contrib.admin",
     "django.contrib.auth",
