@@ -1,0 +1,69 @@
+from dataclasses import dataclass
+
+from django.core.exceptions import ValidationError
+from django.db import transaction
+
+from catalog.models import ProductChoice
+from inventory.availability import compute_product_availability
+from inventory.models import InventoryAdjustment
+
+
+@dataclass(frozen=True, slots=True)
+class ChoiceQuantityDeltaResult:
+    choice: ProductChoice
+    adjustment: InventoryAdjustment
+    is_available: bool
+
+
+def apply_choice_quantity_delta(*, business, choice, actor, delta):
+    """Atomically apply one +1/-1 choice mutation and record its audit fact."""
+    if business is None or business.pk is None:
+        raise ValueError("An existing Business is required.")
+    if choice is None or choice.pk is None:
+        raise ValueError("An existing ProductChoice is required.")
+    if actor is None or actor.pk is None:
+        raise ValueError("An authenticated actor is required.")
+    if type(delta) is not int or delta not in (-1, 1):
+        raise ValidationError("Quantity delta must be +1 or -1.")
+    if choice.business_id != business.pk:
+        raise ValidationError("Choice must belong to the active Business.")
+    if business.owner_id != actor.pk:
+        raise ValidationError("Actor must own the active Business.")
+
+    with transaction.atomic():
+        try:
+            locked_choice = (
+                ProductChoice.objects.select_for_update()
+                .select_related("product")
+                .get(pk=choice.pk, business=business)
+            )
+        except ProductChoice.DoesNotExist as error:
+            raise ValidationError(
+                "Choice must belong to the active Business."
+            ) from error
+
+        quantity_before = locked_choice.quantity
+        quantity_after = quantity_before + delta
+        if quantity_after < 0:
+            raise ValidationError("Choice quantity cannot be negative.")
+
+        locked_choice.quantity = quantity_after
+        locked_choice.save(update_fields=["quantity", "updated_at"])
+        adjustment = InventoryAdjustment.objects.create(
+            business=business,
+            choice=locked_choice,
+            actor=actor,
+            quantity_before=quantity_before,
+            quantity_after=quantity_after,
+            delta=delta,
+        )
+        is_available = compute_product_availability(
+            business=business,
+            product=locked_choice.product,
+        )
+
+    return ChoiceQuantityDeltaResult(
+        choice=locked_choice,
+        adjustment=adjustment,
+        is_available=is_available,
+    )

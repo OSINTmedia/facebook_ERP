@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 is released and exact-SHA CI-passed, while P5.2 is locally implemented and audited pending release. Gate 3 remains open pending centralized inventory mutations and their complete audit trail. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
+- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 and P5.2 are released and exact-SHA CI-passed, while P5.3 is locally implemented and audited pending release. Gate 3 remains open pending stock routes/UI and the remaining Phase 5 audit-trail acceptance work. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -752,7 +752,7 @@ Avoid libraries that depend on:
 - Objective: centralize quantity mutations and availability computation.
 - Dependency: Phase 4.
 - Scope boundary: inventory service, adjustment ledger, +1/-1 and owner-approved direct set, computed availability, concurrency strategy.
-- Current implementation state: `IN_PROGRESS`; P5.1 is released and exact-SHA CI-passed, and P5.2 is locally implemented and integrity-audited with release pending Prompt 5. No stock mutation service, ledger-producing mutation path, stock route, or HTMX stock behavior is included yet.
+- Current implementation state: `IN_PROGRESS`; P5.1 and P5.2 are released and exact-SHA CI-passed, and P5.3 is locally implemented and integrity-audited with release pending Prompt 5. The centralized mutation service now pairs stock writes with ledger facts; stock route and HTMX stock behavior remain later work.
 - Expected micro-slices: pure availability service baseline, adjustment-ledger baseline, centralized mutation service and concurrency handling, stock route, HTMX response, transition tests.
 - Stop gate: all stock changes go through one service and create a complete audit trail.
 
@@ -790,6 +790,24 @@ Avoid libraries that depend on:
 - Proposed commit message: `feat: add inventory adjustment ledger`.
 - Rollback/recovery note: reverse the new inventory migration and remove the model/tests together if the audited release cannot proceed; no existing catalog row is transformed by this initial ledger migration.
 - Stop gate relation: establishes audit-record integrity only; it does not centralize or serialize stock writes, automatically create ledger records, resolve direct set, or pass Gate 3.
+- Status: `CLOSED` after release, remote alignment, and exact-SHA CI success; delivery metadata remains in Git/GitHub.
+
+#### P5.3 Atomic Inventory Increment/Decrement Service
+
+- Objective: centralize one safe stock increment/decrement path that records the corresponding immutable adjustment fact.
+- Dependency: P5.2 `CLOSED` and P5.1 availability service `CLOSED`.
+- Scope boundary: add `apply_choice_quantity_delta(*, business, choice, actor, delta)` for exactly `+1` or `-1`; lock the current owned ProductChoice row; reject invalid, unsaved, cross-Business, non-owner, and underflow requests; save quantity and `InventoryAdjustment` atomically; return the locked choice, adjustment, and computed availability.
+- Explicit exclusions: direct stock set, arbitrary deltas, reason codes, Product-bundle integration, routes, HTMX/UI, totals, readiness, buyer replies, reservations, orders, lifecycle mutation, and `is_active` mutation.
+- Source whitelist: `inventory/mutations.py` and `inventory/tests.py`.
+- Backend acceptance criteria: only integer `+1`/`-1` deltas are accepted; the locked quantity transition and immutable ledger fact commit together; any ledger failure rolls back the quantity write; Business and actor ownership remain enforced; computed availability reflects the committed choice-level quantity without storing availability or changing lifecycle/activation; concurrent decrements serialize without lost updates or duplicate transition facts.
+- UX acceptance criteria: none; this slice has no route, template, HTMX, or Alpine behavior.
+- Automated verification: focused inventory suite, migration-order/concurrency reproducer, full PostgreSQL-backed Django suite, Django system and migration checks, and diff checks.
+- Manual owner verification: not required for this backend-only slice.
+- Failure cases: direct quantity writes outside this service, cross-Business mutation, stale/lost concurrent update, quantity/ledger divergence, arbitrary delta or reason-code policy, lifecycle/activation mutation, stock route/UI scope, or any excluded later-phase behavior.
+- Documentation updates: `changelog_checkpoint.md` always; `BUILD_PLAN.md` for the formal slice contract and Phase 5 state; `DEVELOPMENT_NOTES.md` for the atomic/concurrency boundary or reusable migration-test isolation lesson; `README.md` for material public-status accuracy; no UX-plan or frozen-document update.
+- Proposed commit message: `feat: add atomic inventory delta service`.
+- Rollback/recovery note: remove the service and focused tests together if the audited release cannot proceed; preserve the P5.1 availability and P5.2 ledger boundaries.
+- Stop gate relation: centralizes the first quantity mutation and ledger pairing but does not complete stock UI, workspace behavior, or Gate 3.
 - Status: `AUDITED_READY` pending Prompt 5 release and exact-SHA CI.
 
 ### Phase 6: Operational Product Workspace

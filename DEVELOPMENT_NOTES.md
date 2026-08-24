@@ -360,6 +360,14 @@ Record each inventory adjustment against one Business, exact ProductChoice row, 
 Reason:
 An immutable before/after fact makes stock history independently auditable and preserves the identity of duplicate-looking choice rows. Separating record integrity from the later concurrency-sensitive mutation service avoids silently resolving direct-set or movement-reason policy while ensuring the service has a trustworthy destination.
 
+### 2026-08-24 - Stock mutation and adjustment creation share one locked transaction
+
+Decision:
+Make `apply_choice_quantity_delta` the first centralized quantity mutation boundary. Accept only integer `+1` or `-1`, lock the current Business-owned ProductChoice row with `select_for_update()`, reject underflow and ownership violations before writing, and commit the quantity transition with its immutable `InventoryAdjustment` in one transaction. Compute availability from the committed choice-level state without changing lifecycle or `is_active`.
+
+Reason:
+The adjustment ledger is only trustworthy when the stock write and its transition fact cannot diverge. PostgreSQL-backed concurrent-decrement coverage verifies that row locking prevents lost updates and duplicate transition facts. The concurrency fixture also restores the latest migration graph after the existing historical migration test leaves the disposable test database at an earlier catalog state, keeping the full suite schema-isolated without changing production migrations or runtime behavior.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:
