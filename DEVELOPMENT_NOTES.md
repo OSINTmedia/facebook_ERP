@@ -376,6 +376,14 @@ Keep ProductBundle responsible for ProductChoice identity, activation, and Busin
 Reason:
 The Product form can carry stale or forged values and must not become a second stock-write path. Excluding quantity from existing-row updates preserves concurrent service changes and the immutable adjustment trail, while zero initialization avoids inventing a stock transition for a newly created choice. Blocking persisted deletion preserves exact choice identity and its stock history without preventing normal deactivation.
 
+### 2026-08-24 - Product edit may host separate stock controls for saved choices
+
+Decision:
+Allow compact `+1`/`-1` controls beside a persisted ProductChoice on Product edit. Keep the quantity input disabled, render no control for unsaved rows, and submit every action to the existing inventory route rather than the ProductBundle save path. HTMX replaces only that choice's control region with the server response; native submit follows the same safe route.
+
+Reason:
+Co-location lets a seller correct a saved choice without a premature workspace/dashboard redesign, while the separate route preserves the one-service, immutable-ledger, Business-scoped stock boundary. The explicit server response avoids client-owned quantity and stale control state. Owner/browser testing confirmed the behavior but exposed a reusable UX lesson: requiring a new Product or choice to be saved at zero before quantity controls appear creates avoidable workflow friction. A later approved correction must improve that transition without treating an unsaved row as stock identity or bypassing the ledger.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:

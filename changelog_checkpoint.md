@@ -21,38 +21,39 @@
 - P5.2 Business-Scoped Inventory Adjustment Ledger Baseline: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.3 Atomic Inventory Increment/Decrement Service: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.4 ProductBundle Stock Boundary Enforcement: released, owner-reviewed, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
-- P5.5 Authenticated Stock Mutation Route: locally implemented, integrity-audited, and ready for the Prompt 5 release gate.
-- Gate 3: not passed; HTMX stock controls and Phase 5 transition/regression readiness remain later work.
+- P5.5 Authenticated Stock Mutation Route: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
+- P5.6 HTMX Stock Response and Controls: locally implemented, integrity-audited, and owner/browser-tested with a documented save-before-stock UX limitation; ready for release.
+- Gate 3: not passed; a separately approved quantity-management UX correction and Phase 5 transition/regression readiness remain later work.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
 
-P5.5 exposes the centralized stock boundary through one authenticated route:
+P5.6 provides the first seller-visible stock controls without creating another stock-write boundary:
 
-- only CSRF-protected POST requests with exact `+1` or `-1` deltas can reach the mutation service;
-- Business and actor come from the authenticated request, while the target choice is Business-scoped and cross-Business identity is not exposed;
-- each accepted request produces one atomic quantity transition and immutable adjustment fact;
-- invalid delta, underflow, unauthenticated, GET, CSRF, cross-Business, missing-Business, and unresolved multiple-Business paths produce no stock or ledger write;
-- safe internal return context is preserved, external return URLs fall back to Products, and HTMX controls/responses remain P5.6 work.
+- only persisted, Business-scoped choice rows on Product edit render compact `+1`/`-1` controls; the ProductBundle quantity input remains read-only and unsaved rows have no control;
+- controls submit only the existing CSRF-protected P5.5 route with exact deltas, so actor, Business, row lock, quantity transition, and immutable adjustment fact remain server-owned;
+- an HTMX response replaces only the affected choice-control region with current server quantity plus success or error feedback; the UI claims no optimistic stock state;
+- native submission safely follows the same route and return context, while loading disables both controls for the affected choice.
 
 ## Verification and Audit
 
 - Django system and migration dry-run checks passed with no schema changes.
-- The focused P5.5 route/security suite passed: 11 tests; the complete inventory suite passed: 35 tests.
-- The PostgreSQL-backed full regression suite passed: 316 tests.
+- The focused P5.6 HTMX/control checks passed; route plus Product create/edit regression passed: 70 tests; the complete inventory suite passed: 38 tests.
+- The PostgreSQL-backed full regression suite passed: 321 tests.
 - Source and documentation diff checks passed.
-- Integrity audit passed for authentication, CSRF, POST-only mutation, Business isolation, exact-choice identity, server-derived actor ownership, safe return paths, atomic stock/ledger truth, hosted compatibility, and approved scope.
-- Owner/browser testing is advisory for this route-only slice; no visible stock-control surface was added.
+- Integrity audit passed for authentication, CSRF, POST-only mutation, Business isolation, exact-choice identity, read-only ProductBundle stock input, server-derived actor ownership, safe return paths, atomic stock/ledger truth, HTMX server truth, accessibility feedback, mobile control density, hosted compatibility, and approved scope.
+- Owner/browser testing passed functionally. Owner noted that new Products and newly added choices must be saved at zero before stock controls appear; this inconvenient two-step quantity workflow requires a separately approved correction before Phase 5 audit/Gate 3 closure.
 
 ## Current Gate and Next Work
 
-- Current gate: P5.5 is locally accepted and awaiting Prompt 5 commit, push, clean alignment, and exact-SHA CI; Gate 3 remains open.
-- Next functional slice: P5.6 HTMX Stock Response and Controls after P5.5 release closure; after P5.7, run the Phase 5 audit and Gate 3 transition workflow.
+- Current gate: P5.6 is locally accepted and awaiting Prompt 5 release, clean alignment, and exact-SHA CI; Gate 3 remains open.
+- Next functional work after P5.6 release: use Prompt 2 to define the smallest quantity-management UX correction; P5.7 Inventory Transition and Regression Readiness follows only after that correction closes.
 
 ## Active Blockers and Decisions
 
-- P5.1 through P5.5 have no technical or owner-acceptance blocker; P5.5 has only the Prompt 5 release/CI gate open.
-- The P5.5 route has no visible control consumer yet; P5.6 owns the approved server-rendered HTMX response/control surface.
+- P5.1 through P5.5 have no technical or owner-acceptance blocker. P5.6 has no technical or owner-test blocker; only the Prompt 5 release/CI gate remains open.
+- Owner approved compact controls beside persisted Product-edit choices only; the read-only field and separate inventory mutation boundary remain mandatory.
+- Required UX follow-up: reduce the new-Product/new-choice save-before-stock friction without allowing an unsaved row to bypass persisted choice identity, the centralized mutation service, or the immutable adjustment ledger.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
 - UX note: the current Product create/edit surface is functionally accepted but not yet the desired smart assistant-style operational experience; treat this as later UX work, not a Phase 4 semantic-recognition blocker.
 - Unrelated later-phase owner decisions remain where recorded in controlling documents.
@@ -60,12 +61,17 @@ P5.5 exposes the centralized stock boundary through one authenticated route:
 ## Current Audited Release Set
 
 - `BUILD_PLAN.md`
+- `DEVELOPMENT_NOTES.md`
+- `APP_EXPERIENCE_PLAN.md`
+- `README.md`
+- `catalog/tests.py`
 - `changelog_checkpoint.md`
-- `config/urls.py`
-- `inventory/urls.py`
 - `inventory/views.py`
 - `inventory/tests.py`
-- Proposed commit: `feat: add stock mutation route`
+- `static/css/app.css`
+- `templates/catalog/_choice_section.html`
+- `templates/inventory/_choice_stock_controls.html`
+- Proposed commit: `feat: add htmx stock controls`
 
 ## Handoff Guardrails
 

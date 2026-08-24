@@ -166,6 +166,9 @@
                 New choices start with 0 stock. Stock is managed separately.
               {% endif %}
             </p>
+            {% if choice_form.instance.pk %}
+              {% include "inventory/_choice_stock_controls.html" with choice=choice_form.instance return_url=return_url only %}
+            {% endif %}
             {% if show_form_errors %}
               {% for error in choice_form.quantity.errors %}
                 <p class="field-error">{{ error }}</p>

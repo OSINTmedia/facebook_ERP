@@ -1,0 +1,59 @@
+<div
+  id="choice-stock-controls-{{ choice.pk }}"
+  class="choice-stock-controls"
+  aria-label="Stock controls for {{ choice.size.name }} / {{ choice.color.name }}"
+>
+  <div class="choice-stock-controls__summary">
+    <span>Current stock</span>
+    <output class="choice-stock-controls__quantity" aria-live="polite">{{ choice.quantity }}</output>
+  </div>
+
+  <div class="choice-stock-controls__actions">
+    <button
+      id="choice-stock-decrease-{{ choice.pk }}"
+      class="button button--secondary button--compact"
+      type="submit"
+      name="delta"
+      value="-1"
+      formaction="{% url 'inventory:choice_stock_adjust' choice.pk %}"
+      formmethod="post"
+      formnovalidate
+      hx-post="{% url 'inventory:choice_stock_adjust' choice.pk %}"
+      hx-target="#choice-stock-controls-{{ choice.pk }}"
+      hx-swap="outerHTML"
+      hx-include="closest form"
+      hx-indicator="#choice-stock-loading-{{ choice.pk }}"
+      hx-disabled-elt="#choice-stock-decrease-{{ choice.pk }}, #choice-stock-increase-{{ choice.pk }}"
+      aria-label="Decrease stock for {{ choice.size.name }} / {{ choice.color.name }}"
+    >−1</button>
+    <button
+      id="choice-stock-increase-{{ choice.pk }}"
+      class="button button--secondary button--compact"
+      type="submit"
+      name="delta"
+      value="1"
+      formaction="{% url 'inventory:choice_stock_adjust' choice.pk %}"
+      formmethod="post"
+      formnovalidate
+      hx-post="{% url 'inventory:choice_stock_adjust' choice.pk %}"
+      hx-target="#choice-stock-controls-{{ choice.pk }}"
+      hx-swap="outerHTML"
+      hx-include="closest form"
+      hx-indicator="#choice-stock-loading-{{ choice.pk }}"
+      hx-disabled-elt="#choice-stock-decrease-{{ choice.pk }}, #choice-stock-increase-{{ choice.pk }}"
+      aria-label="Increase stock for {{ choice.size.name }} / {{ choice.color.name }}"
+    >+1</button>
+    <span
+      id="choice-stock-loading-{{ choice.pk }}"
+      class="htmx-indicator choice-stock-controls__loading"
+      role="status"
+    >Updating…</span>
+  </div>
+
+  {% if stock_feedback %}
+    <p class="choice-stock-controls__feedback" role="status">{{ stock_feedback }}</p>
+  {% endif %}
+  {% if stock_error %}
+    <p class="choice-stock-controls__error" role="alert">{{ stock_error }}</p>
+  {% endif %}
+</div>

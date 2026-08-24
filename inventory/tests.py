@@ -747,6 +747,92 @@ class InventoryMutationRouteTests(TestCase):
         self.assertEqual(adjustment.quantity_before, 1)
         self.assertEqual(adjustment.quantity_after, 0)
 
+    def test_htmx_increment_returns_authoritative_choice_controls(self):
+        duplicate_choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=5,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {"delta": "1", "next": self.return_url},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "inventory/_choice_stock_controls.html",
+        )
+        self.assertContains(
+            response,
+            f'id="choice-stock-controls-{self.choice.pk}"',
+        )
+        self.assertNotContains(
+            response,
+            f'id="choice-stock-controls-{duplicate_choice.pk}"',
+        )
+        self.assertContains(response, ">2</output>")
+        self.assertContains(response, "Stock updated to 2.")
+        self.assertContains(response, 'role="status"')
+        self.assertContains(response, 'hx-swap="outerHTML"')
+        self.choice.refresh_from_db()
+        duplicate_choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 2)
+        self.assertEqual(duplicate_choice.quantity, 5)
+        self.assertEqual(InventoryAdjustment.objects.count(), 1)
+
+    def test_htmx_underflow_returns_controls_with_error_and_no_write(self):
+        self.choice.quantity = 0
+        self.choice.save(update_fields=["quantity", "updated_at"])
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {"delta": "-1", "next": self.return_url},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "inventory/_choice_stock_controls.html",
+        )
+        self.assertContains(response, ">0</output>")
+        self.assertContains(response, "Choice quantity cannot be negative.")
+        self.assertContains(response, 'role="alert"')
+        self.assertContains(response, 'name="delta"', count=2)
+        self.assertContains(response, 'value="-1"')
+        self.assertContains(response, 'value="1"')
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_htmx_invalid_delta_returns_current_controls_without_write(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {"delta": "2", "next": self.return_url},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "inventory/_choice_stock_controls.html",
+        )
+        self.assertContains(response, ">1</output>")
+        self.assertContains(response, "Stock adjustment must be +1 or -1.")
+        self.assertContains(response, 'role="alert"')
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
     def test_unauthenticated_post_redirects_to_login_without_writes(self):
         response = self.client.post(self.url, {"delta": "1"})
 

@@ -4508,6 +4508,14 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
             f"{reverse('accounts:login')}?next={self.url}",
         )
 
+    def test_product_create_does_not_render_stock_controls_for_unsaved_choice(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "choice-stock-controls-")
+
     def test_product_create_renders_approved_form_fields(self):
         self.client.force_login(self.owner)
 
@@ -5561,6 +5569,63 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, "Private red")
         self.assertContains(response, "Save changes")
         self.assertNotContains(response, 'name="business"')
+
+    def test_product_edit_renders_separate_controls_for_owned_saved_choice(self):
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=2,
+        )
+        other_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=self.other_product,
+            size=self.other_size,
+            color=self.other_color,
+            quantity=8,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        adjustment_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": choice.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            f'id="choice-stock-controls-{choice.pk}"',
+        )
+        self.assertContains(response, f'formaction="{adjustment_url}"', count=2)
+        self.assertContains(response, f'hx-post="{adjustment_url}"', count=2)
+        self.assertContains(
+            response,
+            f'hx-target="#choice-stock-controls-{choice.pk}"',
+            count=2,
+        )
+        self.assertContains(
+            response,
+            f'hx-indicator="#choice-stock-loading-{choice.pk}"',
+            count=2,
+        )
+        self.assertContains(
+            response,
+            (
+                f'hx-disabled-elt="#choice-stock-decrease-{choice.pk}, '
+                f'#choice-stock-increase-{choice.pk}"'
+            ),
+            count=2,
+        )
+        self.assertContains(response, f'id="choice-stock-loading-{choice.pk}"')
+        self.assertContains(response, "formnovalidate", count=2)
+        self.assertContains(response, "Decrease stock for M / Black")
+        self.assertContains(response, "Increase stock for M / Black")
+        self.assertNotContains(
+            response,
+            f"choice-stock-controls-{other_choice.pk}",
+        )
 
     def test_product_edit_replaces_type_and_tags_atomically(self):
         old_type = BusinessProductType.objects.create(

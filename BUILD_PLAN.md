@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 through P5.4 are released and exact-SHA CI-passed; P5.5 is locally implemented and integrity-audited, pending release and exact-SHA CI. Gate 3 remains open pending HTMX stock controls and Phase 5 transition/regression evidence. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
+- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 through P5.5 are released and exact-SHA CI-passed; P5.6 is locally implemented, integrity-audited, and owner/browser-tested with the documented save-before-stock UX limitation, pending release and exact-SHA CI. Gate 3 remains open pending a separately approved quantity-management UX correction and Phase 5 transition/regression evidence. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -752,7 +752,7 @@ Avoid libraries that depend on:
 - Objective: centralize quantity mutations and availability computation.
 - Dependency: Phase 4.
 - Scope boundary: inventory service, adjustment ledger, +1/-1 and owner-approved direct set, computed availability, concurrency strategy.
-- Current implementation state: `IN_PROGRESS`; P5.1 through P5.4 are released and exact-SHA CI-passed. P5.5 is locally implemented and integrity-audited, pending release and exact-SHA CI. Two controlled functional micro-slices remain after P5.5 before the Phase 5 transition audit: HTMX stock response/controls and end-to-end transition/regression readiness. Gate 3 remains open until the remaining inventory acceptance evidence passes.
+- Current implementation state: `IN_PROGRESS`; P5.1 through P5.5 are released and exact-SHA CI-passed. P5.6 is locally implemented, integrity-audited, and owner/browser-tested with notes, pending release and exact-SHA CI. Owner review confirmed functional correctness but identified a required quantity-management UX correction before the Phase 5 audit: new Products and newly added choices must currently be saved at zero before stock controls become available. The exact correction remains a separately approved functional micro-slice; P5.7 transition/regression readiness must not silently absorb new behavior. Gate 3 remains open until that correction and the remaining inventory acceptance evidence pass.
 - Expected micro-slices: P5.1 availability baseline, P5.2 adjustment-ledger baseline, P5.3 atomic mutation service, P5.4 ProductBundle stock boundary, P5.5 stock route, P5.6 HTMX stock response/controls, and P5.7 transition/regression readiness before the Phase 5 audit and Gate 3 closure.
 - Stop gate: all stock changes go through one service and create a complete audit trail.
 
@@ -830,17 +830,20 @@ Avoid libraries that depend on:
 - Acceptance: authenticated owner can mutate only an owned ProductChoice and each accepted request creates one exact quantity/ledger transition; unauthenticated, GET, CSRF, cross-Business, invalid delta, underflow, missing-Business, and unresolved multiple-Business requests are rejected without writes; external return URLs cannot escape the application; success/error redirects preserve server truth and safe navigation.
 - Automated verification: focused route/security tests, complete inventory service regression, Django system and migration dry-run checks, full PostgreSQL-backed suite, and diff checks.
 - Manual owner verification: advisory because no visible stock-control surface is added; P5.6 owns browser-visible interaction acceptance.
-- Status: `AUDITED — pending release, remote alignment, and exact-SHA CI`; local PostgreSQL verification passed without source repair.
+- Status: `CLOSED` after release, remote alignment, and exact-SHA CI success; delivery metadata remains in Git/GitHub.
 
 #### P5.6 HTMX Stock Response and Controls
 
 - Objective: add the approved server-rendered HTMX response and compact choice-level control surface for the stock route.
 - Dependency: P5.5 `CLOSED` and owner-approved UX responsibility for the affected surface.
-- Scope boundary: HTMX partial response, loading/recovery feedback, accessibility labels, and mobile-reviewable choice-level controls using server truth.
+- Scope boundary: owner-approved compact `+1`/`-1` controls beside persisted choices on Product edit only; retain the disabled quantity input and no-control unsaved rows; use the existing CSRF-protected stock route for both HTMX and native submit; replace only the affected control region with server truth plus loading/recovery feedback and accessible labels.
 - Explicit exclusions: workspace/dashboard redesign, client-owned stock state, Alpine replacement of server truth, direct set, reason codes, and unrelated UX cleanup.
-- Source whitelist: inventory templates/static assets and directly related tests only.
-- Acceptance: HTMX success/error responses update the correct Business-scoped choice state, preserve return context, expose accessible action/status feedback, and do not claim stock state before the server response.
-- Status: `PLANNED`.
+- Source whitelist: `inventory/views.py`, `inventory/tests.py`, `templates/inventory/_choice_stock_controls.html`, `templates/catalog/_choice_section.html`, `catalog/tests.py`, and `static/css/app.css`.
+- Acceptance: only persisted choices render controls; the stock input remains disabled; each control sends one exact delta through P5.5 and cannot choose Business or actor; HTMX success/error responses replace only the correct Business-scoped choice state with current server quantity and accessible status/alert feedback; both controls disable while a request is pending; native fallback preserves the safe return path; unsaved and cross-Business choices gain no control; lifecycle, availability, and adjustment-fact truth remain unchanged except through the established service.
+- Automated verification: focused HTMX increment/underflow/invalid-delta tests; route plus Product create/edit regression; complete inventory suite; Django system and migration dry-run checks; full PostgreSQL-backed suite; diff checks.
+- Manual owner verification: required — on Product edit, confirm the quantity input stays read-only; `+1` and `-1` update a saved choice in place and persist after refresh; decrement at zero shows an inline error with no quantity change.
+- Owner-observed UX limitation: functional behavior passed, but requiring a new Product or newly added choice to be saved at zero before quantity can be increased creates an inconvenient two-step workflow that does not meet the intended modern assistant-style UX. A separately approved functional correction is required before Phase 5 audit/Gate 3 closure and must preserve persisted choice identity, centralized mutation, and immutable adjustment truth.
+- Status: `AUDITED — owner/browser PASS with UX notes; pending release, remote alignment, and exact-SHA CI`; local PostgreSQL verification passed without source repair.
 
 #### P5.7 Inventory Transition and Regression Readiness
 
