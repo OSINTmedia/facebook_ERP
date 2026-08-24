@@ -24,8 +24,8 @@
 - P5.5 Authenticated Stock Mutation Route: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.6 HTMX Stock Response and Controls: released, owner/browser-tested, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.6A One-Save Initial Stock Capture: released, owner/browser-tested, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
-- P5.7 Inventory Transition and Regression Readiness: locally implemented and integrity-audited; release and exact-SHA CI remain before the Phase 5 audit gate.
-- Gate 3: not passed; P5.7 release evidence and Phase 5 audit/transition remain.
+- P5.7 Inventory Transition and Regression Readiness: released, integrity-audited, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
+- Gate 3: not passed; Phase 5 Audit and Transition is now the next governance gate.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
@@ -48,8 +48,8 @@ P5.6A removes the save-before-stock implementation gap while retaining one stock
 
 ## Current Gate and Next Work
 
-- Current gate: release P5.7 and verify its exact-SHA CI; then proceed to the Phase 5 audit/transition and Gate 3 evidence review.
-- Next functional slice after P5.7 closure: Phase 5 audit/transition gate; no additional inventory behavior is authorized in P5.7.
+- Current gate: P5.7 is closed after exact-SHA CI; proceed to the Phase 5 Audit and Transition governance gate. Gate 3 is ready for that audit, not passed.
+- Next functional slice: none authorized by this closure; next action is the Phase 5 Audit and Transition gate.
 
 ## Active Blockers and Decisions
 
@@ -61,13 +61,7 @@ P5.6A removes the save-before-stock implementation gap while retaining one stock
 
 ## Current Audited Release Set
 
-- `APP_EXPERIENCE_PLAN.md`
-- `BUILD_PLAN.md`
-- `DEVELOPMENT_NOTES.md`
-- `README.md`
-- `catalog/tests.py`
-- `changelog_checkpoint.md`
-- Proposed commit: `test: add phase 5 inventory transition coverage`
+- None; P5.7 is closed. Exact branch, hash, remote, and CI metadata remain in Git/GitHub.
 
 ## Handoff Guardrails
 
