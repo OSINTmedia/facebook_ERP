@@ -115,18 +115,17 @@ class ProductChoiceForm(forms.ModelForm):
         self.fields["size"].empty_label = "Select size"
         self.fields["color"].queryset = color_queryset
         self.fields["color"].empty_label = "Select color"
+        self.fields["quantity"].disabled = True
+        self.fields["quantity"].help_text = (
+            "Stock is managed separately. New choices start at 0."
+        )
 
     def has_changed(self):
         """Ignore untouched extra rows whose only values are model defaults."""
         if self.is_bound and not self.instance.pk:
             size = self.data.get(self.add_prefix("size"))
             color = self.data.get(self.add_prefix("color"))
-            quantity = self.data.get(self.add_prefix("quantity"))
-            if (
-                not str(size or "").strip()
-                and not str(color or "").strip()
-                and quantity in (None, "", "0", 0)
-            ):
+            if not str(size or "").strip() and not str(color or "").strip():
                 return False
         return super().has_changed()
 
@@ -281,7 +280,17 @@ class BaseProductChoiceFormSet(BaseInlineFormSet):
 
         active_choices = 0
         for form in self.forms:
-            if not form.cleaned_data or self._should_delete_form(form):
+            if not form.cleaned_data:
+                continue
+            if self._should_delete_form(form):
+                if form.instance.pk:
+                    form.add_error(
+                        "DELETE",
+                        (
+                            "Saved choices cannot be removed. "
+                            "Deactivate the choice instead."
+                        ),
+                    )
                 continue
             if form.cleaned_data.get("is_active"):
                 active_choices += 1

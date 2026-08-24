@@ -86,14 +86,28 @@ class ProductBundle:
             choices = self.choice_formset.save(commit=False)
 
             for choice in self.choice_formset.deleted_objects:
-                self._validate_choice_scope(choice, product)
-                choice.delete()
+                raise ValidationError(
+                    "Saved choices cannot be removed. Deactivate the choice instead."
+                )
 
             for choice in choices:
-                choice.business = self.business
-                choice.product = product
-                choice.full_clean()
-                choice.save()
+                if choice.pk:
+                    self._validate_choice_scope(choice, product)
+                    choice.full_clean()
+                    choice.save(
+                        update_fields=[
+                            "size",
+                            "color",
+                            "is_active",
+                            "updated_at",
+                        ]
+                    )
+                else:
+                    choice.business = self.business
+                    choice.product = product
+                    choice.quantity = 0
+                    choice.full_clean()
+                    choice.save()
 
             self.choice_formset.save_m2m()
             self._replace_product_tags(

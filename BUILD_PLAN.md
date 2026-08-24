@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 and P5.2 are released and exact-SHA CI-passed, while P5.3 is locally implemented and audited pending release. Gate 3 remains open pending stock routes/UI and the remaining Phase 5 audit-trail acceptance work. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
+- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 through P5.3 are released and exact-SHA CI-passed; P5.4 is locally implemented and integrity-audited, pending the required owner/browser test, release, and exact-SHA CI. Gate 3 remains open pending stock routes/UI and the remaining Phase 5 transition evidence. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -645,7 +645,7 @@ Avoid libraries that depend on:
 
 - Objective: make the released Product/choice bundle usable through the authenticated seller Product create/edit screen.
 - Dependency: P4.8 released and CI-passed.
-- Exact scope: use `ProductBundle` in create/update GET and POST paths; render management data, existing choice rows, and one blank extra row; allow create, update, deactivate, and delete; preserve field/formset errors, submitted values, safe return paths, and Business ownership isolation.
+- Exact scope: use `ProductBundle` in create/update GET and POST paths; render management data, existing choice rows, and one blank extra row; allow create, update, deactivate, and discard of unsaved rows while persisted choice deletion is blocked by the later stock-boundary contract; preserve field/formset errors, submitted values, safe return paths, and Business ownership isolation.
 - Explicit exclusions: recognition feedback or confirmation, dynamic multi-row cloning, inventory ledger/service, computed availability, price, media, measurements, and later-phase workspace behavior.
 - Acceptance criteria: Product and choices save atomically; active Products retain at least one active choice; drafts may have no choices; cross-Business Product/choice input cannot leak or mutate data; choice fields and recovery remain accessible and mobile-readable.
 - Verification: local/test Django checks, local/test migration dry-run checks, focused create/update/bundle tests, catalog tests, full Django suite, `git diff --check`, and owner/browser review of create/edit, recovery, return paths, and a 390px viewport.
@@ -752,8 +752,8 @@ Avoid libraries that depend on:
 - Objective: centralize quantity mutations and availability computation.
 - Dependency: Phase 4.
 - Scope boundary: inventory service, adjustment ledger, +1/-1 and owner-approved direct set, computed availability, concurrency strategy.
-- Current implementation state: `IN_PROGRESS`; P5.1, P5.2, and P5.3 are released and exact-SHA CI-passed. Four controlled functional micro-slices remain before the Phase 5 transition audit: ProductBundle integration, authenticated stock route, HTMX stock response/controls, and end-to-end transition/regression readiness. Gate 3 remains open until all stock writes use the centralized service and the remaining inventory acceptance evidence passes.
-- Expected micro-slices: P5.1 availability baseline, P5.2 adjustment-ledger baseline, P5.3 atomic mutation service, P5.4 ProductBundle integration, P5.5 stock route, P5.6 HTMX stock response/controls, and P5.7 transition/regression readiness before the Phase 5 audit and Gate 3 closure.
+- Current implementation state: `IN_PROGRESS`; P5.1, P5.2, and P5.3 are released and exact-SHA CI-passed. P5.4 is locally implemented and integrity-audited, pending the required owner/browser test, release, and exact-SHA CI. Three controlled functional micro-slices remain after P5.4 before the Phase 5 transition audit: authenticated stock route, HTMX stock response/controls, and end-to-end transition/regression readiness. Gate 3 remains open until all stock writes use the centralized service and the remaining inventory acceptance evidence passes.
+- Expected micro-slices: P5.1 availability baseline, P5.2 adjustment-ledger baseline, P5.3 atomic mutation service, P5.4 ProductBundle stock boundary, P5.5 stock route, P5.6 HTMX stock response/controls, and P5.7 transition/regression readiness before the Phase 5 audit and Gate 3 closure.
 - Stop gate: all stock changes go through one service and create a complete audit trail.
 
 #### P5.1 Pure Product Availability Service Baseline
@@ -810,15 +810,15 @@ Avoid libraries that depend on:
 - Stop gate relation: centralizes the first quantity mutation and ledger pairing but does not complete stock UI, workspace behavior, or Gate 3.
 - Status: `CLOSED` after release, remote alignment, and exact-SHA CI success; delivery metadata remains in Git/GitHub.
 
-#### P5.4 ProductBundle Quantity Mutation Integration
+#### P5.4 ProductBundle Stock Boundary Enforcement
 
-- Objective: route existing ProductBundle choice-quantity mutations through the centralized atomic inventory service while preserving the ProductBundle transaction boundary.
+- Objective: prevent ProductBundle editing from becoming a second stock-mutation path while preserving choice identity, activation, and ProductBundle transaction safety.
 - Dependency: P5.3 `CLOSED`.
-- Scope boundary: integrate validated Business-owned ProductChoice quantity changes with `apply_choice_quantity_delta`; preserve choice identity, lifecycle, activation, material, tag, and Business isolation behavior.
-- Explicit exclusions: direct stock set, arbitrary deltas, reason codes, stock route, HTMX response, dashboard, readiness, buyer replies, reservations, orders, and deployment work.
-- Source whitelist: `catalog/product_bundles.py`, `catalog/tests.py`, `inventory/mutations.py` only if directly required by acceptance.
-- Acceptance: ProductBundle quantity writes cannot bypass the mutation service; valid transitions create exactly one immutable adjustment fact; invalid/cross-Business/underflow writes remain atomic and leave no partial state; existing ProductBundle regressions remain green.
-- Status: `PLANNED`.
+- Scope boundary: force new ProductChoice rows to quantity zero without creating an adjustment; preserve existing quantities by excluding stock from persisted ProductBundle updates; reject persisted choice deletion while retaining deactivation; allow unsaved extra-row discard; keep Business/Product validation and atomic Product, choice, material, and tag persistence intact.
+- Explicit exclusions: direct stock set, arbitrary deltas, reason codes, inventory mutation calls from ProductBundle, stock route, HTMX response, dashboard, readiness, buyer replies, reservations, orders, and deployment work.
+- Source whitelist: `catalog/forms.py`, `catalog/product_bundles.py`, `catalog/tests.py`, and `templates/catalog/_choice_section.html`.
+- Acceptance: new choices persist with quantity zero and no adjustment; stale or forged quantity submissions cannot change existing stock; persisted choices cannot be deleted and must be deactivated instead; unsaved rows can be discarded; quantity is visibly read-only; Business isolation, choice identity, lifecycle separation, and existing ProductBundle regressions remain green.
+- Status: `AUDITED — pending required owner/browser test, release, remote alignment, and exact-SHA CI`; local PostgreSQL verification passed without source repair.
 
 #### P5.5 Authenticated Stock Mutation Route
 

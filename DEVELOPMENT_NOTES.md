@@ -368,6 +368,14 @@ Make `apply_choice_quantity_delta` the first centralized quantity mutation bound
 Reason:
 The adjustment ledger is only trustworthy when the stock write and its transition fact cannot diverge. PostgreSQL-backed concurrent-decrement coverage verifies that row locking prevents lost updates and duplicate transition facts. The concurrency fixture also restores the latest migration graph after the existing historical migration test leaves the disposable test database at an earlier catalog state, keeping the full suite schema-isolated without changing production migrations or runtime behavior.
 
+### 2026-08-24 - ProductBundle does not own stock mutation
+
+Decision:
+Keep ProductBundle responsible for ProductChoice identity, activation, and Business/Product validation, but remove quantity mutation from the Product edit boundary. New choices are initialized at zero without an adjustment fact; existing quantities are excluded from ProductBundle updates; persisted choices cannot be deleted and must be deactivated instead; unsaved extra rows may be discarded. Stock changes remain the responsibility of the centralized inventory mutation service.
+
+Reason:
+The Product form can carry stale or forged values and must not become a second stock-write path. Excluding quantity from existing-row updates preserves concurrent service changes and the immutable adjustment trail, while zero initialization avoids inventing a stock transition for a newly created choice. Blocking persisted deletion preserves exact choice identity and its stock history without preventing normal deactivation.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:

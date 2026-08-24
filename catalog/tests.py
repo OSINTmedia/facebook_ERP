@@ -57,6 +57,8 @@ from catalog.vocabulary import (
     create_choice_vocabulary_entry,
     update_choice_vocabulary_entry,
 )
+from inventory.models import InventoryAdjustment
+from inventory.mutations import apply_choice_quantity_delta
 
 
 def size_value(business, name="M", *, is_active=True):
@@ -2867,6 +2869,7 @@ class ProductChoiceFormTests(TestCase):
             list(form.fields),
             ["size", "color", "quantity", "is_active"],
         )
+        self.assertTrue(form.fields["quantity"].disabled)
 
     def test_form_ignores_submitted_business_and_product(self):
         form = ProductChoiceForm(
@@ -2885,6 +2888,7 @@ class ProductChoiceFormTests(TestCase):
         choice = form.save(commit=False)
         self.assertIsNone(choice.business_id)
         self.assertIsNone(choice.product_id)
+        self.assertEqual(choice.quantity, 0)
 
     def test_form_dropdowns_include_only_active_values_from_the_business(self):
         inactive_size = size_value(self.business, "XL")
@@ -3054,8 +3058,44 @@ class ProductChoiceFormSetTests(TestCase):
 
         self.assertFalse(formset.is_valid())
         self.assertIn(
+            "Saved choices cannot be removed. Deactivate the choice instead.",
+            formset.forms[0].errors["DELETE"],
+        )
+        self.assertIn(
             "An active product requires at least one active choice.",
             formset.non_form_errors(),
+        )
+
+    def test_draft_product_rejects_deleting_a_saved_choice(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Draft trousers",
+            description="Draft description.",
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=self.size,
+            color=self.color,
+            quantity=1,
+        )
+        rows = [
+            {
+                "id": str(choice.pk),
+                "size": str(choice.size_id),
+                "color": str(choice.color_id),
+                "quantity": "99",
+                "DELETE": "on",
+            }
+        ]
+
+        formset = self.build_formset(product, rows, initial_forms=1)
+
+        self.assertFalse(formset.is_valid())
+        self.assertIn(
+            "Saved choices cannot be removed. Deactivate the choice instead.",
+            formset.forms[0].errors["DELETE"],
         )
 
 
@@ -3195,7 +3235,8 @@ class ProductBundleTests(TestCase):
         self.assertEqual(choice.product, product)
         self.assertEqual(choice.size, self.size)
         self.assertEqual(choice.color, self.color)
-        self.assertEqual(choice.quantity, 2)
+        self.assertEqual(choice.quantity, 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
 
     def test_valid_create_saves_explicit_confirmed_material_fact(self):
         bundle = ProductBundle(
@@ -3383,7 +3424,8 @@ class ProductBundleTests(TestCase):
         choices = list(product.choices.order_by("id"))
         self.assertEqual(len(choices), 2)
         self.assertNotEqual(choices[0].pk, choices[1].pk)
-        self.assertEqual([choice.quantity for choice in choices], [1, 3])
+        self.assertEqual([choice.quantity for choice in choices], [0, 0])
+        self.assertFalse(InventoryAdjustment.objects.exists())
 
     def test_existing_product_from_another_business_is_rejected(self):
         other_product = Product.objects.create(
@@ -3505,7 +3547,50 @@ class ProductBundleTests(TestCase):
         self.assertEqual(product.product_type, self.second_product_type)
         self.assertEqual(list(product.tags.all()), [self.second_tag])
         self.assertEqual(choice.size, self.large_size)
-        self.assertEqual(choice.quantity, 5)
+        self.assertEqual(choice.quantity, 1)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_bundle_save_does_not_overwrite_a_service_quantity_change(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Stocked trousers",
+            description="Stocked description.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=self.size,
+            color=self.color,
+            quantity=2,
+        )
+        row = self.active_choice_row(
+            id=str(choice.pk),
+            size=str(self.large_size.pk),
+            quantity="99",
+        )
+        bundle = ProductBundle(
+            business=self.business,
+            instance=product,
+            data=self.bundle_data([row], initial_forms=1),
+        )
+        self.assertTrue(bundle.is_valid())
+
+        result = apply_choice_quantity_delta(
+            business=self.business,
+            choice=choice,
+            actor=self.owner,
+            delta=1,
+        )
+        bundle.save()
+
+        choice.refresh_from_db()
+        self.assertEqual(choice.size, self.large_size)
+        self.assertEqual(choice.quantity, 3)
+        self.assertEqual(
+            list(InventoryAdjustment.objects.all()),
+            [result.adjustment],
+        )
 
     def test_valid_update_can_remove_type_and_all_tags(self):
         product = Product.objects.create(
@@ -3678,7 +3763,7 @@ class ProductBundleTests(TestCase):
         self.assertEqual(product.name, "Active trousers")
         self.assertTrue(ProductChoice.objects.filter(pk=choice.pk).exists())
 
-    def test_draft_product_can_delete_all_choices(self):
+    def test_draft_product_cannot_delete_saved_choices(self):
         product = Product.objects.create(
             business=self.business,
             name="Draft trousers",
@@ -3707,10 +3792,33 @@ class ProductBundleTests(TestCase):
             ),
         )
 
-        self.assertTrue(bundle.is_valid())
-        bundle.save()
+        self.assertFalse(bundle.is_valid())
+        self.assertIn(
+            "Saved choices cannot be removed. Deactivate the choice instead.",
+            bundle.choice_formset.forms[0].errors["DELETE"],
+        )
+        with self.assertRaisesMessage(
+            ValueError,
+            "Cannot save an invalid Product bundle.",
+        ):
+            bundle.save()
 
-        self.assertFalse(ProductChoice.objects.filter(pk=choice.pk).exists())
+        self.assertTrue(ProductChoice.objects.filter(pk=choice.pk).exists())
+
+    def test_draft_product_can_discard_an_unsaved_choice(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data(
+                [self.active_choice_row(quantity="50", DELETE="on")],
+                lifecycle=Product.Lifecycle.DRAFT,
+            ),
+        )
+
+        self.assertTrue(bundle.is_valid(), bundle.choice_formset.errors)
+        product = bundle.save()
+
+        self.assertFalse(product.choices.exists())
+        self.assertFalse(InventoryAdjustment.objects.exists())
 
 
 class ProductListViewTests(TestCase):
@@ -4435,6 +4543,10 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, '<input type="text" name="choices-0-size"')
         self.assertNotContains(response, '<input type="text" name="choices-0-color"')
         self.assertContains(response, 'name="choices-0-quantity"')
+        self.assertContains(response, 'name="choices-0-quantity" value="0"')
+        self.assertContains(response, 'min="0" disabled')
+        self.assertContains(response, "New choices start with 0 stock")
+        self.assertContains(response, "Discard new choice")
         self.assertContains(response, 'name="choices-0-is_active"')
         self.assertContains(response, 'hx-post="."')
         self.assertContains(response, 'hx-trigger="input changed delay:600ms"')
@@ -4859,7 +4971,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         transferred_form = response.context["choice_formset"].forms[0]
         self.assertEqual(transferred_form["size"].value(), str(self.size.pk))
         self.assertEqual(transferred_form["color"].value(), str(self.color.pk))
-        self.assertEqual(transferred_form["quantity"].value(), "7")
+        self.assertEqual(transferred_form["quantity"].value(), 0)
         self.assertEqual(
             response.context["choice_transfer_feedback"],
             'Size "M" added to Choice 1. Review the row before saving.',
@@ -4976,7 +5088,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         formset = response.context["choice_formset"]
         self.assertEqual(formset.total_form_count(), 2)
         self.assertEqual(formset.forms[0]["size"].value(), str(self.size.pk))
-        self.assertEqual(formset.forms[0]["quantity"].value(), "5")
+        self.assertEqual(formset.forms[0]["quantity"].value(), 0)
         self.assertEqual(formset.forms[1]["size"].value(), str(self.size.pk))
         self.assertEqual(formset.forms[1]["color"].value(), "")
         self.assertEqual(Product.objects.count(), 0)
@@ -5243,7 +5355,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(choice.product, product)
         self.assertEqual(choice.size, self.size)
         self.assertEqual(choice.color, self.color)
-        self.assertEqual(choice.quantity, 2)
+        self.assertEqual(choice.quantity, 0)
 
     def test_product_create_active_requires_an_active_choice(self):
         self.client.force_login(self.owner)
@@ -5734,7 +5846,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(transferred_form["id"].value(), str(choice.pk))
         self.assertEqual(transferred_form["size"].value(), str(self.size.pk))
         self.assertEqual(transferred_form["color"].value(), str(self.navy.pk))
-        self.assertEqual(transferred_form["quantity"].value(), "9")
+        self.assertEqual(transferred_form["quantity"].value(), 2)
         self.assertEqual(
             response.context["return_url"],
             f"{self.list_url}?from=transfer",
@@ -5771,7 +5883,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         choice = self.product.choices.get()
         self.assertEqual(choice.business, self.business)
         self.assertEqual(choice.size, self.large_size)
-        self.assertEqual(choice.quantity, 5)
+        self.assertEqual(choice.quantity, 0)
 
     def test_product_edit_updates_and_deactivates_existing_choice(self):
         choice = ProductChoice.objects.create(
@@ -5805,7 +5917,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(choice.product, self.product)
         self.assertEqual(choice.size, self.extra_large_size)
         self.assertEqual(choice.color, self.navy)
-        self.assertEqual(choice.quantity, 7)
+        self.assertEqual(choice.quantity, 2)
         self.assertFalse(choice.is_active)
 
     def test_product_edit_active_cannot_remove_last_active_choice(self):
@@ -5842,7 +5954,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(self.product.name, "Black trousers")
         self.assertTrue(ProductChoice.objects.filter(pk=choice.pk).exists())
 
-    def test_product_edit_draft_can_remove_all_choices(self):
+    def test_product_edit_draft_rejects_saved_choice_removal(self):
         choice = ProductChoice.objects.create(
             business=self.business,
             product=self.product,
@@ -5865,8 +5977,12 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
             ),
         )
 
-        self.assertRedirects(response, self.list_url)
-        self.assertFalse(ProductChoice.objects.filter(pk=choice.pk).exists())
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Saved choices cannot be removed. Deactivate the choice instead.",
+        )
+        self.assertTrue(ProductChoice.objects.filter(pk=choice.pk).exists())
 
     def test_product_edit_rejects_another_business_choice_id(self):
         owned_choice = ProductChoice.objects.create(

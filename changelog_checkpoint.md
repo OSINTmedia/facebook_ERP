@@ -20,7 +20,8 @@
 - P5.1 Pure Product Availability Service Baseline: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.2 Business-Scoped Inventory Adjustment Ledger Baseline: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.3 Atomic Inventory Increment/Decrement Service: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
-- Gate 3: not passed; stock routes/UI, Product-bundle integration, and the remaining Phase 5 acceptance work remain later Phase 5 work.
+- P5.4 ProductBundle Stock Boundary Enforcement: locally implemented, audited, and ready for the release/owner-test gate; exact delivery metadata remains in Git/GitHub.
+- Gate 3: not passed; stock routes/UI and the remaining Phase 5 acceptance work remain later Phase 5 work.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
@@ -43,25 +44,35 @@ P5.2 establishes the inventory adjustment fact boundary:
 - creating an adjustment record does not change ProductChoice quantity;
 - no mutation/concurrency service, Product-bundle integration, direct set, reason code, route, HTMX/UI, total, or availability change was added.
 
+P5.4 establishes the ProductBundle stock boundary:
+
+- new ProductChoice rows always start at quantity zero and create no inventory adjustment;
+- existing choice quantities are preserved even when stale or forged form values are submitted;
+- persisted choices cannot be deleted through ProductBundle, while deactivation remains available;
+- unsaved extra rows can be discarded, and the quantity field is visibly read-only;
+- ProductBundle owns choice identity, activation, and Business/Product validation, while stock mutation remains centralized in the inventory service.
+
 ## Verification and Audit
 
 - Django system and migration dry-run checks passed; the initial inventory migration was exercised on the PostgreSQL test database while the local development database remained unchanged.
 - The focused inventory availability/ledger/mutation suite passed: 24 tests.
-- The directly related Product choice and bundle regression suite passed: 36 tests.
-- The migration-order reproducer passed: 2 tests; the PostgreSQL-backed full regression suite passed: 302 tests.
+- The directly related Product choice and bundle regression suite passed: 84 tests.
+- Previous P5.3 release evidence included a 2-test migration-order reproducer and a 302-test PostgreSQL-backed full regression suite.
+- P5.4 full local verification passed: Django system check, migration dry-run, focused 84-test suite, inventory 24-test suite, and full PostgreSQL-backed regression suite (305 tests).
 - Source and documentation diff checks passed.
 - Integrity audit passed for Business isolation, exact-choice identity, actor ownership, append-only behavior, numeric/database integrity, choice-level stock truth, no-write behavior, hosted compatibility, and approved scope.
-- Owner/browser testing is not required for this backend-only slice.
+- Owner/browser testing is required for this visible choice-form boundary and is pending the owner report.
 
 ## Current Gate and Next Work
 
-- Current gate: Phase 5 functional continuation; Gate 3 remains open because ProductBundle integration, stock route/HTMX behavior, and transition/regression readiness are not complete.
-- Next functional slice: P5.4 ProductBundle Quantity Mutation Integration; after P5.7, run the Phase 5 audit and Gate 3 transition workflow.
+- Current gate: Phase 5 functional continuation; P5.4 is audited and awaiting owner/browser confirmation, release, and exact-SHA CI; Gate 3 remains open because stock route/HTMX behavior and transition/regression readiness are not complete.
+- Next functional slice: P5.5 Authenticated Stock Mutation Route after P5.4 release closure; after P5.7, run the Phase 5 audit and Gate 3 transition workflow.
 
 ## Active Blockers and Decisions
 
 - P5.2 and P5.3 have no technical or owner-acceptance blocker.
-- Existing Product-bundle quantity writes are not integrated with P5.3; this remains later Phase 5 work, not a P5.3 defect.
+- P5.4 has no technical blocker; the required owner/browser test and Prompt 5 release/CI gate remain open.
+- ProductBundle no longer accepts quantity writes as part of product editing; stock mutation remains a later authenticated route concern over the P5.3 service.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
 - UX note: the current Product create/edit surface is functionally accepted but not yet the desired smart assistant-style operational experience; treat this as later UX work, not a Phase 4 semantic-recognition blocker.
 - Unrelated later-phase owner decisions remain where recorded in controlling documents.
@@ -70,7 +81,14 @@ P5.2 establishes the inventory adjustment fact boundary:
 
 - `BUILD_PLAN.md`
 - `changelog_checkpoint.md`
-- Proposed commit: `docs: plan remaining phase 5 slices`
+- `DEVELOPMENT_NOTES.md`
+- `APP_EXPERIENCE_PLAN.md`
+- `README.md`
+- `catalog/forms.py`
+- `catalog/product_bundles.py`
+- `catalog/tests.py`
+- `templates/catalog/_choice_section.html`
+- Proposed commit: `feat: enforce product bundle stock boundary`
 
 ## Handoff Guardrails
 

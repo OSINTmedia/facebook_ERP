@@ -157,8 +157,15 @@
           </div>
 
           <div class="form-field">
-            <label for="{{ choice_form.quantity.id_for_label }}">Quantity</label>
+            <label for="{{ choice_form.quantity.id_for_label }}">Stock quantity</label>
             {{ choice_form.quantity }}
+            <p class="field-help">
+              {% if choice_form.instance.pk %}
+                Stock is managed separately from product details.
+              {% else %}
+                New choices start with 0 stock. Stock is managed separately.
+              {% endif %}
+            </p>
             {% if show_form_errors %}
               {% for error in choice_form.quantity.errors %}
                 <p class="field-error">{{ error }}</p>
@@ -178,16 +185,16 @@
             {% endfor %}
           {% endif %}
 
-          {% if choice_form.instance.pk %}
+          {% if not choice_form.instance.pk %}
             <div class="choice-option choice-option--remove">
               {{ choice_form.DELETE }}
-              <label for="{{ choice_form.DELETE.id_for_label }}">Remove choice</label>
+              <label for="{{ choice_form.DELETE.id_for_label }}">Discard new choice</label>
             </div>
-            {% if show_form_errors %}
-              {% for error in choice_form.DELETE.errors %}
-                <p class="field-error">{{ error }}</p>
-              {% endfor %}
-            {% endif %}
+          {% endif %}
+          {% if show_form_errors %}
+            {% for error in choice_form.DELETE.errors %}
+              <p class="field-error" role="alert">{{ error }}</p>
+            {% endfor %}
           {% endif %}
         </div>
       </fieldset>
