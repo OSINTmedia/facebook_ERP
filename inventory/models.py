@@ -7,6 +7,34 @@ from catalog.models import ProductChoice
 
 
 class InventoryAdjustmentQuerySet(models.QuerySet):
+    def bulk_create(
+        self,
+        objs,
+        batch_size=None,
+        ignore_conflicts=False,
+        update_conflicts=False,
+        update_fields=None,
+        unique_fields=None,
+    ):
+        if (
+            ignore_conflicts
+            or update_conflicts
+            or update_fields
+            or unique_fields
+        ):
+            raise ValidationError(
+                "Inventory adjustment conflict handling is not allowed."
+            )
+
+        adjustments = list(objs)
+        for adjustment in adjustments:
+            adjustment._validate_business_scope()
+
+        return super().bulk_create(
+            adjustments,
+            batch_size=batch_size,
+        )
+
     def update(self, **kwargs):
         raise ValidationError("Inventory adjustments cannot be changed.")
 

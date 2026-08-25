@@ -8,7 +8,7 @@
 - Rebuild workspace: `/home/giga/Desktop/OSINT/GITHUB_MVP_ERP/`
 - Source prototype: read-only evidence at `/home/giga/Desktop/OSINT/facebook_MVP/`
 - Authority rule: exact branch, hash, remote, and CI metadata live in Git/GitHub, not this file
-- Last updated: 2026-08-24
+- Last updated: 2026-08-25
 
 ## Current State
 
@@ -25,35 +25,34 @@
 - P5.6 HTMX Stock Response and Controls: released, owner/browser-tested, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.6A One-Save Initial Stock Capture: released, owner/browser-tested, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.7 Inventory Transition and Regression Readiness: released, integrity-audited, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
-- Gate 3: not passed; Phase 5 Audit and Transition is now the next governance gate.
+- P5.8 Inventory Boundary Hardening: locally accepted and release-ready; commit, push, exact-SHA CI, and the Phase 5/Gate 3 post-CI transition remain pending.
+- Gate 3: not passed; P5.8 release and exact-SHA CI are the remaining operational gate before the Phase 5 transition.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
 
-P5.6A removes the save-before-stock implementation gap while retaining one stock-write boundary:
+P5.8 closes the two integrity gaps found by the Phase 5 code-first audit without adding inventory policy or UI behavior:
 
-- an unsaved choice exposes non-negative Starting stock during the normal Product create/edit submission, while persisted quantities remain read-only and continue to use P5.6 `-1`/`+1` controls;
-- ProductBundle validates first, persists each new choice at zero, and passes a positive start plus server-derived Business and actor to the centralized inventory mutation boundary inside the same outer transaction;
-- initialization re-locks the exact Business-scoped choice, requires zero quantity and no adjustment history, and records one immutable `0 -> N` fact; zero creates no fact because no transition occurred;
-- invalid input and no-write helper interactions preserve seller input, and any later ProductBundle persistence failure rolls back Product, choice, quantity, tags, materials, and adjustment facts together.
+- ledger bulk creation validates the complete batch's Business/choice/actor scope before any insert, while conflict-ignore and conflict-update modes are rejected so facts cannot be hidden or rewritten;
+- one-time initialization and ongoing `+1` mutation validate the configured database quantity range before writing;
+- storage overflow now returns the existing controlled `ValidationError` path, preserving current server quantity and creating no adjustment fact.
 
 ## Verification and Audit
 
-- Django system and migration dry-run checks passed with no schema changes.
-- The focused P5.6A service/form/ProductBundle/create-edit/concurrency suite passed: 104 tests; the integrated P5.7 transition regression passed: 1 test; the complete inventory suite passed: 46 tests.
-- The focused Phase 5 regression passed: 113 tests; the PostgreSQL-backed full regression suite passed: 336 tests.
+- The P5.8 inventory suite passed: 52 tests; the PostgreSQL-backed full regression suite passed: 342 tests.
 - Source and documentation diff checks passed.
-- Integrity audit passed for Business-scoped vocabulary and choice identity, authenticated actor ownership, row locking, one-time initialization preconditions, immutable adjustment truth, full ProductBundle rollback, lifecycle/availability separation, P5.6 control preservation, no-write helper behavior, hosted compatibility, and approved scope.
-- Required P5.6A owner/browser testing passed: one-save positive/zero/invalid starting stock, persisted controls, refresh persistence, and `-1`/`+1` behavior.
+- Django system, migration dry-run, and unapplied-migration checks passed with no schema change.
+- Integrity audit passed for batch-level Business isolation, ledger conflict-mode immutability, configured quantity-range enforcement, rollback/no-write behavior, HTMX error recovery, existing stock/lifecycle/availability boundaries, hosted compatibility, and approved scope.
+- P5.8 is backend hardening with no new owner/browser interaction; the previously accepted P5.6A/P5.7 workflow remains unchanged.
 
 ## Current Gate and Next Work
 
-- Current gate: P5.7 is closed after exact-SHA CI; proceed to the Phase 5 Audit and Transition governance gate. Gate 3 is ready for that audit, not passed.
-- Next functional slice: none authorized by this closure; next action is the Phase 5 Audit and Transition gate.
+- Current gate: release the locally accepted P5.8 set through Prompt 5 and require successful exact-SHA CI; Gate 3 remains not passed before that evidence.
+- Next functional slice: none before release; after successful P5.8 CI, Prompt 5 must complete the Phase 5/Gate 3 governance transition, then routine planning may begin for Phase 6.
 
 ## Active Blockers and Decisions
 
-- P5.6A has no known technical or owner-acceptance blocker; its one-save starting-stock behavior is released and verified.
+- P5.8 has no known local technical blocker; release, exact-SHA CI, and the allowed post-CI Phase 5/Gate 3 transition remain pending.
 - Existing choices retain read-only quantity plus P5.6 controls; one-time initialization is not approval for ongoing direct set or arbitrary subsequent deltas.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
 - UX note: the current Product create/edit surface is functionally accepted but not yet the desired smart assistant-style operational experience; treat this as later UX work, not a Phase 4 semantic-recognition blocker.
@@ -61,7 +60,12 @@ P5.6A removes the save-before-stock implementation gap while retaining one stock
 
 ## Current Audited Release Set
 
-- None; P5.7 is closed. Exact branch, hash, remote, and CI metadata remain in Git/GitHub.
+- `inventory/models.py`
+- `inventory/mutations.py`
+- `inventory/tests.py`
+- `BUILD_PLAN.md`
+- `DEVELOPMENT_NOTES.md`
+- `changelog_checkpoint.md`
 
 ## Handoff Guardrails
 

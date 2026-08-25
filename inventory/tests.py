@@ -26,6 +26,14 @@ from inventory.mutations import (
 )
 
 
+def maximum_choice_quantity():
+    quantity_field = ProductChoice._meta.get_field("quantity")
+    _, maximum = connection.ops.integer_field_range(
+        quantity_field.get_internal_type()
+    )
+    return maximum
+
+
 class ProductAvailabilityTests(TestCase):
     def setUp(self):
         user_model = get_user_model()
@@ -389,6 +397,102 @@ class InventoryAdjustmentTests(TestCase):
                     with transaction.atomic():
                         InventoryAdjustment.objects.bulk_create([invalid_adjustment])
 
+    def test_bulk_create_validates_all_business_scopes_before_writing(self):
+        invalid_adjustments = (
+            (
+                InventoryAdjustment(
+                    business=self.business,
+                    choice=self.other_choice,
+                    actor=self.owner,
+                    quantity_before=8,
+                    quantity_after=7,
+                    delta=-1,
+                ),
+                "Choice must belong to the active Business.",
+            ),
+            (
+                InventoryAdjustment(
+                    business=self.business,
+                    choice=self.choice,
+                    actor=self.other_owner,
+                    quantity_before=3,
+                    quantity_after=4,
+                    delta=1,
+                ),
+                "Actor must own the active Business.",
+            ),
+        )
+
+        for invalid_adjustment, message in invalid_adjustments:
+            with self.subTest(message=message):
+                valid_adjustment = InventoryAdjustment(
+                    business=self.business,
+                    choice=self.choice,
+                    actor=self.owner,
+                    quantity_before=3,
+                    quantity_after=2,
+                    delta=-1,
+                )
+                with self.assertRaisesMessage(ValidationError, message):
+                    InventoryAdjustment.objects.bulk_create(
+                        [valid_adjustment, invalid_adjustment]
+                    )
+                self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_bulk_create_preserves_valid_owned_transition_facts(self):
+        adjustment = InventoryAdjustment(
+            business=self.business,
+            choice=self.choice,
+            actor=self.owner,
+            quantity_before=3,
+            quantity_after=2,
+            delta=-1,
+        )
+
+        created_adjustments = InventoryAdjustment.objects.bulk_create(
+            [adjustment]
+        )
+
+        self.assertEqual(created_adjustments, [adjustment])
+        self.assertIsNotNone(adjustment.pk)
+        self.assertEqual(InventoryAdjustment.objects.get(), adjustment)
+
+    def test_bulk_create_rejects_conflict_modes_that_could_hide_or_change_facts(self):
+        adjustment = self.create_adjustment()
+        replacement = InventoryAdjustment(
+            pk=adjustment.pk,
+            business=self.business,
+            choice=self.choice,
+            actor=self.owner,
+            quantity_before=3,
+            quantity_after=4,
+            delta=1,
+        )
+
+        conflict_options = (
+            {"ignore_conflicts": True},
+            {
+                "update_conflicts": True,
+                "update_fields": ["quantity_after", "delta"],
+                "unique_fields": ["pk"],
+            },
+        )
+        for options in conflict_options:
+            with self.subTest(options=options):
+                with self.assertRaisesMessage(
+                    ValidationError,
+                    "Inventory adjustment conflict handling is not allowed.",
+                ):
+                    InventoryAdjustment.objects.bulk_create(
+                        [replacement],
+                        **options,
+                    )
+
+        adjustment.refresh_from_db()
+        self.assertEqual(adjustment.quantity_after, 2)
+        self.assertEqual(adjustment.delta, -1)
+        self.assertEqual(InventoryAdjustment.objects.count(), 1)
+
     def test_adjustment_cannot_be_changed_or_deleted_through_model_api(self):
         adjustment = self.create_adjustment()
         adjustment.quantity_after = 1
@@ -539,6 +643,19 @@ class InventoryMutationTests(TestCase):
         self.assertEqual(self.choice.quantity, 0)
         self.assertFalse(InventoryAdjustment.objects.exists())
 
+    def test_initial_quantity_rejects_storage_overflow_without_writes(self):
+        maximum = maximum_choice_quantity()
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            f"Choice quantity cannot exceed {maximum}.",
+        ):
+            self.initialize_quantity(maximum + 1)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
     def test_initial_quantity_rejects_unsaved_choice_without_writes(self):
         unsaved_choice = ProductChoice(
             business=self.business,
@@ -636,6 +753,21 @@ class InventoryMutationTests(TestCase):
         self.assertEqual(result.adjustment.quantity_before, 0)
         self.assertEqual(result.adjustment.quantity_after, 1)
         self.assertEqual(result.adjustment.delta, 1)
+
+    def test_increment_rejects_storage_overflow_without_writes(self):
+        maximum = maximum_choice_quantity()
+        self.choice.quantity = maximum
+        self.choice.save(update_fields=["quantity", "updated_at"])
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            f"Choice quantity cannot exceed {maximum}.",
+        ):
+            self.apply_delta(1)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, maximum)
+        self.assertFalse(InventoryAdjustment.objects.exists())
 
     def test_decrement_records_adjustment_and_returns_sold_out_transition(self):
         self.choice.quantity = 1
@@ -928,6 +1060,33 @@ class InventoryMutationRouteTests(TestCase):
         self.assertContains(response, 'value="1"')
         self.choice.refresh_from_db()
         self.assertEqual(self.choice.quantity, 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_htmx_increment_at_storage_limit_returns_error_without_write(self):
+        maximum = maximum_choice_quantity()
+        self.choice.quantity = maximum
+        self.choice.save(update_fields=["quantity", "updated_at"])
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {"delta": "1", "next": self.return_url},
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            "inventory/_choice_stock_controls.html",
+        )
+        self.assertContains(response, f">{maximum}</output>")
+        self.assertContains(
+            response,
+            f"Choice quantity cannot exceed {maximum}.",
+        )
+        self.assertContains(response, 'role="alert"')
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, maximum)
         self.assertFalse(InventoryAdjustment.objects.exists())
 
     def test_htmx_invalid_delta_returns_current_controls_without_write(self):

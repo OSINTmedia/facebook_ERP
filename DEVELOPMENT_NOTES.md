@@ -392,6 +392,14 @@ Allow a seller to enter non-negative starting stock for an unsaved choice in the
 Reason:
 This removes the owner-observed save-then-adjust burden without inventing stock identity for an unsaved row or writing quantity outside the ledger. Replaying `+1` N times would misrepresent one seller action and scale poorly, while directly assigning N would lose the adjustment fact. A narrowly guarded, creation-only initialization preserves one-save UX, Business/actor ownership, rollback safety, and an exact audit trail without approving general direct set.
 
+### 2026-08-25 - Inventory batch and numeric edges remain inside the integrity boundary
+
+Decision:
+Validate every InventoryAdjustment bulk-create object's Business/choice/actor scope before inserting any row, and reject conflict-ignore or conflict-update modes because an immutable audit fact must not be silently omitted or rewritten. Validate initialization and delta results against the configured ProductChoice quantity storage range before stock or ledger writes.
+
+Reason:
+Django bulk creation bypasses model `save()` validation, while conflict-update can bypass ordinary queryset update guards. PostgreSQL protects adjustment arithmetic but cannot express ownership equality across the related Business, choice, and actor rows with the existing schema. Likewise, relying on a database overflow would preserve transaction rollback but expose a server error instead of the established controlled stock-recovery path. These guards keep tenant scope, append-only history, and authoritative HTMX feedback intact without adding stock policy, schema, or UI behavior.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:

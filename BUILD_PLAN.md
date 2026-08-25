@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 through P5.7 are released, owner-reviewed where required, and exact-SHA CI-passed. Phase 5 Audit and Transition is the next governance gate; Gate 3 is ready for that audit and is not passed. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
+- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 through P5.7 are released, owner-reviewed where required, and exact-SHA CI-passed; the audit-required P5.8 Inventory Boundary Hardening is locally accepted and awaits release/exact-SHA CI. Gate 3 is not passed before that evidence and the allowed post-CI Phase 5 transition. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -752,8 +752,8 @@ Avoid libraries that depend on:
 - Objective: centralize quantity mutations and availability computation.
 - Dependency: Phase 4.
 - Scope boundary: inventory service, adjustment ledger, +1/-1 and owner-approved direct set, computed availability, concurrency strategy.
-- Current implementation state: `IN_PROGRESS`; P5.1 through P5.7 are released and exact-SHA CI-passed. The integrated transition/regression evidence is complete; Phase 5 Audit and Transition remains the next governance gate before Gate 3 can be passed.
-- Expected micro-slices: P5.1 availability baseline, P5.2 adjustment-ledger baseline, P5.3 atomic mutation service, P5.4 ProductBundle stock boundary, P5.5 stock route, P5.6 HTMX stock response/controls, P5.6A one-save initial-stock capture, and P5.7 transition/regression readiness before the Phase 5 audit and Gate 3 closure.
+- Current implementation state: `IN_PROGRESS`; P5.1 through P5.7 are released and exact-SHA CI-passed. The Phase 5 audit found two boundary gaps; P5.8 repairs them and is locally accepted, with release/exact-SHA CI and the post-CI Phase 5/Gate 3 transition pending.
+- Expected micro-slices: P5.1 availability baseline, P5.2 adjustment-ledger baseline, P5.3 atomic mutation service, P5.4 ProductBundle stock boundary, P5.5 stock route, P5.6 HTMX stock response/controls, P5.6A one-save initial-stock capture, P5.7 transition/regression readiness, and audit-required P5.8 inventory boundary hardening before the Phase 5/Gate 3 closure.
 - Stop gate: all stock changes go through one service and create a complete audit trail.
 
 #### P5.1 Pure Product Availability Service Baseline
@@ -872,6 +872,20 @@ Avoid libraries that depend on:
 - Manual owner verification: advisory — create with starting stock `2`, decrement to `0`, increment to `1`, and refresh to confirm persisted server truth.
 - Post-CI governance closure: completed in the allowed governance docs after successful P5.7 exact-SHA CI; no new functional slice was created.
 - Status: `CLOSED` after release, remote alignment, exact-SHA CI success, and governance closure; no production source changes.
+
+#### P5.8 Inventory Boundary Hardening
+
+- Objective: close the ORM batch-isolation and quantity-overflow gaps found by the Phase 5 code-first audit before Gate 3 transition.
+- Dependency: P5.7 `CLOSED` and owner approval of the audit recovery plan.
+- Scope boundary: validate every pending InventoryAdjustment bulk-create row against Business/choice/actor ownership before any insert; reject bulk conflict modes that could hide or rewrite immutable facts; validate one-time initialization and `+1` results against the configured ProductChoice quantity storage range before any stock or ledger write; preserve the existing route/HTMX `ValidationError` recovery path.
+- Explicit exclusions: direct stock set, arbitrary subsequent deltas, reason codes, new stock routes or UI, workspace behavior, schema/migrations, dependencies, orders, reservations, and lifecycle/availability policy changes.
+- Source whitelist: `inventory/models.py`, `inventory/mutations.py`, and `inventory/tests.py`; governance docs are synchronized after local acceptance.
+- Acceptance: a mixed valid/cross-Business or wrong-actor bulk batch creates no facts; conflict-ignore/update modes cannot suppress or mutate ledger history; initialization above the storage range and `+1` at the maximum return controlled validation errors with unchanged quantity and no fact; HTMX returns authoritative current controls instead of a server error; existing arithmetic constraints, atomicity, concurrency, Business isolation, lifecycle separation, and computed availability remain green.
+- Automated verification: complete inventory suite 52/52; full PostgreSQL suite 342/342; Django system check, migration dry-run, unapplied-migration check, and diff checks pass with no schema change.
+- Manual owner verification: not required; this backend hardening adds no interaction and preserves the owner-accepted P5.6A/P5.7 workflow.
+- Post-CI governance closure: required — after successful P5.8 exact-SHA CI, Prompt 5 may update only `changelog_checkpoint.md`, `BUILD_PLAN.md`, and `README.md` to mark Phase 5 and Gate 3 `PASSED` and make Phase 6 planning next.
+- Proposed commit message: `fix: harden inventory integrity boundaries`.
+- Status: locally accepted and ready for Prompt 5; release, exact-SHA CI, and post-CI Phase 5/Gate 3 transition remain pending.
 
 ### Phase 6: Operational Product Workspace
 

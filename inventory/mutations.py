@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import connection, transaction
 
 from catalog.models import ProductChoice
 from inventory.availability import compute_product_availability
@@ -20,6 +20,16 @@ class ChoiceQuantityInitializationResult:
     choice: ProductChoice
     adjustment: InventoryAdjustment
     is_available: bool
+
+
+def _validate_storable_choice_quantity(quantity):
+    """Reject values outside the configured database field range."""
+    quantity_field = ProductChoice._meta.get_field("quantity")
+    _, maximum = connection.ops.integer_field_range(
+        quantity_field.get_internal_type()
+    )
+    if maximum is not None and quantity > maximum:
+        raise ValidationError(f"Choice quantity cannot exceed {maximum}.")
 
 
 def apply_choice_quantity_delta(*, business, choice, actor, delta):
@@ -53,6 +63,7 @@ def apply_choice_quantity_delta(*, business, choice, actor, delta):
         quantity_after = quantity_before + delta
         if quantity_after < 0:
             raise ValidationError("Choice quantity cannot be negative.")
+        _validate_storable_choice_quantity(quantity_after)
 
         locked_choice.quantity = quantity_after
         locked_choice.save(update_fields=["quantity", "updated_at"])
@@ -90,6 +101,7 @@ def initialize_choice_quantity(*, business, choice, actor, quantity):
         raise ValidationError("Choice must belong to the active Business.")
     if business.owner_id != actor.pk:
         raise ValidationError("Actor must own the active Business.")
+    _validate_storable_choice_quantity(quantity)
 
     with transaction.atomic():
         try:
