@@ -890,7 +890,7 @@ Avoid libraries that depend on:
 ### Phase 6: Operational Product Workspace
 
 - Refined objective: turn the existing authenticated Product list into the seller's mobile-first daily operational cockpit for finding one Product, understanding its lifecycle and computed availability, inspecting exact choice stock, making approved +1/-1 stock changes, and returning from correction work without losing Workspace context.
-- Dependency and current state: Phase 5 and Gate 3 are PASSED; the Product core, confirmed classification/material/choice truth, one-save initial stock, centralized subsequent stock mutation, immutable adjustment history, and computed availability are released. Phase 6 is NOT_STARTED.
+- Dependency and current state: Phase 5 and Gate 3 are PASSED; the Product core, confirmed classification/material/choice truth, one-save initial stock, centralized subsequent stock mutation, immutable adjustment history, and computed availability are released. Phase 6 is IN_PROGRESS; P6.1 is locally accepted and awaiting Prompt 5 release and exact-SHA CI.
 - Scope boundary: authenticated Business-scoped server-rendered Product listing, compact operational cards, exact-choice stock controls, deterministic search, owner-approved bounded filters, canonical URL/query state, explicit edit return paths, HTMX server-truth refresh, Phase 6 empty/loading/error/recovery states, mobile-first behavior, accessibility baseline, and a Phase 6-specific UX/regression gate.
 - Source-of-truth boundary: Product lifecycle remains stored and separate from computed availability; ProductChoice remains the quantity owner; duplicate same-size/color choices remain distinct identities; all subsequent quantity writes continue through the released Phase 5 inventory route and mutation service; no client state may own quantity, availability, lifecycle, Business scope, or confirmed facts.
 - Cross-phase firewall: no Dashboard or attention queue, readiness, buyer-question coverage, ready reply, Product Detail dependency, clone, archive/restore, direct stock set, arbitrary quantity mutation, reason codes, bulk stock editing, Product relations, measurements, fit guidance, media expansion, analytics, public buyer behavior, chatbot, LLM interpretation, orders, reservations, payments, or delivery.
@@ -926,7 +926,7 @@ Avoid libraries that depend on:
 - Proposed commit message: feat: establish product workspace query baseline
 - Rollback/recovery note: revert the query helper and Workspace template/result split together; no schema, migration, dependency, or persisted data rollback is required.
 - Stop gate relation: opens the Phase 6 delivery sequence but does not satisfy the Product card, stock, retrieval, HTMX, accessibility, or owner UX stop conditions.
-- Status: NOT_STARTED.
+- Status: AUDITED_READY; Prompt 5 release and exact-SHA CI are pending.
 
 #### P6.2 Compact Product Card and Availability Baseline
 

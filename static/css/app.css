@@ -200,6 +200,12 @@ h1 {
   margin: 0;
 }
 
+.product-workspace-results {
+  display: grid;
+  min-width: 0;
+  gap: 1.25rem;
+}
+
 .product-summary {
   display: flex;
   gap: 1rem;
@@ -212,15 +218,21 @@ h1 {
   box-shadow: var(--shadow-subtle);
 }
 
+.product-summary > :first-child {
+  min-width: 0;
+}
+
 .product-summary h2 {
   margin: 0 0 0.35rem;
   font-size: 1rem;
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 
 .product-summary p {
   margin: 0;
   color: var(--color-muted);
+  overflow-wrap: anywhere;
 }
 
 .product-summary__actions {
@@ -245,6 +257,9 @@ h1 {
 
 .page-actions {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
   justify-content: flex-start;
 }
 

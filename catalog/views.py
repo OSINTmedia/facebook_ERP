@@ -29,6 +29,7 @@ from catalog.vocabulary import (
     create_choice_vocabulary_entry,
     update_choice_vocabulary_entry,
 )
+from catalog.workspace import ProductWorkspaceState, product_workspace_products
 
 
 RECOGNITION_PREVIEW_INTENT = "preview_recognition"
@@ -92,6 +93,7 @@ class ProductListView(LoginRequiredMixin, TemplateView):
     template_name = "catalog/product_list.html"
 
     def get(self, request, *args, **kwargs):
+        self.workspace_state = ProductWorkspaceState.from_query_params(request.GET)
         self.business_policy_blocked = False
         self.active_business = None
 
@@ -109,7 +111,7 @@ class ProductListView(LoginRequiredMixin, TemplateView):
         products = Product.objects.none()
 
         if self.active_business is not None:
-            products = Product.objects.filter(business=self.active_business)
+            products = product_workspace_products(business=self.active_business)
 
         context.update(
             {
@@ -117,6 +119,7 @@ class ProductListView(LoginRequiredMixin, TemplateView):
                 "business_policy_blocked": self.business_policy_blocked,
                 "current_nav": "products",
                 "products": products,
+                "workspace_return_url": self.workspace_state.return_url,
             }
         )
         return context
