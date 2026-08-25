@@ -157,7 +157,7 @@ Successful commit, push, Git/remote alignment, and CI success are operational cl
 | Phase 2 | User and Business Ownership | Implement authentication and business ownership boundary | PASSED | Gate 2 | User/business tests, access-control tests |
 | Phase 3 | Catalog Core | Implement product core facts and lifecycle | PASSED | Gate 3 | Product model/forms/views/tests |
 | Phase 4 | Semantic Recognition and Choice Model | Implement description-first recognition for type/tag/material candidates plus stock-bearing choices | PASSED | Gate 3 | Recognition contract, alias tests, choice validation |
-| Phase 5 | Inventory and Computed Availability | Centralize stock mutations and computed availability | IN_PROGRESS | Gate 3 | Inventory service tests and ledger tests |
+| Phase 5 | Inventory and Computed Availability | Centralize stock mutations and computed availability | PASSED | Gate 3 | Inventory service tests and ledger tests |
 | Phase 6 | Operational Product Workspace | Build seller product workspace with compact product cards | NOT_STARTED | Gate 4 | Workspace UI, HTMX stock checks, UX audit notes |
 | Phase 7 | Dashboard and Attention Signals | Build daily attention surface from shared domain truth | NOT_STARTED | Gate 4 | Dashboard signal tests and manual workflow proof |
 | Phase 8 | Deterministic Buyer Replies | Generate seller-side ready replies from verified facts | NOT_STARTED | Gate 4 | Reply service tests and copy workflow |
@@ -450,7 +450,7 @@ Avoid libraries that depend on:
 - Dependency: Gate 1.
 - Scope boundary: User, Business, login/logout, active business policy, access tests.
 - Expected micro-slices: auth model, business model, login flow, owner-scoped query helper, cross-business access tests.
-- Current dependency state: Gate 1 and Gate 2 are passed. P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are released and `PASSED`. Phase 3 and Phase 4 are `PASSED`; Gate 3 remains open pending Phase 5 inventory and computed-availability work.
+- Current dependency state: Gate 1, Gate 2, and Gate 3 are passed. P2.1 through P2.5 and the Environment-Gated Demo Seller Access Bootstrap are released and `PASSED`; Phase 3, Phase 4, and Phase 5 are `PASSED`.
 - Stop gate: every seller-owned object created later has a business boundary and test pattern.
 
 ### Phase 3: Catalog Core
@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 is `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. Phase 5 is `IN_PROGRESS`: P5.1 through P5.7 are released, owner-reviewed where required, and exact-SHA CI-passed; the audit-required P5.8 Inventory Boundary Hardening is locally accepted and awaits release/exact-SHA CI. Gate 3 is not passed before that evidence and the allowed post-CI Phase 5 transition. Availability has no UI consumer yet, and readiness and buyer replies do not exist; exact delivery metadata remains Git/GitHub authority.
+- Current implementation state: Phase 4 and Phase 5 are `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. P5.1 through P5.8 are released, owner-reviewed where required, integrity-audited, and exact-SHA CI-passed; Gate 3 is `PASSED`. Availability has no UI consumer yet, and readiness and buyer replies do not exist; Phase 6 Operational Product Workspace is next, and exact delivery metadata remains Git/GitHub authority.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -744,7 +744,7 @@ Avoid libraries that depend on:
 - Documentation updates: update `changelog_checkpoint.md` for Phase 4 closure only when closure criteria pass; no routine post-push documentation sync; no new `.1 Post-Push...` micro-slice.
 - Proposed commit message: `chore: audit phase 4 semantic recognition`.
 - Rollback/recovery note: if audit fails, record the real blocker and recovery requirement instead of marking Phase 4 passed.
-- Stop gate relation: closes Phase 4 only after all criteria pass; Gate 3 remains open until Phase 5 inventory and computed-availability criteria also pass.
+- Stop gate relation: Phase 4 closed after its criteria passed; Gate 3 passed only after the Phase 5 inventory and computed-availability criteria also passed.
 - Status: PASSED — the code-first scope/integrity audit, focused 240-test catalog/Phase 4 suite, full 278-test regression suite, Django checks, migration checks, local Git drift checks, release, and exact-SHA CI passed without source repair.
 
 ### Phase 5: Inventory and Computed Availability
@@ -752,7 +752,7 @@ Avoid libraries that depend on:
 - Objective: centralize quantity mutations and availability computation.
 - Dependency: Phase 4.
 - Scope boundary: inventory service, adjustment ledger, +1/-1 and owner-approved direct set, computed availability, concurrency strategy.
-- Current implementation state: `IN_PROGRESS`; P5.1 through P5.7 are released and exact-SHA CI-passed. The Phase 5 audit found two boundary gaps; P5.8 repairs them and is locally accepted, with release/exact-SHA CI and the post-CI Phase 5/Gate 3 transition pending.
+- Current implementation state: `PASSED`; P5.1 through P5.8 are released and exact-SHA CI-passed. P5.8 closed the two boundary gaps found by the code-first audit, and the Phase 5/Gate 3 transition is complete.
 - Expected micro-slices: P5.1 availability baseline, P5.2 adjustment-ledger baseline, P5.3 atomic mutation service, P5.4 ProductBundle stock boundary, P5.5 stock route, P5.6 HTMX stock response/controls, P5.6A one-save initial-stock capture, P5.7 transition/regression readiness, and audit-required P5.8 inventory boundary hardening before the Phase 5/Gate 3 closure.
 - Stop gate: all stock changes go through one service and create a complete audit trail.
 
@@ -883,14 +883,15 @@ Avoid libraries that depend on:
 - Acceptance: a mixed valid/cross-Business or wrong-actor bulk batch creates no facts; conflict-ignore/update modes cannot suppress or mutate ledger history; initialization above the storage range and `+1` at the maximum return controlled validation errors with unchanged quantity and no fact; HTMX returns authoritative current controls instead of a server error; existing arithmetic constraints, atomicity, concurrency, Business isolation, lifecycle separation, and computed availability remain green.
 - Automated verification: complete inventory suite 52/52; full PostgreSQL suite 342/342; Django system check, migration dry-run, unapplied-migration check, and diff checks pass with no schema change.
 - Manual owner verification: not required; this backend hardening adds no interaction and preserves the owner-accepted P5.6A/P5.7 workflow.
-- Post-CI governance closure: required — after successful P5.8 exact-SHA CI, Prompt 5 may update only `changelog_checkpoint.md`, `BUILD_PLAN.md`, and `README.md` to mark Phase 5 and Gate 3 `PASSED` and make Phase 6 planning next.
+- Post-CI governance closure: completed after successful P5.8 exact-SHA CI in the allowed governance documents; Phase 5 and Gate 3 are `PASSED`.
 - Proposed commit message: `fix: harden inventory integrity boundaries`.
-- Status: locally accepted and ready for Prompt 5; release, exact-SHA CI, and post-CI Phase 5/Gate 3 transition remain pending.
+- Status: `CLOSED` after release, remote alignment, exact-SHA CI success, and the Phase 5/Gate 3 governance transition.
 
 ### Phase 6: Operational Product Workspace
 
 - Objective: build the daily seller workspace for search, cards, and stock work.
 - Dependency: Phase 5.
+- Current implementation state: `NOT_STARTED`; Phase 5 and Gate 3 are `PASSED`, so Prompt 2 may select the first smallest coherent Phase 6 functional slice.
 - Scope boundary: compact product cards, filters approved for V1, inline stock controls, explicit return context.
 - Expected micro-slices: workspace route, card partial, HTMX card update, search/filter, UX density review.
 - Stop gate: product workspace passes UX review gate and critical HTMX regression tests.

@@ -16,7 +16,7 @@
 - Phase 2 User and Business Ownership: `PASSED`.
 - Phase 3 Catalog Core: `PASSED`.
 - Phase 4 Semantic Recognition and Choice Model: `PASSED`.
-- Phase 5 Inventory and Computed Availability: `IN_PROGRESS`.
+- Phase 5 Inventory and Computed Availability: `PASSED`.
 - P5.1 Pure Product Availability Service Baseline: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.2 Business-Scoped Inventory Adjustment Ledger Baseline: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.3 Atomic Inventory Increment/Decrement Service: released and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
@@ -25,8 +25,8 @@
 - P5.6 HTMX Stock Response and Controls: released, owner/browser-tested, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.6A One-Save Initial Stock Capture: released, owner/browser-tested, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
 - P5.7 Inventory Transition and Regression Readiness: released, integrity-audited, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
-- P5.8 Inventory Boundary Hardening: locally accepted and release-ready; commit, push, exact-SHA CI, and the Phase 5/Gate 3 post-CI transition remain pending.
-- Gate 3: not passed; P5.8 release and exact-SHA CI are the remaining operational gate before the Phase 5 transition.
+- P5.8 Inventory Boundary Hardening: released, integrity-audited, and exact-SHA CI-passed; delivery metadata remains in Git/GitHub.
+- Gate 3: `PASSED`; the Phase 5 audit and transition are complete.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
@@ -47,12 +47,12 @@ P5.8 closes the two integrity gaps found by the Phase 5 code-first audit without
 
 ## Current Gate and Next Work
 
-- Current gate: release the locally accepted P5.8 set through Prompt 5 and require successful exact-SHA CI; Gate 3 remains not passed before that evidence.
-- Next functional slice: none before release; after successful P5.8 CI, Prompt 5 must complete the Phase 5/Gate 3 governance transition, then routine planning may begin for Phase 6.
+- Current gate: Phase 5 and Gate 3 are closed after P5.8 release and successful exact-SHA CI.
+- Next functional slice: use Prompt 2 to select the first smallest coherent Phase 6 Operational Product Workspace slice.
 
 ## Active Blockers and Decisions
 
-- P5.8 has no known local technical blocker; release, exact-SHA CI, and the allowed post-CI Phase 5/Gate 3 transition remain pending.
+- P5.8 and the Phase 5/Gate 3 transition have no known technical or release blocker.
 - Existing choices retain read-only quantity plus P5.6 controls; one-time initialization is not approval for ongoing direct set or arbitrary subsequent deltas.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
 - UX note: the current Product create/edit surface is functionally accepted but not yet the desired smart assistant-style operational experience; treat this as later UX work, not a Phase 4 semantic-recognition blocker.
@@ -60,12 +60,7 @@ P5.8 closes the two integrity gaps found by the Phase 5 code-first audit without
 
 ## Current Audited Release Set
 
-- `inventory/models.py`
-- `inventory/mutations.py`
-- `inventory/tests.py`
-- `BUILD_PLAN.md`
-- `DEVELOPMENT_NOTES.md`
-- `changelog_checkpoint.md`
+- None; P5.8 and the Phase 5/Gate 3 transition are closed. Exact branch, hash, remote, and CI metadata remain in Git/GitHub.
 
 ## Handoff Guardrails
 

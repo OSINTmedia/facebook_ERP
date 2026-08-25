@@ -32,7 +32,7 @@ This rebuild is intended to demonstrate:
 
 ## Current Status
 
-Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User and Business Ownership is complete. Phase 3 Catalog Core is complete. Phase 4 Semantic Recognition and Choice Model is complete. Phase 5 Inventory and Computed Availability is in progress with computed availability, an immutable adjustment ledger, centralized choice-level stock mutation, and Product-edit stock controls; availability UI consumers and the operational workspace remain later work.
+Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User and Business Ownership is complete. Phase 3 Catalog Core is complete. Phase 4 Semantic Recognition and Choice Model is complete. Phase 5 Inventory and Computed Availability is complete with computed availability, an immutable Business-scoped adjustment ledger, centralized choice-level stock mutation, one-save initial stock, and Product-edit stock controls. Phase 6 Operational Product Workspace is next; availability UI consumers and the workspace itself remain later work.
 
 - Product discovery completed from an earlier private prototype.
 - Owner-controlled planning documents are frozen for the Phase 1 starting baseline.
