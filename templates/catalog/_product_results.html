@@ -3,7 +3,7 @@
     <ul class="product-list" aria-label="Products">
       {% for card in product_cards %}
         <li class="product-list__item">
-          {% include "catalog/_product_card.html" with card=card workspace_return_url=workspace_return_url only %}
+          {% include "catalog/_product_card.html" with card=card workspace_return_url=workspace_return_url csrf_token=csrf_token only %}
         </li>
       {% endfor %}
     </ul>

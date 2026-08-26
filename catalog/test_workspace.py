@@ -19,6 +19,7 @@ from catalog.workspace import (
     build_product_workspace_cards,
     product_workspace_products,
 )
+from inventory.models import InventoryAdjustment
 
 
 class ProductWorkspaceStateTests(SimpleTestCase):
@@ -288,6 +289,37 @@ class ProductWorkspaceViewTests(TestCase):
         )
         self.url = reverse("catalog:product_list")
 
+    def create_product_with_choice(
+        self,
+        *,
+        name="Workspace trousers",
+        quantity=1,
+        is_active=True,
+    ):
+        size, _ = BusinessSize.objects.get_or_create(
+            business=self.business,
+            name="M",
+        )
+        color, _ = BusinessColor.objects.get_or_create(
+            business=self.business,
+            name="Black",
+        )
+        product = Product.objects.create(
+            business=self.business,
+            name=name,
+            description="Workspace stock controls product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=size,
+            color=color,
+            quantity=quantity,
+            is_active=is_active,
+        )
+        return product, choice
+
     def test_workspace_requires_authentication(self):
         response = self.client.get(self.url)
 
@@ -395,6 +427,156 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, "Quantity")
         self.assertContains(response, 'aria-label="Edit Black trousers"')
         self.assertNotContains(response, "Ready reply")
+
+    def test_workspace_renders_native_stock_controls_only_for_active_choices(self):
+        product, active_choice = self.create_product_with_choice(quantity=2)
+        inactive_choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=active_choice.size,
+            color=active_choice.color,
+            quantity=7,
+            is_active=False,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        active_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": active_choice.pk},
+        )
+        inactive_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": inactive_choice.pk},
+        )
+        self.assertContains(
+            response,
+            f'action="{active_url}"',
+            count=1,
+        )
+        self.assertContains(response, 'method="post"')
+        self.assertContains(response, 'name="csrfmiddlewaretoken"', count=2)
+        self.assertContains(response, f'name="next" value="{self.url}"')
+        self.assertContains(response, 'name="delta"', count=2)
+        self.assertContains(response, 'value="-1"')
+        self.assertContains(response, 'value="1"')
+        self.assertContains(
+            response,
+            f"Decrease stock for Choice #{active_choice.pk}, size M, color Black",
+        )
+        self.assertContains(
+            response,
+            f"Increase stock for Choice #{active_choice.pk}, size M, color Black",
+        )
+        self.assertNotContains(response, f'action="{inactive_url}"')
+        self.assertContains(response, "1 inactive")
+        self.assertNotContains(response, "hx-post=")
+
+    def test_native_stock_controls_recompute_full_workspace_truth(self):
+        product, choice = self.create_product_with_choice(quantity=1)
+        adjustment_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": choice.pk},
+        )
+        self.client.force_login(self.owner)
+
+        sold_out_response = self.client.post(
+            adjustment_url,
+            {"delta": "-1", "next": self.url},
+            follow=True,
+        )
+
+        self.assertEqual(sold_out_response.redirect_chain, [(self.url, 302)])
+        choice.refresh_from_db()
+        product.refresh_from_db()
+        self.assertEqual(choice.quantity, 0)
+        self.assertTrue(choice.is_active)
+        self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
+        first_adjustment = InventoryAdjustment.objects.get()
+        self.assertEqual(first_adjustment.choice, choice)
+        self.assertEqual(first_adjustment.quantity_before, 1)
+        self.assertEqual(first_adjustment.quantity_after, 0)
+        self.assertEqual(first_adjustment.delta, -1)
+        self.assertContains(sold_out_response, "Stock updated to 0.")
+        self.assertContains(sold_out_response, "Sold out")
+        self.assertContains(sold_out_response, "1 active · 0 total stock")
+
+        available_response = self.client.post(
+            adjustment_url,
+            {"delta": "1", "next": self.url},
+            follow=True,
+        )
+
+        choice.refresh_from_db()
+        product.refresh_from_db()
+        self.assertEqual(choice.quantity, 1)
+        self.assertTrue(choice.is_active)
+        self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
+        self.assertEqual(InventoryAdjustment.objects.count(), 2)
+        latest_adjustment = InventoryAdjustment.objects.latest("created_at")
+        self.assertEqual(latest_adjustment.choice, choice)
+        self.assertEqual(latest_adjustment.quantity_before, 0)
+        self.assertEqual(latest_adjustment.quantity_after, 1)
+        self.assertEqual(latest_adjustment.delta, 1)
+        self.assertContains(available_response, "Stock updated to 1.")
+        self.assertContains(available_response, "Available")
+        self.assertContains(available_response, "1 active · 1 total stock")
+
+    def test_native_stock_control_targets_one_duplicate_looking_choice(self):
+        product, targeted_choice = self.create_product_with_choice(quantity=1)
+        duplicate_choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=targeted_choice.size,
+            color=targeted_choice.color,
+            quantity=4,
+        )
+        adjustment_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": targeted_choice.pk},
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            adjustment_url,
+            {"delta": "1", "next": self.url},
+            follow=True,
+        )
+
+        targeted_choice.refresh_from_db()
+        duplicate_choice.refresh_from_db()
+        self.assertEqual(targeted_choice.quantity, 2)
+        self.assertEqual(duplicate_choice.quantity, 4)
+        adjustment = InventoryAdjustment.objects.get()
+        self.assertEqual(adjustment.choice, targeted_choice)
+        self.assertContains(response, f"Choice #{targeted_choice.pk}")
+        self.assertContains(response, f"Choice #{duplicate_choice.pk}")
+        self.assertContains(response, "2 active · 6 total stock")
+
+    def test_native_stock_underflow_returns_authoritative_workspace_error(self):
+        product, choice = self.create_product_with_choice(quantity=0)
+        adjustment_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": choice.pk},
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            adjustment_url,
+            {"delta": "-1", "next": self.url},
+            follow=True,
+        )
+
+        choice.refresh_from_db()
+        product.refresh_from_db()
+        self.assertEqual(choice.quantity, 0)
+        self.assertTrue(choice.is_active)
+        self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+        self.assertContains(response, "Choice quantity cannot be negative.")
+        self.assertContains(response, "Sold out")
+        self.assertContains(response, "1 active · 0 total stock")
 
     def test_workspace_card_without_active_choices_has_edit_recovery(self):
         product = Product.objects.create(

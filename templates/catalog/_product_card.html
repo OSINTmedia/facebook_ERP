@@ -43,10 +43,33 @@
               <span><span class="product-card__choice-label">Size</span> {{ choice.size_name }}</span>
               <span><span class="product-card__choice-label">Color</span> {{ choice.color_name }}</span>
             </div>
-            <div class="product-card__quantity">
-              <span>Quantity</span>
-              <strong>{{ choice.quantity }}</strong>
-            </div>
+            <form
+              class="product-card__stock-form"
+              method="post"
+              action="{% url 'inventory:choice_stock_adjust' choice.choice_id %}"
+              aria-label="Stock controls for Choice #{{ choice.choice_id }}, size {{ choice.size_name }}, color {{ choice.color_name }}"
+            >
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ workspace_return_url }}">
+              <button
+                class="button button--secondary product-card__stock-button"
+                type="submit"
+                name="delta"
+                value="-1"
+                aria-label="Decrease stock for Choice #{{ choice.choice_id }}, size {{ choice.size_name }}, color {{ choice.color_name }}"
+              >−1</button>
+              <div class="product-card__quantity">
+                <span>Quantity</span>
+                <output aria-label="Current quantity for Choice #{{ choice.choice_id }}">{{ choice.quantity }}</output>
+              </div>
+              <button
+                class="button button--secondary product-card__stock-button"
+                type="submit"
+                name="delta"
+                value="1"
+                aria-label="Increase stock for Choice #{{ choice.choice_id }}, size {{ choice.size_name }}, color {{ choice.color_name }}"
+              >+1</button>
+            </form>
           </li>
         {% endfor %}
       </ul>
