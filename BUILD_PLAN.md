@@ -1019,7 +1019,7 @@ Avoid libraries that depend on:
 - Proposed commit message: feat: add product workspace search
 - Rollback/recovery note: remove q parsing and search UI while leaving the P6.1-P6.3 unsearched Workspace intact; no schema or persisted data changes require recovery.
 - Stop gate relation: satisfies the Phase 6 search and searched-return foundation; bounded filters and HTMX state coherence remain open.
-- Status: AUDITED_READY locally; operational closure is determined by Prompt 5 Git/GitHub evidence without a routine post-release documentation sync.
+- Status: CI_RECOVERY_AUDITED_READY; the source release is clean and aligned, but its exact-SHA workflow ended in a zero-job startup failure before tests could run. CI-R1 adds only `workflow_dispatch` while retaining the existing push and pull-request triggers, jobs, permissions, services, and commands. The owner approved successful CI on the new current-main recovery SHA as closure evidence because the original zero-job run cannot be rerun; P6.4 remains open until Prompt 5 verifies that success.
 
 #### P6.5 V1 Product Workspace Filter Baseline
 

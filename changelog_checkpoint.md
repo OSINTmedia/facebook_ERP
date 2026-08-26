@@ -31,7 +31,7 @@
 - P6.1 Product Workspace Route and Query Baseline: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
 - P6.2 Compact Product Card and Availability Baseline: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
 - P6.3 Choice-Level Workspace Stock Controls: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
-- P6.4 Product Workspace Search Baseline: locally `AUDITED_READY`; operational closure is determined by the Prompt 5 Git/GitHub release evidence.
+- P6.4 Product Workspace Search Baseline: `CI_RECOVERY_AUDITED_READY`; the source release is clean and aligned, but its exact-SHA workflow ended in a zero-job startup failure. The approved CI-R1 recovery adds manual dispatch only and awaits Prompt 5.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
@@ -53,12 +53,12 @@ P6.4 adds controlled, URL-backed Product retrieval to the owned Workspace withou
 
 ## Current Gate and Next Work
 
-- Release gate: P6.4 closes when Prompt 5 produces a clean aligned release and relevant exact-SHA CI success; the exact outcome is read from Git/GitHub rather than copied into this file.
+- Release gate: Prompt 5 must release CI-R1 and obtain successful CI on the new current-main recovery SHA. Because the original source SHA cannot be rerun after its zero-job startup failure, the owner explicitly approved that successful recovery-SHA CI may close P6.4; exact delivery metadata remains in Git/GitHub.
 - Next functional slice after P6.4 closes: P6.5 V1 Product Workspace Filter Baseline; implementation requires explicit owner approval of the exact bounded filter set.
 
 ## Active Blockers and Decisions
 
-- P6.4 has no known technical or owner-decision blocker; Prompt 5 owns its operational release outcome.
+- P6.4 is blocked only by the operational CI recovery gate; CI-R1 is locally audited and approved for release.
 - P6.4 intentionally adds only native server-rendered search; filters, lifecycle keyword interpretation, fuzzy/morphology behavior, ranking, autocomplete, pagination, Workspace HTMX replacement, readiness, replies, and Dashboard behavior remain excluded.
 - P6.5 remains `OWNER_DECISION_REQUIRED` before implementation for the exact bounded filter set; the roadmap recommends stored Lifecycle plus computed Availability only.
 - Existing choices retain read-only quantity plus P5.6 controls; one-time initialization is not approval for ongoing direct set or arbitrary subsequent deltas.
@@ -68,15 +68,10 @@ P6.4 adds controlled, URL-backed Product retrieval to the owned Workspace withou
 
 ## Current Audited Release Set
 
+- `.github/workflows/django.yml`
 - `BUILD_PLAN.md`
-- `catalog/forms.py`
-- `catalog/test_workspace.py`
-- `catalog/views.py`
-- `catalog/workspace.py`
+- `DEVELOPMENT_NOTES.md`
 - `changelog_checkpoint.md`
-- `static/css/app.css`
-- `templates/catalog/_product_results.html`
-- `templates/catalog/product_list.html`
 
 ## Handoff Guardrails
 

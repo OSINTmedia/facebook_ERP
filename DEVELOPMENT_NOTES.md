@@ -497,6 +497,14 @@ One functional micro-slice closes through one bounded implementation, audit, and
 Reason:
 Documentation stores stable project truth while Git/GitHub stores exact delivery metadata such as commit hashes, remote alignment, CI runs, and CI conclusions. Post-push documentation is exceptional for failures, divergence, blockers, phase/gate closure, deployment/demo/public-release changes, or public factuality correction, not routine delivery bookkeeping.
 
+### 2026-08-26 - Zero-job CI startup recovery uses an explicit manual trigger
+
+Decision:
+Retain the Django CI workflow's push and pull-request behavior and add `workflow_dispatch` as a manual recovery trigger. When the P6.4 source release produced a GitHub Actions startup failure before any job or check-run existed, the owner approved successful CI on the next current-main CI-only recovery commit as closure evidence; the original failed run remains visible and is not relabeled as successful.
+
+Reason:
+A zero-job startup failure provides no application failure or job to repair or rerun, while creating an empty bookkeeping commit would add no durable capability. A manual trigger provides a reusable recovery path, and constraining the recovery commit to the workflow trigger keeps the previously audited application source unchanged and the evidence honest.
+
 ### 2026-07-28 - Private workflow artifacts stay local
 
 Decision:
