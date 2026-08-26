@@ -18,6 +18,34 @@
         <p>No business workspace yet.</p>
       </div>
     {% else %}
+      <form
+        class="product-workspace-search"
+        method="get"
+        action="{% url 'catalog:product_list' %}"
+        role="search"
+      >
+        <div class="product-workspace-search__controls">
+          <div class="form-field">
+            {{ search_form.q.label_tag }}
+            {{ search_form.q }}
+            <small id="{{ search_form.q.id_for_label }}_helptext">{{ search_form.q.help_text }}</small>
+            {% if search_form.q.errors %}
+              <div class="form-errors" role="alert">{{ search_form.q.errors }}</div>
+            {% endif %}
+          </div>
+          <button class="button button--primary" type="submit">Search</button>
+        </div>
+      </form>
+
+      {% if workspace_search_is_valid and workspace_search_query %}
+        <div class="product-workspace-search__summary" role="status">
+          <p><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }} for “{{ workspace_search_query }}”</p>
+          {% if product_cards %}
+            <a class="button button--secondary button--compact" href="{% url 'catalog:product_list' %}">Clear search</a>
+          {% endif %}
+        </div>
+      {% endif %}
+
       {% if product_cards %}
         <div class="page-actions">
           <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">Add product</a>

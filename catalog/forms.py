@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 from django import forms
 from django.core.exceptions import ValidationError
@@ -20,6 +21,46 @@ from catalog.vocabulary import (
     SIZE_VOCABULARY,
     TAG_VOCABULARY,
 )
+
+
+PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH = 120
+PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS = 8
+
+
+class ProductWorkspaceSearchForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        label="Search products",
+        help_text="Use up to 8 words.",
+        widget=forms.TextInput(
+            attrs={
+                "type": "search",
+                "autocomplete": "off",
+                "maxlength": PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH,
+                "placeholder": "Name, description, type, tag, choice, or material",
+            }
+        ),
+    )
+
+    def clean_q(self):
+        if hasattr(self.data, "getlist") and len(self.data.getlist("q")) > 1:
+            raise ValidationError("Enter one search query.")
+
+        query = " ".join((self.cleaned_data.get("q") or "").split())
+        if any(
+            unicodedata.category(character) in {"Cc", "Cs"}
+            for character in query
+        ):
+            raise ValidationError("Search contains unsupported characters.")
+        if len(query) > PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH:
+            raise ValidationError(
+                f"Search must be {PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH} characters or fewer."
+            )
+        if len(query.split()) > PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS:
+            raise ValidationError(
+                f"Search must use {PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS} words or fewer."
+            )
+        return query
 
 
 class ProductForm(forms.ModelForm):

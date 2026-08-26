@@ -10,7 +10,11 @@ from django.views.generic import TemplateView
 
 from businesses.selectors import MultipleBusinessesUnsupported, resolve_active_business
 from catalog.choice_transfers import transfer_choice_candidate
-from catalog.forms import ChoiceVocabularyEditForm, ChoiceVocabularyForm
+from catalog.forms import (
+    ChoiceVocabularyEditForm,
+    ChoiceVocabularyForm,
+    ProductWorkspaceSearchForm,
+)
 from catalog.material_transfers import transfer_material_candidate
 from catalog.models import (
     BusinessColor,
@@ -97,7 +101,10 @@ class ProductListView(LoginRequiredMixin, TemplateView):
     template_name = "catalog/product_list.html"
 
     def get(self, request, *args, **kwargs):
-        self.workspace_state = ProductWorkspaceState.from_query_params(request.GET)
+        self.search_form = ProductWorkspaceSearchForm(request.GET)
+        self.workspace_state = ProductWorkspaceState.from_search_form(
+            self.search_form
+        )
         self.business_policy_blocked = False
         self.active_business = None
 
@@ -114,13 +121,25 @@ class ProductListView(LoginRequiredMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         products = Product.objects.none()
         product_cards = ()
+        catalog_has_products = False
 
-        if self.active_business is not None:
-            products = product_workspace_products(business=self.active_business)
+        if (
+            self.active_business is not None
+            and self.workspace_state.search_is_valid
+        ):
+            products = product_workspace_products(
+                business=self.active_business,
+                search_query=self.workspace_state.search_query,
+            )
             product_cards = build_product_workspace_cards(
                 business=self.active_business,
                 products=products,
             )
+            catalog_has_products = bool(product_cards)
+            if self.workspace_state.search_query and not product_cards:
+                catalog_has_products = Product.objects.filter(
+                    business=self.active_business
+                ).exists()
 
         context.update(
             {
@@ -129,6 +148,16 @@ class ProductListView(LoginRequiredMixin, TemplateView):
                 "current_nav": "products",
                 "product_cards": product_cards,
                 "products": products,
+                "search_form": self.search_form,
+                "workspace_search_query": self.workspace_state.search_query,
+                "workspace_search_requested": (
+                    self.workspace_state.search_requested
+                ),
+                "workspace_search_is_valid": (
+                    self.workspace_state.search_is_valid
+                ),
+                "workspace_result_count": len(product_cards),
+                "catalog_has_products": catalog_has_products,
                 "workspace_return_url": self.workspace_state.return_url,
             }
         )

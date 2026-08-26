@@ -3,15 +3,21 @@
 from dataclasses import dataclass
 from urllib.parse import urlencode
 
-from django.db.models import OuterRef, Prefetch, QuerySet, Subquery
+from django.db.models import OuterRef, Prefetch, Q, QuerySet, Subquery
 from django.urls import reverse
 
 from businesses.models import Business
-from catalog.models import BusinessProductType, Product, ProductChoice
+from catalog.forms import ProductWorkspaceSearchForm
+from catalog.models import (
+    BusinessProductType,
+    Product,
+    ProductChoice,
+    ProductMaterialFact,
+)
 from inventory.availability import compute_availability_from_stock_state
 
 
-SUPPORTED_PRODUCT_WORKSPACE_QUERY_KEYS: frozenset[str] = frozenset()
+SUPPORTED_PRODUCT_WORKSPACE_QUERY_KEYS: frozenset[str] = frozenset({"q"})
 PRODUCT_DESCRIPTION_EXCERPT_LENGTH = 160
 
 
@@ -20,15 +26,30 @@ class ProductWorkspaceState:
     """Validated URL state that is safe to carry through Product workflows."""
 
     query_items: tuple[tuple[str, str], ...] = ()
+    search_query: str = ""
+    search_requested: bool = False
+    search_is_valid: bool = True
 
     @classmethod
     def from_query_params(cls, query_params):
-        query_items = tuple(
-            (key, value)
-            for key in sorted(SUPPORTED_PRODUCT_WORKSPACE_QUERY_KEYS)
-            if (value := query_params.get(key, "").strip())
+        return cls.from_search_form(ProductWorkspaceSearchForm(query_params))
+
+    @classmethod
+    def from_search_form(cls, search_form):
+        search_requested = "q" in search_form.data
+        if not search_form.is_valid():
+            return cls(
+                search_requested=search_requested,
+                search_is_valid=False,
+            )
+
+        search_query = search_form.cleaned_data["q"]
+        query_items = (("q", search_query),) if search_query else ()
+        return cls(
+            query_items=query_items,
+            search_query=search_query,
+            search_requested=search_requested,
         )
-        return cls(query_items=query_items)
 
     @property
     def return_url(self):
@@ -61,7 +82,11 @@ class ProductCard:
     inactive_choice_count: int
 
 
-def product_workspace_products(*, business: Business) -> QuerySet[Product]:
+def product_workspace_products(
+    *,
+    business: Business,
+    search_query: str = "",
+) -> QuerySet[Product]:
     """Return deterministic Product rows owned by one resolved Business."""
 
     product_type_name = BusinessProductType.objects.filter(
@@ -79,8 +104,16 @@ def product_workspace_products(*, business: Business) -> QuerySet[Product]:
         .order_by("product_id", "size_id", "color_id", "id")
     )
 
+    products = Product.objects.filter(business=business)
+    for token in search_query.split():
+        products = products.filter(
+            _product_search_token_filter(business=business, token=token)
+        )
+    if search_query:
+        products = products.distinct()
+
     return (
-        Product.objects.filter(business=business)
+        products
         .annotate(workspace_product_type_name=Subquery(product_type_name))
         .prefetch_related(
             Prefetch(
@@ -90,6 +123,74 @@ def product_workspace_products(*, business: Business) -> QuerySet[Product]:
             )
         )
         .order_by("name", "id")
+    )
+
+
+def _product_search_token_filter(*, business: Business, token: str) -> Q:
+    product_type_match = Q(product_type__business=business) & (
+        Q(product_type__name__icontains=token)
+        | (
+            Q(product_type__aliases__business=business)
+            & Q(product_type__aliases__alias__icontains=token)
+        )
+    )
+    tag_match = (
+        Q(tag_links__business=business)
+        & Q(tag_links__tag__business=business)
+        & (
+            Q(tag_links__tag__name__icontains=token)
+            | (
+                Q(tag_links__tag__aliases__business=business)
+                & Q(tag_links__tag__aliases__alias__icontains=token)
+            )
+        )
+    )
+    choice_scope = (
+        Q(choices__business=business)
+        & Q(choices__size__business=business)
+        & Q(choices__color__business=business)
+    )
+    size_match = (
+        choice_scope
+        & (
+            Q(choices__size__name__icontains=token)
+            | (
+                Q(choices__size__aliases__business=business)
+                & Q(choices__size__aliases__alias__icontains=token)
+            )
+        )
+    )
+    color_match = (
+        choice_scope
+        & (
+            Q(choices__color__name__icontains=token)
+            | (
+                Q(choices__color__aliases__business=business)
+                & Q(choices__color__aliases__alias__icontains=token)
+            )
+        )
+    )
+    material_match = (
+        Q(material_facts__business=business)
+        & Q(
+            material_facts__confirmation_state=(
+                ProductMaterialFact.ConfirmationState.CONFIRMED
+            )
+        )
+        & (
+            Q(material_facts__canonical_material__icontains=token)
+            | Q(material_facts__original_text__icontains=token)
+        )
+    )
+
+    return (
+        Q(name__icontains=token)
+        | Q(description__icontains=token)
+        | product_type_match
+        | tag_match
+        | size_match
+        | color_match
+        | material_match
     )
 
 

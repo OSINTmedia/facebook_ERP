@@ -30,35 +30,37 @@
 - Phase 6 Operational Product Workspace: `IN_PROGRESS`.
 - P6.1 Product Workspace Route and Query Baseline: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
 - P6.2 Compact Product Card and Availability Baseline: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
-- P6.3 Choice-Level Workspace Stock Controls: locally `AUDITED_READY`; operational closure is determined by the Prompt 5 Git/GitHub release evidence.
+- P6.3 Choice-Level Workspace Stock Controls: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
+- P6.4 Product Workspace Search Baseline: locally `AUDITED_READY`; operational closure is determined by the Prompt 5 Git/GitHub release evidence.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
 
-P6.3 makes each active ProductChoice on an owned Workspace card directly actionable without adding a new mutation path or premature Workspace HTMX:
+P6.4 adds controlled, URL-backed Product retrieval to the owned Workspace without adding filters, client-owned state, or unconfirmed facts:
 
-- each visible active choice has CSRF-protected native `-1` and `+1` controls labeled with exact Choice identity, canonical Size, and canonical Color;
-- every accepted action reuses the released authenticated inventory route, locked delta service, and immutable adjustment ledger, while leaving lifecycle and choice activation unchanged;
-- success and expected failure redirect to the canonical Workspace URL and re-render quantity, active total, and computed Availability from current server truth;
-- inactive choices remain non-actionable, duplicate-looking rows remain distinct, and mobile controls retain safe tap targets without HTMX, Alpine, direct set, or optimistic state.
+- validated `q` state trims and collapses whitespace, permits at most 120 characters and eight tokens, rejects repeated or malformed input, and owns canonical Workspace return context;
+- case-insensitive search requires every token to match at least one approved persisted field across Product name/description, confirmed Type/Tag names and aliases, exact choice Size/Color names and aliases, or confirmed material wording;
+- every structured relation is Business-scoped, including the complete Size/Color choice boundary, and duplicate joins still produce one deterministically ordered Product;
+- visible applied query, result count, Clear search, validation, catalog-empty, and search-no-result states remain native server-rendered behavior and preserve Edit and stock return context without HTMX or Alpine.
 
 ## Verification and Audit
 
-- The focused P6.3 Workspace and inventory-route suite passed: 37 tests; the inventory suite passed: 53 tests; the catalog suite passed: 274 tests; the PostgreSQL-backed full regression suite passed: 365 tests.
+- The focused P6.4 Workspace suite passed: 36 tests; the PostgreSQL-backed full regression suite passed: 379 tests.
 - Source, untracked-file whitespace, documentation, and release-whitelist diff checks passed.
 - Django system, migration dry-run, and unapplied-migration checks passed with no schema change.
-- Integrity audit passed for authenticated Business-scoped mutation reuse, exact duplicate-choice targeting, immutable ledger transitions, underflow/no-write recovery, lifecycle and activation preservation, full-page recomputation, CSRF propagation through isolated card rendering, native return context, mobile tap targets, hosted compatibility, and approved Phase 6 scope.
-- Owner/browser verification is advisory for P6.3 and has not been claimed as executed.
+- Integrity audit passed for Business-first querying, canonical and alias field coverage, confirmed-fact boundaries, whole-choice Business isolation, deliberate cross-Business corruption rejection, AND-across-token behavior, duplicate elimination, bounded query count, malformed-input recovery, canonical Edit/stock return context, native accessibility/mobile behavior, hosted compatibility, and approved Phase 6 scope.
+- Owner/browser verification is advisory for P6.4 and has not been claimed as executed.
 
 ## Current Gate and Next Work
 
-- Release gate: P6.3 closes when Prompt 5 produces a clean aligned release and relevant exact-SHA CI success; the exact outcome is read from Git/GitHub rather than copied into this file.
-- Next functional slice after P6.3 closes: P6.4 Product Workspace Search Baseline.
+- Release gate: P6.4 closes when Prompt 5 produces a clean aligned release and relevant exact-SHA CI success; the exact outcome is read from Git/GitHub rather than copied into this file.
+- Next functional slice after P6.4 closes: P6.5 V1 Product Workspace Filter Baseline; implementation requires explicit owner approval of the exact bounded filter set.
 
 ## Active Blockers and Decisions
 
-- P6.3 has no known technical or owner-decision blocker; Prompt 5 owns its operational release outcome.
-- P6.3 intentionally adds only native exact-choice `-1`/`+1` controls; search/filter state, Workspace HTMX replacement, readiness, replies, Dashboard behavior, direct set, and arbitrary deltas remain excluded.
+- P6.4 has no known technical or owner-decision blocker; Prompt 5 owns its operational release outcome.
+- P6.4 intentionally adds only native server-rendered search; filters, lifecycle keyword interpretation, fuzzy/morphology behavior, ranking, autocomplete, pagination, Workspace HTMX replacement, readiness, replies, and Dashboard behavior remain excluded.
+- P6.5 remains `OWNER_DECISION_REQUIRED` before implementation for the exact bounded filter set; the roadmap recommends stored Lifecycle plus computed Availability only.
 - Existing choices retain read-only quantity plus P5.6 controls; one-time initialization is not approval for ongoing direct set or arbitrary subsequent deltas.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
 - UX note: the current Product create/edit surface is functionally accepted but not yet the desired smart assistant-style operational experience; treat this as later UX work, not a Phase 4 semantic-recognition blocker.
@@ -67,12 +69,14 @@ P6.3 makes each active ProductChoice on an owned Workspace card directly actiona
 ## Current Audited Release Set
 
 - `BUILD_PLAN.md`
-- `README.md`
+- `catalog/forms.py`
 - `catalog/test_workspace.py`
+- `catalog/views.py`
+- `catalog/workspace.py`
 - `changelog_checkpoint.md`
 - `static/css/app.css`
-- `templates/catalog/_product_card.html`
 - `templates/catalog/_product_results.html`
+- `templates/catalog/product_list.html`
 
 ## Handoff Guardrails
 

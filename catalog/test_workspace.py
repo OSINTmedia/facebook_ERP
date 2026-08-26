@@ -6,12 +6,24 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from businesses.models import Business
+from catalog.forms import (
+    PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH,
+    PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS,
+    ProductWorkspaceSearchForm,
+)
 from catalog.models import (
     BusinessColor,
+    BusinessColorAlias,
     BusinessProductType,
+    BusinessProductTypeAlias,
     BusinessSize,
+    BusinessSizeAlias,
+    BusinessTag,
+    BusinessTagAlias,
     Product,
     ProductChoice,
+    ProductMaterialFact,
+    ProductTag,
 )
 from catalog.workspace import (
     PRODUCT_DESCRIPTION_EXCERPT_LENGTH,
@@ -23,13 +35,73 @@ from inventory.models import InventoryAdjustment
 
 
 class ProductWorkspaceStateTests(SimpleTestCase):
-    def test_p6_1_discards_all_unapproved_query_parameters(self):
+    def test_search_state_normalizes_q_and_discards_unapproved_parameters(self):
         state = ProductWorkspaceState.from_query_params(
-            QueryDict("q=trousers&next=https%3A%2F%2Fexample.com&unknown=value")
+            QueryDict(
+                "q=+black+++trousers+&next=https%3A%2F%2Fexample.com&unknown=value"
+            )
         )
 
+        self.assertEqual(state.search_query, "black trousers")
+        self.assertEqual(state.query_items, (("q", "black trousers"),))
+        self.assertEqual(
+            state.return_url,
+            f'{reverse("catalog:product_list")}?q=black+trousers',
+        )
+        self.assertTrue(state.search_is_valid)
+
+    def test_blank_search_is_the_unsearched_workspace(self):
+        state = ProductWorkspaceState.from_query_params(QueryDict("q=+++"))
+
+        self.assertEqual(state.search_query, "")
         self.assertEqual(state.query_items, ())
         self.assertEqual(state.return_url, reverse("catalog:product_list"))
+        self.assertTrue(state.search_is_valid)
+
+    def test_repeated_search_parameter_is_rejected(self):
+        search_form = ProductWorkspaceSearchForm(
+            QueryDict("q=trousers&q=private")
+        )
+
+        state = ProductWorkspaceState.from_search_form(search_form)
+
+        self.assertFalse(state.search_is_valid)
+        self.assertEqual(state.search_query, "")
+        self.assertEqual(state.return_url, reverse("catalog:product_list"))
+        self.assertEqual(search_form.errors["q"], ["Enter one search query."])
+
+    def test_search_length_and_token_limits_are_controlled(self):
+        overlong_form = ProductWorkspaceSearchForm(
+            {"q": "x" * (PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH + 1)}
+        )
+        too_many_tokens_form = ProductWorkspaceSearchForm(
+            {
+                "q": " ".join(
+                    f"word{index}"
+                    for index in range(PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS + 1)
+                )
+            }
+        )
+
+        self.assertFalse(overlong_form.is_valid())
+        self.assertEqual(
+            overlong_form.errors["q"],
+            ["Search must be 120 characters or fewer."],
+        )
+        self.assertFalse(too_many_tokens_form.is_valid())
+        self.assertEqual(
+            too_many_tokens_form.errors["q"],
+            ["Search must use 8 words or fewer."],
+        )
+
+    def test_search_rejects_database_unsafe_control_characters(self):
+        search_form = ProductWorkspaceSearchForm({"q": "wool\x01private"})
+
+        self.assertFalse(search_form.is_valid())
+        self.assertEqual(
+            search_form.errors["q"],
+            ["Search contains unsupported characters."],
+        )
 
 
 class ProductWorkspaceQueryTests(TestCase):
@@ -81,6 +153,304 @@ class ProductWorkspaceQueryTests(TestCase):
             list(products),
             [lower_id_same_name, higher_id_same_name, later_name],
         )
+
+    def test_search_matches_each_approved_persisted_field_and_alias(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=product_type,
+            alias="Slacks",
+        )
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Formal",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=tag,
+            alias="Officewear",
+        )
+        size = BusinessSize.objects.create(business=self.business, name="Medium")
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=size,
+            alias="M",
+        )
+        color = BusinessColor.objects.create(
+            business=self.business,
+            name="Midnight blue",
+        )
+        BusinessColorAlias.objects.create(
+            business=self.business,
+            color=color,
+            alias="Navy",
+        )
+        product = Product.objects.create(
+            business=self.business,
+            product_type=product_type,
+            name="City pants",
+            description="A tailored wardrobe staple.",
+        )
+        ProductTag.objects.create(
+            business=self.business,
+            product=product,
+            tag=tag,
+        )
+        ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=size,
+            color=color,
+        )
+        ProductMaterialFact.objects.create(
+            business=self.business,
+            product=product,
+            canonical_material="Wool",
+            original_text="Merino blend",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+
+        for query in (
+            "city",
+            "tailored",
+            "trousers",
+            "slacks",
+            "formal",
+            "officewear",
+            "medium",
+            "m",
+            "midnight",
+            "navy",
+            "wool",
+            "merino",
+        ):
+            with self.subTest(query=query):
+                matches = product_workspace_products(
+                    business=self.business,
+                    search_query=query,
+                )
+                self.assertEqual(list(matches), [product])
+
+    def test_search_uses_and_across_tokens_without_duplicate_products(self):
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Formal",
+        )
+        product = Product.objects.create(
+            business=self.business,
+            name="Black trousers",
+            description="Tailored wool trousers.",
+        )
+        ProductTag.objects.create(
+            business=self.business,
+            product=product,
+            tag=tag,
+        )
+        second_tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Black tie",
+        )
+        ProductTag.objects.create(
+            business=self.business,
+            product=product,
+            tag=second_tag,
+        )
+        Product.objects.create(
+            business=self.business,
+            name="Black shirt",
+            description="Casual cotton.",
+        )
+
+        matches = product_workspace_products(
+            business=self.business,
+            search_query="black formal",
+        )
+
+        self.assertEqual(list(matches), [product])
+
+    def test_search_matches_canonical_related_values_without_alias_rows(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Jacket",
+        )
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Outerwear",
+        )
+        size = BusinessSize.objects.create(business=self.business, name="Large")
+        color = BusinessColor.objects.create(
+            business=self.business,
+            name="Burgundy",
+        )
+        product = Product.objects.create(
+            business=self.business,
+            product_type=product_type,
+            name="Structured product",
+            description="Canonical relation coverage.",
+        )
+        ProductTag.objects.create(
+            business=self.business,
+            product=product,
+            tag=tag,
+        )
+        ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=size,
+            color=color,
+        )
+
+        for query in ("jacket", "outerwear", "large", "burgundy"):
+            with self.subTest(query=query):
+                matches = product_workspace_products(
+                    business=self.business,
+                    search_query=query,
+                )
+                self.assertEqual(list(matches), [product])
+
+    def test_search_does_not_match_other_business_facts_or_aliases(self):
+        owned_product = Product.objects.create(
+            business=self.business,
+            name="Owned product",
+            description="Visible wording.",
+        )
+        other_type = BusinessProductType.objects.create(
+            business=self.other_business,
+            name="Private type",
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.other_business,
+            product_type=other_type,
+            alias="Private alias",
+        )
+        Product.objects.create(
+            business=self.other_business,
+            product_type=other_type,
+            name="Private product",
+            description="Private description.",
+        )
+        Product.objects.filter(pk=owned_product.pk).update(product_type=other_type)
+        local_tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Local tag",
+        )
+        other_tag = BusinessTag.objects.create(
+            business=self.other_business,
+            name="Private tag",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.other_business,
+            tag=other_tag,
+            alias="Private tag alias",
+        )
+        tag_link = ProductTag.objects.create(
+            business=self.business,
+            product=owned_product,
+            tag=local_tag,
+        )
+        ProductTag.objects.filter(pk=tag_link.pk).update(
+            business=self.other_business,
+            tag=other_tag,
+        )
+        local_size = BusinessSize.objects.create(
+            business=self.business,
+            name="Local size",
+        )
+        local_color = BusinessColor.objects.create(
+            business=self.business,
+            name="Local color",
+        )
+        other_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="Private size",
+        )
+        BusinessSizeAlias.objects.create(
+            business=self.other_business,
+            size=other_size,
+            alias="Private size alias",
+        )
+        other_color = BusinessColor.objects.create(
+            business=self.other_business,
+            name="Private color",
+        )
+        BusinessColorAlias.objects.create(
+            business=self.other_business,
+            color=other_color,
+            alias="Private color alias",
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=owned_product,
+            size=local_size,
+            color=local_color,
+        )
+        ProductChoice.objects.filter(pk=choice.pk).update(
+            color=other_color,
+        )
+        material = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=owned_product,
+            canonical_material="Local material",
+            original_text="Local wording",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
+        ProductMaterialFact.objects.filter(pk=material.pk).update(
+            business=self.other_business,
+            canonical_material="Private material",
+            original_text="Private material wording",
+        )
+
+        matches = product_workspace_products(
+            business=self.business,
+            search_query="private",
+        )
+        partial_choice_matches = product_workspace_products(
+            business=self.business,
+            search_query="local size",
+        )
+
+        self.assertEqual(list(matches), [])
+        self.assertEqual(list(partial_choice_matches), [])
+
+    def test_search_card_query_count_does_not_grow_per_product(self):
+        first_product = Product.objects.create(
+            business=self.business,
+            name="Match 1",
+            description="Searchable collection.",
+        )
+
+        with CaptureQueriesContext(connection) as one_product_queries:
+            first_cards = build_product_workspace_cards(
+                business=self.business,
+                products=product_workspace_products(
+                    business=self.business,
+                    search_query="searchable",
+                ),
+            )
+        self.assertEqual(len(first_cards), 1)
+
+        for index in range(2, 7):
+            Product.objects.create(
+                business=self.business,
+                name=f"Match {index}",
+                description="Searchable collection.",
+            )
+
+        with CaptureQueriesContext(connection) as many_product_queries:
+            many_cards = build_product_workspace_cards(
+                business=self.business,
+                products=product_workspace_products(
+                    business=self.business,
+                    search_query="searchable",
+                ),
+            )
+
+        self.assertEqual(len(many_cards), 6)
+        self.assertEqual(len(one_product_queries), 2)
+        self.assertEqual(len(many_product_queries), len(one_product_queries))
 
 
 class ProductCardReadModelTests(TestCase):
@@ -356,7 +726,7 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, later.name)
         self.assertNotContains(response, "Private product")
 
-    def test_workspace_drops_unknown_query_state_from_workflow_links(self):
+    def test_workspace_preserves_q_and_drops_unknown_workflow_state(self):
         product = Product.objects.create(
             business=self.business,
             name="Black trousers",
@@ -373,21 +743,129 @@ class ProductWorkspaceViewTests(TestCase):
             },
         )
 
-        expected_return_url = self.url
+        expected_return_url = f"{self.url}?q=trousers"
         self.assertEqual(
             response.context["workspace_return_url"],
             expected_return_url,
         )
-        self.assertContains(
-            response,
-            f'{reverse("catalog:product_create")}?next={self.url}',
-        )
-        self.assertContains(
-            response,
-            f'{reverse("catalog:product_edit", kwargs={"pk": product.pk})}'
-            f"?next={self.url}",
-        )
+        self.assertEqual(response.context["workspace_search_query"], "trousers")
+        self.assertContains(response, "q%3Dtrousers")
         self.assertNotContains(response, "example.com")
+        self.assertNotContains(response, "unknown")
+
+    def test_workspace_search_filters_and_shows_applied_query_count(self):
+        matching_product, _ = self.create_product_with_choice(
+            name="Black trousers",
+        )
+        Product.objects.create(
+            business=self.business,
+            name="Blue shirt",
+            description="Different product.",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url, {"q": "  black   trousers "})
+
+        expected_return_url = f"{self.url}?q=black+trousers"
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["products"]), [matching_product])
+        self.assertEqual(
+            response.context["workspace_return_url"],
+            expected_return_url,
+        )
+        self.assertEqual(response.context["workspace_result_count"], 1)
+        self.assertContains(response, "product for “black trousers”")
+        self.assertContains(response, "Black trousers")
+        self.assertNotContains(response, "Blue shirt")
+        self.assertContains(response, "q%3Dblack%2Btrousers")
+        self.assertContains(
+            response,
+            f'name="next" value="{expected_return_url}"',
+        )
+        self.assertContains(response, "Clear search", count=1)
+
+    def test_workspace_search_no_result_has_one_clear_recovery(self):
+        Product.objects.create(
+            business=self.business,
+            name="Black trousers",
+            description="Classic product.",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url, {"q": "missing"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["workspace_result_count"], 0)
+        self.assertContains(response, "products for “missing”")
+        self.assertContains(response, "No products match “missing”.")
+        self.assertContains(response, "Try a simpler search.")
+        self.assertContains(response, "Clear search", count=1)
+        self.assertNotContains(response, "No products yet.")
+        self.assertNotContains(
+            response,
+            f'href="{reverse("catalog:product_create")}?next=',
+        )
+
+    def test_search_on_an_empty_catalog_keeps_the_catalog_empty_state(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url, {"q": "missing"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["workspace_result_count"], 0)
+        self.assertContains(response, "products for “missing”")
+        self.assertContains(response, "No products yet.")
+        self.assertNotContains(response, "No products match")
+        self.assertContains(
+            response,
+            f'href="{reverse("catalog:product_create")}?next=',
+            count=1,
+        )
+        self.assertContains(response, "Clear search", count=1)
+
+    def test_invalid_repeated_search_is_controlled_and_does_not_list_products(self):
+        Product.objects.create(
+            business=self.business,
+            name="Private if unfiltered",
+            description="Must not render for invalid search.",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(f"{self.url}?q=first&q=second")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["workspace_search_is_valid"])
+        self.assertContains(response, "Enter one search query.")
+        self.assertContains(response, "Search was not applied.")
+        self.assertNotContains(response, "Private if unfiltered")
+
+    def test_native_stock_fallback_preserves_searched_workspace(self):
+        product, choice = self.create_product_with_choice(
+            name="Searchable trousers",
+            quantity=1,
+        )
+        adjustment_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": choice.pk},
+        )
+        searched_workspace_url = f"{self.url}?q=searchable"
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            adjustment_url,
+            {"delta": "1", "next": searched_workspace_url},
+            follow=True,
+        )
+
+        self.assertEqual(
+            response.redirect_chain,
+            [(searched_workspace_url, 302)],
+        )
+        self.assertEqual(response.context["workspace_search_query"], "searchable")
+        self.assertEqual(list(response.context["products"]), [product])
+        choice.refresh_from_db()
+        self.assertEqual(choice.quantity, 2)
+        self.assertContains(response, "1 active · 2 total stock")
 
     def test_workspace_renders_compact_card_semantics(self):
         product_type = BusinessProductType.objects.create(

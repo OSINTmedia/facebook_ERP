@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 and Phase 5 are `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. P5.1 through P5.8 are released, owner-reviewed where required, integrity-audited, and exact-SHA CI-passed; Gate 3 is `PASSED`. Phase 6 is `IN_PROGRESS`: P6.1 and P6.2 are closed, and P6.3 is locally accepted with operational closure determined by Prompt 5 Git/GitHub evidence. The Workspace is now the first availability UI consumer; readiness and buyer replies do not exist, and exact delivery metadata remains Git/GitHub authority.
+- Current implementation state: Phase 4 and Phase 5 are `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. P5.1 through P5.8 are released, owner-reviewed where required, integrity-audited, and exact-SHA CI-passed; Gate 3 is `PASSED`. Phase 6 is `IN_PROGRESS`: P6.1 through P6.3 are closed, and P6.4 is locally accepted with operational closure determined by Prompt 5 Git/GitHub evidence. The Workspace is now the first availability UI consumer; readiness and buyer replies do not exist, and exact delivery metadata remains Git/GitHub authority.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -890,7 +890,7 @@ Avoid libraries that depend on:
 ### Phase 6: Operational Product Workspace
 
 - Refined objective: turn the existing authenticated Product list into the seller's mobile-first daily operational cockpit for finding one Product, understanding its lifecycle and computed availability, inspecting exact choice stock, making approved +1/-1 stock changes, and returning from correction work without losing Workspace context.
-- Dependency and current state: Phase 5 and Gate 3 are PASSED; the Product core, confirmed classification/material/choice truth, one-save initial stock, centralized subsequent stock mutation, immutable adjustment history, and computed availability are released. Phase 6 is IN_PROGRESS; P6.1 and P6.2 are CLOSED, and P6.3 is locally accepted with operational closure determined by Prompt 5 Git/GitHub evidence.
+- Dependency and current state: Phase 5 and Gate 3 are PASSED; the Product core, confirmed classification/material/choice truth, one-save initial stock, centralized subsequent stock mutation, immutable adjustment history, and computed availability are released. Phase 6 is IN_PROGRESS; P6.1 through P6.3 are CLOSED, and P6.4 is locally accepted with operational closure determined by Prompt 5 Git/GitHub evidence.
 - Scope boundary: authenticated Business-scoped server-rendered Product listing, compact operational cards, exact-choice stock controls, deterministic search, owner-approved bounded filters, canonical URL/query state, explicit edit return paths, HTMX server-truth refresh, Phase 6 empty/loading/error/recovery states, mobile-first behavior, accessibility baseline, and a Phase 6-specific UX/regression gate.
 - Source-of-truth boundary: Product lifecycle remains stored and separate from computed availability; ProductChoice remains the quantity owner; duplicate same-size/color choices remain distinct identities; all subsequent quantity writes continue through the released Phase 5 inventory route and mutation service; no client state may own quantity, availability, lifecycle, Business scope, or confirmed facts.
 - Cross-phase firewall: no Dashboard or attention queue, readiness, buyer-question coverage, ready reply, Product Detail dependency, clone, archive/restore, direct stock set, arbitrary quantity mutation, reason codes, bulk stock editing, Product relations, measurements, fit guidance, media expansion, analytics, public buyer behavior, chatbot, LLM interpretation, orders, reservations, payments, or delivery.
@@ -988,7 +988,7 @@ Avoid libraries that depend on:
 - Proposed commit message: feat: add workspace choice stock controls
 - Rollback/recovery note: remove the card-hosted forms while retaining the released inventory route/service and Product Edit controls; no inventory facts or schema need rollback.
 - Stop gate relation: satisfies native exact-choice stock action and fallback integrity; the Phase 6 HTMX loading, focus, error, availability, and filter-membership coherence gate remains P6.6.
-- Status: AUDITED_READY locally; operational closure is determined by Prompt 5 Git/GitHub evidence without a routine post-release documentation sync.
+- Status: CLOSED; released and exact-SHA CI-passed.
 
 #### P6.4 Product Workspace Search Baseline
 
@@ -1019,7 +1019,7 @@ Avoid libraries that depend on:
 - Proposed commit message: feat: add product workspace search
 - Rollback/recovery note: remove q parsing and search UI while leaving the P6.1-P6.3 unsearched Workspace intact; no schema or persisted data changes require recovery.
 - Stop gate relation: satisfies the Phase 6 search and searched-return foundation; bounded filters and HTMX state coherence remain open.
-- Status: NOT_STARTED.
+- Status: AUDITED_READY locally; operational closure is determined by Prompt 5 Git/GitHub evidence without a routine post-release documentation sync.
 
 #### P6.5 V1 Product Workspace Filter Baseline
 
