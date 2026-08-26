@@ -1,0 +1,65 @@
+<article class="product-card" aria-labelledby="product-card-title-{{ card.product_id }}">
+  <header class="product-card__header">
+    <div class="product-card__identity">
+      <h2 id="product-card-title-{{ card.product_id }}">{{ card.name }}</h2>
+      <p class="product-card__description">{{ card.description_excerpt }}</p>
+      {% if card.product_type_name %}
+        <p class="product-card__type">
+          <span>Product type</span>
+          <strong>{{ card.product_type_name }}</strong>
+        </p>
+      {% endif %}
+    </div>
+
+    <dl class="product-card__states">
+      <div class="product-card__state">
+        <dt>Lifecycle</dt>
+        <dd><span class="status-pill status-pill--lifecycle">{{ card.lifecycle_label }}</span></dd>
+      </div>
+      <div class="product-card__state">
+        <dt>Availability</dt>
+        <dd><span class="status-pill status-pill--{{ card.availability_state }}">{{ card.availability_label }}</span></dd>
+      </div>
+    </dl>
+  </header>
+
+  <section class="product-card__choices" aria-labelledby="product-card-choices-{{ card.product_id }}">
+    <div class="product-card__choice-heading">
+      <div>
+        <h3 id="product-card-choices-{{ card.product_id }}">Choices</h3>
+        <p>{{ card.active_choice_count }} active · {{ card.active_stock_total }} total stock</p>
+      </div>
+      {% if card.inactive_choice_count %}
+        <p class="product-card__inactive-count">{{ card.inactive_choice_count }} inactive</p>
+      {% endif %}
+    </div>
+
+    {% if card.active_choices %}
+      <ul class="product-card__choice-list" aria-label="Active choices for {{ card.name }}">
+        {% for choice in card.active_choices %}
+          <li class="product-card__choice-row">
+            <div class="product-card__choice-identity">
+              <strong>Choice #{{ choice.choice_id }}</strong>
+              <span><span class="product-card__choice-label">Size</span> {{ choice.size_name }}</span>
+              <span><span class="product-card__choice-label">Color</span> {{ choice.color_name }}</span>
+            </div>
+            <div class="product-card__quantity">
+              <span>Quantity</span>
+              <strong>{{ choice.quantity }}</strong>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="product-card__choice-empty">No active choices. Edit this Product to add or activate one.</p>
+    {% endif %}
+  </section>
+
+  <footer class="product-card__actions">
+    <a
+      class="button button--secondary button--compact"
+      href="{% url 'catalog:product_edit' card.product_id %}?next={{ workspace_return_url|urlencode }}"
+      aria-label="Edit {{ card.name }}"
+    >Edit product</a>
+  </footer>
+</article>

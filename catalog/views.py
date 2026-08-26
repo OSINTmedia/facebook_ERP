@@ -29,7 +29,11 @@ from catalog.vocabulary import (
     create_choice_vocabulary_entry,
     update_choice_vocabulary_entry,
 )
-from catalog.workspace import ProductWorkspaceState, product_workspace_products
+from catalog.workspace import (
+    ProductWorkspaceState,
+    build_product_workspace_cards,
+    product_workspace_products,
+)
 
 
 RECOGNITION_PREVIEW_INTENT = "preview_recognition"
@@ -109,15 +113,21 @@ class ProductListView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         products = Product.objects.none()
+        product_cards = ()
 
         if self.active_business is not None:
             products = product_workspace_products(business=self.active_business)
+            product_cards = build_product_workspace_cards(
+                business=self.active_business,
+                products=products,
+            )
 
         context.update(
             {
                 "active_business": self.active_business,
                 "business_policy_blocked": self.business_policy_blocked,
                 "current_nav": "products",
+                "product_cards": product_cards,
                 "products": products,
                 "workspace_return_url": self.workspace_state.return_url,
             }

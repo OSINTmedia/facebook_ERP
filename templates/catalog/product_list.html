@@ -18,7 +18,7 @@
         <p>No business workspace yet.</p>
       </div>
     {% else %}
-      {% if products %}
+      {% if product_cards %}
         <div class="page-actions">
           <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">Add product</a>
           <a class="button button--secondary" href="{% url 'catalog:choice_vocabulary' %}?next={{ workspace_return_url|urlencode }}">Manage product vocabulary</a>

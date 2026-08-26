@@ -1,18 +1,9 @@
 <div id="product-workspace-results" class="product-workspace-results">
-  {% if products %}
+  {% if product_cards %}
     <ul class="product-list" aria-label="Products">
-      {% for product in products %}
+      {% for card in product_cards %}
         <li class="product-list__item">
-          <article class="product-summary">
-            <div>
-              <h2>{{ product.name }}</h2>
-              <p>{{ product.description }}</p>
-            </div>
-            <div class="product-summary__actions">
-              <span class="status-pill">{{ product.get_lifecycle_display }}</span>
-              <a class="button button--secondary button--compact" href="{% url 'catalog:product_edit' product.pk %}?next={{ workspace_return_url|urlencode }}">Edit</a>
-            </div>
-          </article>
+          {% include "catalog/_product_card.html" with card=card workspace_return_url=workspace_return_url only %}
         </li>
       {% endfor %}
     </ul>

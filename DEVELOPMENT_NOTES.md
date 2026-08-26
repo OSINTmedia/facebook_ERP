@@ -400,6 +400,14 @@ Validate every InventoryAdjustment bulk-create object's Business/choice/actor sc
 Reason:
 Django bulk creation bypasses model `save()` validation, while conflict-update can bypass ordinary queryset update guards. PostgreSQL protects adjustment arithmetic but cannot express ownership equality across the related Business, choice, and actor rows with the existing schema. Likewise, relying on a database overflow would preserve transaction rollback but expose a server error instead of the established controlled stock-recovery path. These guards keep tenant scope, append-only history, and authoritative HTMX feedback intact without adding stock policy, schema, or UI behavior.
 
+### 2026-08-26 - Workspace cards share availability truth through a scoped batch read model
+
+Decision:
+Build Product Workspace cards from one Business-first Product query plus one Business-scoped choice prefetch, and expose immutable card state rather than letting templates traverse models. Reuse a pure stock-state availability evaluator from the released inventory boundary so the batch card path and the single-Product service apply the same lifecycle-plus-active-stock rule. Keep duplicate ProductChoice rows separate by stable identity and sum only active-choice stock.
+
+Reason:
+A per-card availability or related-fact query would create N+1 growth, while copying the rule into catalog templates or storing a new availability field would create conflicting truth. The scoped batch adapter keeps Product Type, Size, Color, quantity, totals, and availability server-owned and tenant-safe without adding cache, schema, mutation, or later-phase state.
+
 ### 2026-08-14 - Superseded: normalized duplicate choices were blocked
 
 Status:

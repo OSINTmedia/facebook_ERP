@@ -18,7 +18,10 @@ from catalog.models import (
     Product,
     ProductChoice,
 )
-from inventory.availability import compute_product_availability
+from inventory.availability import (
+    compute_availability_from_stock_state,
+    compute_product_availability,
+)
 from inventory.models import InventoryAdjustment
 from inventory.mutations import (
     apply_choice_quantity_delta,
@@ -97,6 +100,26 @@ class ProductAvailabilityTests(TestCase):
             color=color,
             quantity=quantity,
             is_active=is_active,
+        )
+
+    def test_shared_stock_state_evaluator_keeps_lifecycle_separate(self):
+        self.assertTrue(
+            compute_availability_from_stock_state(
+                product_lifecycle=Product.Lifecycle.ACTIVE,
+                has_positive_active_choice=True,
+            )
+        )
+        self.assertFalse(
+            compute_availability_from_stock_state(
+                product_lifecycle=Product.Lifecycle.ACTIVE,
+                has_positive_active_choice=False,
+            )
+        )
+        self.assertFalse(
+            compute_availability_from_stock_state(
+                product_lifecycle=Product.Lifecycle.DRAFT,
+                has_positive_active_choice=True,
+            )
         )
 
     def test_active_product_with_positive_active_choice_is_available(self):

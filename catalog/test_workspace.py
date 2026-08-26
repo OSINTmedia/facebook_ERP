@@ -1,11 +1,24 @@
 from django.contrib.auth import get_user_model
+from django.db import connection
 from django.http import QueryDict
 from django.test import SimpleTestCase, TestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from businesses.models import Business
-from catalog.models import Product
-from catalog.workspace import ProductWorkspaceState, product_workspace_products
+from catalog.models import (
+    BusinessColor,
+    BusinessProductType,
+    BusinessSize,
+    Product,
+    ProductChoice,
+)
+from catalog.workspace import (
+    PRODUCT_DESCRIPTION_EXCERPT_LENGTH,
+    ProductWorkspaceState,
+    build_product_workspace_cards,
+    product_workspace_products,
+)
 
 
 class ProductWorkspaceStateTests(SimpleTestCase):
@@ -67,6 +80,191 @@ class ProductWorkspaceQueryTests(TestCase):
             list(products),
             [lower_id_same_name, higher_id_same_name, later_name],
         )
+
+
+class ProductCardReadModelTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="card-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="card-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Card Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Card Studio",
+        )
+        self.size = BusinessSize.objects.create(
+            business=self.business,
+            name="M",
+        )
+        self.color = BusinessColor.objects.create(
+            business=self.business,
+            name="Black",
+        )
+        self.other_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="Private size",
+        )
+        self.other_color = BusinessColor.objects.create(
+            business=self.other_business,
+            name="Private color",
+        )
+
+    def create_product(self, *, lifecycle=Product.Lifecycle.ACTIVE, **fields):
+        fields.setdefault("name", "Black trousers")
+        fields.setdefault("description", "Classic black trousers.")
+        return Product.objects.create(
+            business=self.business,
+            lifecycle=lifecycle,
+            **fields,
+        )
+
+    def create_choice(self, *, product, quantity=0, is_active=True):
+        return ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=self.size,
+            color=self.color,
+            quantity=quantity,
+            is_active=is_active,
+        )
+
+    def cards(self):
+        products = product_workspace_products(business=self.business)
+        return build_product_workspace_cards(
+            business=self.business,
+            products=products,
+        )
+
+    def test_active_positive_card_is_available_with_confirmed_type(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        product = self.create_product(product_type=product_type)
+        choice = self.create_choice(product=product, quantity=3)
+
+        card = self.cards()[0]
+
+        self.assertEqual(card.lifecycle_label, "Active")
+        self.assertEqual(card.availability_label, "Available")
+        self.assertEqual(card.availability_state, "available")
+        self.assertEqual(card.product_type_name, "Trousers")
+        self.assertEqual(card.active_choice_count, 1)
+        self.assertEqual(card.active_stock_total, 3)
+        self.assertEqual(card.inactive_choice_count, 0)
+        self.assertEqual(card.active_choices[0].choice_id, choice.pk)
+
+    def test_active_card_is_sold_out_when_only_active_choice_is_zero(self):
+        product = self.create_product()
+        zero_choice = self.create_choice(product=product, quantity=0)
+        self.create_choice(product=product, quantity=7, is_active=False)
+
+        card = self.cards()[0]
+
+        self.assertEqual(card.lifecycle_label, "Active")
+        self.assertEqual(card.availability_label, "Sold out")
+        self.assertEqual(card.availability_state, "sold-out")
+        self.assertEqual(card.active_choice_count, 1)
+        self.assertEqual(card.active_stock_total, 0)
+        self.assertEqual(card.inactive_choice_count, 1)
+        self.assertEqual(card.active_choices[0].choice_id, zero_choice.pk)
+
+    def test_draft_with_active_stock_is_not_sellable(self):
+        product = self.create_product(lifecycle=Product.Lifecycle.DRAFT)
+        self.create_choice(product=product, quantity=4)
+
+        card = self.cards()[0]
+
+        self.assertEqual(card.lifecycle_label, "Draft")
+        self.assertEqual(card.availability_label, "Not sellable")
+        self.assertEqual(card.availability_state, "not-sellable")
+        self.assertEqual(card.active_stock_total, 4)
+
+    def test_duplicate_looking_choices_remain_distinct_card_rows(self):
+        product = self.create_product()
+        first_choice = self.create_choice(product=product, quantity=1)
+        second_choice = self.create_choice(product=product, quantity=2)
+
+        card = self.cards()[0]
+
+        self.assertEqual(card.active_choice_count, 2)
+        self.assertEqual(card.active_stock_total, 3)
+        self.assertEqual(
+            [choice.choice_id for choice in card.active_choices],
+            [first_choice.pk, second_choice.pk],
+        )
+
+    def test_cross_business_related_facts_are_not_exposed(self):
+        other_type = BusinessProductType.objects.create(
+            business=self.other_business,
+            name="PRIVATE TYPE",
+        )
+        product = self.create_product()
+        Product.objects.filter(pk=product.pk).update(product_type=other_type)
+        choice = self.create_choice(product=product, quantity=8)
+        ProductChoice.objects.filter(pk=choice.pk).update(
+            size=self.other_size,
+            color=self.other_color,
+        )
+
+        card = self.cards()[0]
+
+        self.assertIsNone(card.product_type_name)
+        self.assertEqual(card.active_choices, ())
+        self.assertEqual(card.active_stock_total, 0)
+        self.assertEqual(card.availability_label, "Sold out")
+
+    def test_description_excerpt_is_bounded_without_inventing_content(self):
+        product = self.create_product(description="x" * 200)
+
+        card = self.cards()[0]
+
+        self.assertEqual(
+            len(card.description_excerpt),
+            PRODUCT_DESCRIPTION_EXCERPT_LENGTH,
+        )
+        self.assertTrue(card.description_excerpt.endswith("…"))
+        self.assertEqual(card.product_id, product.pk)
+
+    def test_card_builder_requires_the_workspace_read_boundary(self):
+        product = self.create_product()
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "Product must come from the Product Workspace query.",
+        ):
+            build_product_workspace_cards(
+                business=self.business,
+                products=[product],
+            )
+
+    def test_card_query_count_does_not_grow_per_product(self):
+        first_product = self.create_product(name="Product 1")
+        self.create_choice(product=first_product, quantity=1)
+
+        with CaptureQueriesContext(connection) as one_product_queries:
+            first_cards = self.cards()
+        self.assertEqual(len(first_cards), 1)
+
+        for index in range(2, 7):
+            product = self.create_product(name=f"Product {index}")
+            self.create_choice(product=product, quantity=index)
+
+        with CaptureQueriesContext(connection) as many_product_queries:
+            many_cards = self.cards()
+
+        self.assertEqual(len(many_cards), 6)
+        self.assertEqual(len(one_product_queries), 2)
+        self.assertEqual(len(many_product_queries), len(one_product_queries))
 
 
 class ProductWorkspaceViewTests(TestCase):
@@ -158,6 +356,65 @@ class ProductWorkspaceViewTests(TestCase):
             f"?next={self.url}",
         )
         self.assertNotContains(response, "example.com")
+
+    def test_workspace_renders_compact_card_semantics(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        size = BusinessSize.objects.create(business=self.business, name="M")
+        color = BusinessColor.objects.create(business=self.business, name="Black")
+        product = Product.objects.create(
+            business=self.business,
+            product_type=product_type,
+            name="Black trousers",
+            description="Classic black trousers.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=size,
+            color=color,
+            quantity=3,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_product_card.html")
+        self.assertContains(response, "Lifecycle")
+        self.assertContains(response, "Availability")
+        self.assertContains(response, "Available")
+        self.assertContains(response, "Product type")
+        self.assertContains(response, "Trousers")
+        self.assertContains(response, f"Choice #{choice.pk}")
+        self.assertContains(response, "Size")
+        self.assertContains(response, "Color")
+        self.assertContains(response, "Quantity")
+        self.assertContains(response, 'aria-label="Edit Black trousers"')
+        self.assertNotContains(response, "Ready reply")
+
+    def test_workspace_card_without_active_choices_has_edit_recovery(self):
+        product = Product.objects.create(
+            business=self.business,
+            name="Choice-free draft",
+            description="Needs a choice.",
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "No active choices.")
+        self.assertContains(response, "Not sellable")
+        self.assertContains(
+            response,
+            f'{reverse("catalog:product_edit", kwargs={"pk": product.pk})}'
+            f"?next={self.url}",
+            count=1,
+        )
 
     def test_workspace_without_business_is_write_free(self):
         seller_without_business = get_user_model().objects.create_user(
