@@ -53,8 +53,8 @@ P6.4 adds controlled, URL-backed Product retrieval to the owned Workspace withou
 
 ## Current Gate and Next Work
 
-- Release gate: P6.4 is closed through the owner-approved successful current-main recovery-SHA CI; exact delivery metadata remains in Git/GitHub.
-- Next functional slice after P6.4 closes: P6.5 V1 Product Workspace Filter Baseline; implementation requires explicit owner approval of the exact bounded filter set.
+- Current gate: P6.4 is closed through the owner-approved successful current-main recovery-SHA CI; exact delivery metadata remains in Git/GitHub.
+- Next functional slice: P6.5 V1 Product Workspace Filter Baseline; implementation requires explicit owner approval of the exact bounded filter set.
 
 ## Active Blockers and Decisions
 
@@ -65,11 +65,6 @@ P6.4 adds controlled, URL-backed Product retrieval to the owned Workspace withou
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
 - UX note: the current Product create/edit surface is functionally accepted but not yet the desired smart assistant-style operational experience; treat this as later UX work, not a Phase 4 semantic-recognition blocker.
 - Unrelated later-phase owner decisions remain where recorded in controlling documents.
-
-## Current Audited Release Set
-
-- `BUILD_PLAN.md`
-- `changelog_checkpoint.md`
 
 ## Handoff Guardrails
 
