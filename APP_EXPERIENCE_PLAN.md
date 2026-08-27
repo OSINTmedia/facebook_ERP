@@ -150,6 +150,7 @@ OWNER_DECISION_REQUIRED: whether relations are excluded from V1 edit form.
 ## 11. Search and Filter Experience Contract
 
 - RECOMMENDED_FROM_EVIDENCE: Search should support product description/name, size, color, approved type, approved tags, aliases, and normalized observed text where this does not create false buyer-facing facts.
+- OWNER_APPROVED_P6.5: The V1 Product Workspace filter set is exactly one single-select stored Lifecycle filter (`Active`/`Draft`) and one single-select computed Availability filter (`Available`/`Sold out`). They compose with search using AND semantics in canonical server-owned URL state; Sold out means an active Product with no positive active choice stock and never relabels a draft. Active filters and result count remain visible, Clear search preserves filters, Clear filters preserves search, and Clear all removes both. Type, Tag, material, size, color, readiness, low-stock, multi-select, sorting, pagination, and client-owned filter state remain excluded.
 - RECOMMENDED_FROM_EVIDENCE: Active query/filter state must be visible.
 - RECOMMENDED_FROM_EVIDENCE: Clear action must be obvious.
 - RECOMMENDED_FROM_EVIDENCE: No-result state should suggest simpler terms.

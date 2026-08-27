@@ -125,18 +125,20 @@ class ProductListView(LoginRequiredMixin, TemplateView):
 
         if (
             self.active_business is not None
-            and self.workspace_state.search_is_valid
+            and self.workspace_state.is_valid
         ):
             products = product_workspace_products(
                 business=self.active_business,
                 search_query=self.workspace_state.search_query,
+                lifecycle_filter=self.workspace_state.lifecycle_filter,
+                availability_filter=self.workspace_state.availability_filter,
             )
             product_cards = build_product_workspace_cards(
                 business=self.active_business,
                 products=products,
             )
             catalog_has_products = bool(product_cards)
-            if self.workspace_state.search_query and not product_cards:
+            if self.workspace_state.has_active_query and not product_cards:
                 catalog_has_products = Product.objects.filter(
                     business=self.active_business
                 ).exists()
@@ -156,9 +158,28 @@ class ProductListView(LoginRequiredMixin, TemplateView):
                 "workspace_search_is_valid": (
                     self.workspace_state.search_is_valid
                 ),
+                "workspace_filters_are_valid": (
+                    self.workspace_state.filters_are_valid
+                ),
+                "workspace_query_is_valid": self.workspace_state.is_valid,
+                "workspace_lifecycle_filter": (
+                    self.workspace_state.lifecycle_filter
+                ),
+                "workspace_availability_filter": (
+                    self.workspace_state.availability_filter
+                ),
+                "workspace_has_active_filters": (
+                    self.workspace_state.has_active_filters
+                ),
                 "workspace_result_count": len(product_cards),
                 "catalog_has_products": catalog_has_products,
                 "workspace_return_url": self.workspace_state.return_url,
+                "workspace_clear_search_url": (
+                    self.workspace_state.clear_search_url
+                ),
+                "workspace_clear_filters_url": (
+                    self.workspace_state.clear_filters_url
+                ),
             }
         )
         return context

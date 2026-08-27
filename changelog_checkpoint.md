@@ -8,7 +8,7 @@
 - Rebuild workspace: `/home/giga/Desktop/OSINT/GITHUB_MVP_ERP/`
 - Source prototype: read-only evidence at `/home/giga/Desktop/OSINT/facebook_MVP/`
 - Authority rule: exact branch, hash, remote, and CI metadata live in Git/GitHub, not this file
-- Last updated: 2026-08-26
+- Last updated: 2026-08-27
 
 ## Current State
 
@@ -32,35 +32,35 @@
 - P6.2 Compact Product Card and Availability Baseline: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
 - P6.3 Choice-Level Workspace Stock Controls: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
 - P6.4 Product Workspace Search Baseline: `CLOSED`; the approved manual-dispatch recovery was released and exact-SHA CI-passed after the original source workflow's zero-job startup failure, with delivery metadata retained in Git/GitHub.
+- P6.5 V1 Product Workspace Filter Baseline: `AUDITED_READY`; implementation, local integrity verification, and required owner/browser acceptance passed; Prompt 5 release and exact-SHA CI remain.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
 
-P6.4 adds controlled, URL-backed Product retrieval to the owned Workspace without adding filters, client-owned state, or unconfirmed facts:
+P6.5 adds the owner-approved bounded filter set to the owned Product Workspace without adding filter sprawl or client-owned truth:
 
-- validated `q` state trims and collapses whitespace, permits at most 120 characters and eight tokens, rejects repeated or malformed input, and owns canonical Workspace return context;
-- case-insensitive search requires every token to match at least one approved persisted field across Product name/description, confirmed Type/Tag names and aliases, exact choice Size/Color names and aliases, or confirmed material wording;
-- every structured relation is Business-scoped, including the complete Size/Color choice boundary, and duplicate joins still produce one deterministically ordered Product;
-- visible applied query, result count, Clear search, validation, catalog-empty, and search-no-result states remain native server-rendered behavior and preserve Edit and stock return context without HTMX or Alpine.
+- single-select stored Lifecycle (`Active`/`Draft`) and computed Availability (`Available`/`Sold out`) filters compose with `q` through canonical server-owned URL state;
+- Availability is derived from active positive choice stock, excludes drafts from Sold out, and constrains the complete Product/choice/size/color relation to the active Business;
+- visible active filters, result counts, Clear search, Clear filters, Clear all, validation, and distinct catalog/search/filter/combined empty states remain native server-rendered behavior;
+- Type, Tag, material, size, color, readiness, low-stock, multi-select, sorting, pagination, HTMX filter state, and Alpine query state remain excluded.
 
 ## Verification and Audit
 
-- The focused P6.4 Workspace suite passed: 36 tests; the PostgreSQL-backed full regression suite passed: 379 tests.
-- Source, untracked-file whitespace, documentation, and release-whitelist diff checks passed.
+- The focused P6.5 Workspace suite passed: 49 tests; the focused inventory regression suite passed: 53 tests; the PostgreSQL-backed full regression suite passed: 392 tests.
+- Source, whitespace, scope-whitelist, documentation, and no-drift checks passed.
 - Django system, migration dry-run, and unapplied-migration checks passed with no schema change.
-- Integrity audit passed for Business-first querying, canonical and alias field coverage, confirmed-fact boundaries, whole-choice Business isolation, deliberate cross-Business corruption rejection, AND-across-token behavior, duplicate elimination, bounded query count, malformed-input recovery, canonical Edit/stock return context, native accessibility/mobile behavior, hosted compatibility, and approved Phase 6 scope.
-- Owner/browser verification is advisory for P6.4 and has not been claimed as executed.
+- Integrity audit passed for the approved filter scope, Business-first querying, complete choice-relation isolation, lifecycle/availability separation, search composition, canonical/clear URL behavior, invalid-input recovery, bounded query growth, distinct empty states, native accessibility/mobile structure, and hosted compatibility.
+- Required P6.5 owner/browser verification passed by owner report.
 
 ## Current Gate and Next Work
 
-- Current gate: P6.4 is closed through the owner-approved successful current-main recovery-SHA CI; exact delivery metadata remains in Git/GitHub.
-- Next functional slice: P6.5 V1 Product Workspace Filter Baseline; implementation requires explicit owner approval of the exact bounded filter set.
+- Current gate: Prompt 5 exact release, remote alignment, and exact-SHA CI for P6.5.
+- Next functional slice after P6.5 closes: P6.6 HTMX Workspace Truth Refresh and State Coherence.
 
 ## Active Blockers and Decisions
 
-- P6.4 has no remaining blocker; the original zero-job startup failure remains visible in GitHub history and is not represented as a successful run.
-- P6.4 intentionally adds only native server-rendered search; filters, lifecycle keyword interpretation, fuzzy/morphology behavior, ranking, autocomplete, pagination, Workspace HTMX replacement, readiness, replies, and Dashboard behavior remain excluded.
-- P6.5 remains `OWNER_DECISION_REQUIRED` before implementation for the exact bounded filter set; the roadmap recommends stored Lifecycle plus computed Availability only.
+- P6.5 has no pre-release blocker; implementation approval fixed the exact set as stored Lifecycle plus computed Availability.
+- P6.5 intentionally remains native server-rendered filtering; Type/Tag and other filter expansion, fuzzy/morphology behavior, ranking, autocomplete, pagination, Workspace HTMX replacement, readiness, replies, and Dashboard behavior remain excluded.
 - Existing choices retain read-only quantity plus P5.6 controls; one-time initialization is not approval for ongoing direct set or arbitrary subsequent deltas.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
 - UX note: the current Product create/edit surface is functionally accepted but not yet the desired smart assistant-style operational experience; treat this as later UX work, not a Phase 4 semantic-recognition blocker.

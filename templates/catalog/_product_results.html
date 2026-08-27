@@ -1,7 +1,11 @@
 <div id="product-workspace-results" class="product-workspace-results">
-  {% if not workspace_search_is_valid %}
+  {% if not workspace_query_is_valid %}
     <div class="empty-state empty-state--warning" role="status">
-      <p>Search was not applied. Correct the query above and try again.</p>
+      {% if not workspace_search_is_valid %}
+        <p>Search was not applied. Correct the query above and try again.</p>
+      {% else %}
+        <p>Filters were not applied. Correct the filters above and try again.</p>
+      {% endif %}
     </div>
   {% elif product_cards %}
     <ul class="product-list" aria-label="Products">
@@ -11,12 +15,26 @@
         </li>
       {% endfor %}
     </ul>
+  {% elif workspace_search_query and workspace_has_active_filters and catalog_has_products %}
+    <div class="empty-state" role="status">
+      <p>No products match this search and filter combination.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button button--primary" href="{% url 'catalog:product_list' %}">Clear all</a>
+    </div>
+  {% elif workspace_has_active_filters and catalog_has_products %}
+    <div class="empty-state" role="status">
+      <p>No products match the active filters.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button button--primary" href="{{ workspace_clear_filters_url }}">Clear filters</a>
+    </div>
   {% elif workspace_search_query and catalog_has_products %}
     <div class="empty-state" role="status">
       <p>No products match “{{ workspace_search_query }}”. Try a simpler search.</p>
     </div>
     <div class="page-actions">
-      <a class="button button--primary" href="{% url 'catalog:product_list' %}">Clear search</a>
+      <a class="button button--primary" href="{{ workspace_clear_search_url }}">Clear search</a>
     </div>
   {% else %}
     <div class="empty-state" role="status">
@@ -24,8 +42,12 @@
     </div>
     <div class="page-actions">
       <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">Add product</a>
-      {% if workspace_search_query %}
-        <a class="button button--secondary" href="{% url 'catalog:product_list' %}">Clear search</a>
+      {% if workspace_search_query and workspace_has_active_filters %}
+        <a class="button button--secondary" href="{% url 'catalog:product_list' %}">Clear all</a>
+      {% elif workspace_has_active_filters %}
+        <a class="button button--secondary" href="{{ workspace_clear_filters_url }}">Clear filters</a>
+      {% elif workspace_search_query %}
+        <a class="button button--secondary" href="{{ workspace_clear_search_url }}">Clear search</a>
       {% endif %}
     </div>
   {% endif %}

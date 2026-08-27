@@ -25,6 +25,16 @@ from catalog.vocabulary import (
 
 PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH = 120
 PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS = 8
+PRODUCT_WORKSPACE_LIFECYCLE_CHOICES = (
+    ("", "All lifecycle states"),
+    (Product.Lifecycle.ACTIVE, "Active"),
+    (Product.Lifecycle.DRAFT, "Draft"),
+)
+PRODUCT_WORKSPACE_AVAILABILITY_CHOICES = (
+    ("", "All availability states"),
+    ("available", "Available"),
+    ("sold_out", "Sold out"),
+)
 
 
 class ProductWorkspaceSearchForm(forms.Form):
@@ -40,6 +50,16 @@ class ProductWorkspaceSearchForm(forms.Form):
                 "placeholder": "Name, description, type, tag, choice, or material",
             }
         ),
+    )
+    lifecycle = forms.ChoiceField(
+        required=False,
+        label="Lifecycle",
+        choices=PRODUCT_WORKSPACE_LIFECYCLE_CHOICES,
+    )
+    availability = forms.ChoiceField(
+        required=False,
+        label="Availability",
+        choices=PRODUCT_WORKSPACE_AVAILABILITY_CHOICES,
     )
 
     def clean_q(self):
@@ -61,6 +81,22 @@ class ProductWorkspaceSearchForm(forms.Form):
                 f"Search must use {PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS} words or fewer."
             )
         return query
+
+    def clean_lifecycle(self):
+        if (
+            hasattr(self.data, "getlist")
+            and len(self.data.getlist("lifecycle")) > 1
+        ):
+            raise ValidationError("Select one lifecycle filter.")
+        return self.cleaned_data.get("lifecycle", "")
+
+    def clean_availability(self):
+        if (
+            hasattr(self.data, "getlist")
+            and len(self.data.getlist("availability")) > 1
+        ):
+            raise ValidationError("Select one availability filter.")
+        return self.cleaned_data.get("availability", "")
 
 
 class ProductForm(forms.ModelForm):

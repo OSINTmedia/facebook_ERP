@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from urllib.parse import urlencode
 
-from django.db.models import OuterRef, Prefetch, Q, QuerySet, Subquery
+from django.db.models import Exists, OuterRef, Prefetch, Q, QuerySet, Subquery
 from django.urls import reverse
 
 from businesses.models import Business
@@ -17,7 +17,12 @@ from catalog.models import (
 from inventory.availability import compute_availability_from_stock_state
 
 
-SUPPORTED_PRODUCT_WORKSPACE_QUERY_KEYS: frozenset[str] = frozenset({"q"})
+SUPPORTED_PRODUCT_WORKSPACE_QUERY_KEYS: frozenset[str] = frozenset(
+    {"q", "lifecycle", "availability"}
+)
+PRODUCT_WORKSPACE_AVAILABILITY_VALUES: frozenset[str] = frozenset(
+    {"available", "sold_out"}
+)
 PRODUCT_DESCRIPTION_EXCERPT_LENGTH = 160
 
 
@@ -29,6 +34,10 @@ class ProductWorkspaceState:
     search_query: str = ""
     search_requested: bool = False
     search_is_valid: bool = True
+    lifecycle_filter: str = ""
+    availability_filter: str = ""
+    filters_requested: bool = False
+    filters_are_valid: bool = True
 
     @classmethod
     def from_query_params(cls, query_params):
@@ -37,26 +46,82 @@ class ProductWorkspaceState:
     @classmethod
     def from_search_form(cls, search_form):
         search_requested = "q" in search_form.data
-        if not search_form.is_valid():
-            return cls(
-                search_requested=search_requested,
-                search_is_valid=False,
-            )
+        filters_requested = any(
+            key in search_form.data for key in ("lifecycle", "availability")
+        )
+        search_form.is_valid()
+        search_is_valid = "q" not in search_form.errors
+        filters_are_valid = not any(
+            key in search_form.errors for key in ("lifecycle", "availability")
+        )
 
-        search_query = search_form.cleaned_data["q"]
-        query_items = (("q", search_query),) if search_query else ()
+        search_query = (
+            search_form.cleaned_data.get("q", "") if search_is_valid else ""
+        )
+        if filters_are_valid:
+            lifecycle_filter = search_form.cleaned_data.get("lifecycle", "")
+            availability_filter = search_form.cleaned_data.get(
+                "availability",
+                "",
+            )
+        else:
+            lifecycle_filter = ""
+            availability_filter = ""
+
+        query_items = tuple(
+            (key, value)
+            for key, value in (
+                ("q", search_query),
+                ("lifecycle", lifecycle_filter),
+                ("availability", availability_filter),
+            )
+            if value
+        )
         return cls(
             query_items=query_items,
             search_query=search_query,
             search_requested=search_requested,
+            search_is_valid=search_is_valid,
+            lifecycle_filter=lifecycle_filter,
+            availability_filter=availability_filter,
+            filters_requested=filters_requested,
+            filters_are_valid=filters_are_valid,
         )
 
     @property
+    def is_valid(self):
+        return self.search_is_valid and self.filters_are_valid
+
+    @property
+    def has_active_filters(self):
+        return bool(self.lifecycle_filter or self.availability_filter)
+
+    @property
+    def has_active_query(self):
+        return bool(self.search_query or self.has_active_filters)
+
+    @property
     def return_url(self):
+        return self._url_for(self.query_items)
+
+    @property
+    def clear_search_url(self):
+        return self._url_for(
+            tuple(item for item in self.query_items if item[0] != "q")
+        )
+
+    @property
+    def clear_filters_url(self):
+        return self._url_for(
+            tuple(item for item in self.query_items if item[0] == "q")
+        )
+
+    @staticmethod
+    def _url_for(query_items):
         base_url = reverse("catalog:product_list")
-        if not self.query_items:
+        if not query_items:
             return base_url
-        return f"{base_url}?{urlencode(self.query_items)}"
+        return f"{base_url}?{urlencode(query_items)}"
 
 
 @dataclass(frozen=True)
@@ -86,8 +151,15 @@ def product_workspace_products(
     *,
     business: Business,
     search_query: str = "",
+    lifecycle_filter: str = "",
+    availability_filter: str = "",
 ) -> QuerySet[Product]:
     """Return deterministic Product rows owned by one resolved Business."""
+
+    if lifecycle_filter not in {"", *Product.Lifecycle.values}:
+        raise ValueError("Unsupported Product lifecycle filter.")
+    if availability_filter not in {"", *PRODUCT_WORKSPACE_AVAILABILITY_VALUES}:
+        raise ValueError("Unsupported Product availability filter.")
 
     product_type_name = BusinessProductType.objects.filter(
         business=business,
@@ -105,12 +177,35 @@ def product_workspace_products(
     )
 
     products = Product.objects.filter(business=business)
+    if lifecycle_filter:
+        products = products.filter(lifecycle=lifecycle_filter)
     for token in search_query.split():
         products = products.filter(
             _product_search_token_filter(business=business, token=token)
         )
     if search_query:
         products = products.distinct()
+
+    if availability_filter:
+        positive_active_choice = ProductChoice.objects.filter(
+            business=business,
+            product__business=business,
+            product_id=OuterRef("pk"),
+            size__business=business,
+            color__business=business,
+            is_active=True,
+            quantity__gt=0,
+        )
+        products = products.annotate(
+            workspace_has_positive_active_choice=Exists(
+                positive_active_choice
+            )
+        ).filter(
+            lifecycle=Product.Lifecycle.ACTIVE,
+            workspace_has_positive_active_choice=(
+                availability_filter == "available"
+            ),
+        )
 
     return (
         products

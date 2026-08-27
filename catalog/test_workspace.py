@@ -7,6 +7,8 @@ from django.urls import reverse
 
 from businesses.models import Business
 from catalog.forms import (
+    PRODUCT_WORKSPACE_AVAILABILITY_CHOICES,
+    PRODUCT_WORKSPACE_LIFECYCLE_CHOICES,
     PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH,
     PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS,
     ProductWorkspaceSearchForm,
@@ -103,6 +105,101 @@ class ProductWorkspaceStateTests(SimpleTestCase):
             ["Search contains unsupported characters."],
         )
 
+    def test_filter_state_uses_canonical_order_and_clear_urls(self):
+        state = ProductWorkspaceState.from_query_params(
+            QueryDict(
+                "availability=available&q=+black+++trousers+"
+                "&unknown=value&lifecycle=active"
+            )
+        )
+
+        self.assertTrue(state.is_valid)
+        self.assertTrue(state.has_active_filters)
+        self.assertEqual(state.lifecycle_filter, Product.Lifecycle.ACTIVE)
+        self.assertEqual(state.availability_filter, "available")
+        self.assertEqual(
+            state.query_items,
+            (
+                ("q", "black trousers"),
+                ("lifecycle", "active"),
+                ("availability", "available"),
+            ),
+        )
+        self.assertEqual(
+            state.return_url,
+            (
+                f'{reverse("catalog:product_list")}?q=black+trousers'
+                "&lifecycle=active&availability=available"
+            ),
+        )
+        self.assertEqual(
+            state.clear_search_url,
+            (
+                f'{reverse("catalog:product_list")}?lifecycle=active'
+                "&availability=available"
+            ),
+        )
+        self.assertEqual(
+            state.clear_filters_url,
+            f'{reverse("catalog:product_list")}?q=black+trousers',
+        )
+
+    def test_repeated_filter_parameters_are_rejected(self):
+        search_form = ProductWorkspaceSearchForm(
+            QueryDict(
+                "q=trousers&lifecycle=active&lifecycle=draft"
+                "&availability=available&availability=sold_out"
+            )
+        )
+
+        state = ProductWorkspaceState.from_search_form(search_form)
+
+        self.assertFalse(state.is_valid)
+        self.assertTrue(state.search_is_valid)
+        self.assertFalse(state.filters_are_valid)
+        self.assertEqual(state.lifecycle_filter, "")
+        self.assertEqual(state.availability_filter, "")
+        self.assertEqual(
+            search_form.errors["lifecycle"],
+            ["Select one lifecycle filter."],
+        )
+        self.assertEqual(
+            search_form.errors["availability"],
+            ["Select one availability filter."],
+        )
+        self.assertEqual(
+            state.return_url,
+            f'{reverse("catalog:product_list")}?q=trousers',
+        )
+
+    def test_filter_fields_expose_only_the_approved_values(self):
+        self.assertEqual(
+            PRODUCT_WORKSPACE_LIFECYCLE_CHOICES,
+            (
+                ("", "All lifecycle states"),
+                (Product.Lifecycle.ACTIVE, "Active"),
+                (Product.Lifecycle.DRAFT, "Draft"),
+            ),
+        )
+        self.assertEqual(
+            PRODUCT_WORKSPACE_AVAILABILITY_CHOICES,
+            (
+                ("", "All availability states"),
+                ("available", "Available"),
+                ("sold_out", "Sold out"),
+            ),
+        )
+        search_form = ProductWorkspaceSearchForm(
+            {"lifecycle": "archived", "availability": "low_stock"}
+        )
+
+        self.assertFalse(search_form.is_valid())
+        self.assertIn("Select a valid choice", search_form.errors["lifecycle"][0])
+        self.assertIn(
+            "Select a valid choice",
+            search_form.errors["availability"][0],
+        )
+
 
 class ProductWorkspaceQueryTests(TestCase):
     def setUp(self):
@@ -123,6 +220,39 @@ class ProductWorkspaceQueryTests(TestCase):
             owner=self.other_owner,
             name="Other Studio",
         )
+
+    def create_filter_product(
+        self,
+        *,
+        name,
+        lifecycle=Product.Lifecycle.ACTIVE,
+        quantity=None,
+        choice_is_active=True,
+    ):
+        product = Product.objects.create(
+            business=self.business,
+            name=name,
+            description=f"{name} description.",
+            lifecycle=lifecycle,
+        )
+        if quantity is not None:
+            size, _ = BusinessSize.objects.get_or_create(
+                business=self.business,
+                name="M",
+            )
+            color, _ = BusinessColor.objects.get_or_create(
+                business=self.business,
+                name="Black",
+            )
+            ProductChoice.objects.create(
+                business=self.business,
+                product=product,
+                size=size,
+                color=color,
+                quantity=quantity,
+                is_active=choice_is_active,
+            )
+        return product
 
     def test_query_is_business_scoped_and_deterministically_ordered(self):
         lower_id_same_name = Product.objects.create(
@@ -452,6 +582,177 @@ class ProductWorkspaceQueryTests(TestCase):
         self.assertEqual(len(one_product_queries), 2)
         self.assertEqual(len(many_product_queries), len(one_product_queries))
 
+    def test_lifecycle_and_computed_availability_filters_are_distinct(self):
+        available = self.create_filter_product(
+            name="Active available",
+            quantity=2,
+        )
+        sold_out = self.create_filter_product(
+            name="Active sold out",
+            quantity=0,
+        )
+        inactive_stock = self.create_filter_product(
+            name="Active inactive stock",
+            quantity=5,
+            choice_is_active=False,
+        )
+        draft_with_stock = self.create_filter_product(
+            name="Draft with stock",
+            lifecycle=Product.Lifecycle.DRAFT,
+            quantity=7,
+        )
+
+        active_products = product_workspace_products(
+            business=self.business,
+            lifecycle_filter=Product.Lifecycle.ACTIVE,
+        )
+        draft_products = product_workspace_products(
+            business=self.business,
+            lifecycle_filter=Product.Lifecycle.DRAFT,
+        )
+        available_products = product_workspace_products(
+            business=self.business,
+            availability_filter="available",
+        )
+        sold_out_products = product_workspace_products(
+            business=self.business,
+            availability_filter="sold_out",
+        )
+
+        self.assertEqual(
+            list(active_products),
+            [available, inactive_stock, sold_out],
+        )
+        self.assertEqual(list(draft_products), [draft_with_stock])
+        self.assertEqual(list(available_products), [available])
+        self.assertEqual(
+            list(sold_out_products),
+            [inactive_stock, sold_out],
+        )
+        self.assertNotIn(draft_with_stock, sold_out_products)
+
+    def test_search_and_filters_compose_with_and_semantics(self):
+        matching = self.create_filter_product(
+            name="Black active trousers",
+            quantity=1,
+        )
+        self.create_filter_product(name="Black sold-out trousers", quantity=0)
+        self.create_filter_product(name="Blue active shirt", quantity=1)
+
+        products = product_workspace_products(
+            business=self.business,
+            search_query="black trousers",
+            lifecycle_filter=Product.Lifecycle.ACTIVE,
+            availability_filter="available",
+        )
+
+        self.assertEqual(list(products), [matching])
+
+    def test_availability_filter_rejects_cross_business_choice_stock(self):
+        local_product = self.create_filter_product(
+            name="Local sold out",
+            quantity=0,
+        )
+        corrupt_vocabulary_product = self.create_filter_product(
+            name="Local product with corrupt vocabulary",
+            quantity=4,
+        )
+        other_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="Private size",
+        )
+        other_color = BusinessColor.objects.create(
+            business=self.other_business,
+            name="Private color",
+        )
+        other_product = Product.objects.create(
+            business=self.other_business,
+            name="Private product",
+            description="Private product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        other_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=other_product,
+            size=other_size,
+            color=other_color,
+            quantity=9,
+        )
+        ProductChoice.objects.filter(pk=other_choice.pk).update(
+            product=local_product
+        )
+        ProductChoice.objects.filter(
+            product=corrupt_vocabulary_product
+        ).update(
+            size=other_size,
+            color=other_color,
+        )
+
+        available_products = product_workspace_products(
+            business=self.business,
+            availability_filter="available",
+        )
+        sold_out_products = product_workspace_products(
+            business=self.business,
+            availability_filter="sold_out",
+        )
+
+        self.assertEqual(list(available_products), [])
+        self.assertEqual(
+            list(sold_out_products),
+            [corrupt_vocabulary_product, local_product],
+        )
+
+    def test_query_boundary_rejects_unsupported_filter_values(self):
+        with self.assertRaisesMessage(
+            ValueError,
+            "Unsupported Product lifecycle filter.",
+        ):
+            product_workspace_products(
+                business=self.business,
+                lifecycle_filter="archived",
+            )
+        with self.assertRaisesMessage(
+            ValueError,
+            "Unsupported Product availability filter.",
+        ):
+            product_workspace_products(
+                business=self.business,
+                availability_filter="low_stock",
+            )
+
+    def test_availability_filter_card_query_count_does_not_grow_per_product(self):
+        self.create_filter_product(name="Available 1", quantity=1)
+
+        with CaptureQueriesContext(connection) as one_product_queries:
+            first_cards = build_product_workspace_cards(
+                business=self.business,
+                products=product_workspace_products(
+                    business=self.business,
+                    availability_filter="available",
+                ),
+            )
+
+        for index in range(2, 7):
+            self.create_filter_product(
+                name=f"Available {index}",
+                quantity=index,
+            )
+
+        with CaptureQueriesContext(connection) as many_product_queries:
+            many_cards = build_product_workspace_cards(
+                business=self.business,
+                products=product_workspace_products(
+                    business=self.business,
+                    availability_filter="available",
+                ),
+            )
+
+        self.assertEqual(len(first_cards), 1)
+        self.assertEqual(len(many_cards), 6)
+        self.assertEqual(len(one_product_queries), 2)
+        self.assertEqual(len(many_product_queries), len(one_product_queries))
+
 
 class ProductCardReadModelTests(TestCase):
     def setUp(self):
@@ -665,6 +966,7 @@ class ProductWorkspaceViewTests(TestCase):
         name="Workspace trousers",
         quantity=1,
         is_active=True,
+        lifecycle=Product.Lifecycle.ACTIVE,
     ):
         size, _ = BusinessSize.objects.get_or_create(
             business=self.business,
@@ -678,7 +980,7 @@ class ProductWorkspaceViewTests(TestCase):
             business=self.business,
             name=name,
             description="Workspace stock controls product.",
-            lifecycle=Product.Lifecycle.ACTIVE,
+            lifecycle=lifecycle,
         )
         choice = ProductChoice.objects.create(
             business=self.business,
@@ -838,6 +1140,179 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, "Enter one search query.")
         self.assertContains(response, "Search was not applied.")
         self.assertNotContains(response, "Private if unfiltered")
+
+    def test_workspace_filters_render_canonical_state_and_clear_actions(self):
+        matching_product, _ = self.create_product_with_choice(
+            name="Black available trousers",
+            quantity=2,
+        )
+        self.create_product_with_choice(
+            name="Black sold-out trousers",
+            quantity=0,
+        )
+        self.create_product_with_choice(
+            name="Black draft trousers",
+            quantity=4,
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(
+            self.url,
+            {
+                "availability": "available",
+                "q": "  black   trousers ",
+                "lifecycle": "active",
+                "unknown": "discard-me",
+            },
+        )
+
+        expected_return_url = (
+            f"{self.url}?q=black+trousers"
+            "&lifecycle=active&availability=available"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(list(response.context["products"]), [matching_product])
+        self.assertEqual(
+            response.context["workspace_return_url"],
+            expected_return_url,
+        )
+        self.assertEqual(
+            response.context["workspace_clear_search_url"],
+            f"{self.url}?lifecycle=active&availability=available",
+        )
+        self.assertEqual(
+            response.context["workspace_clear_filters_url"],
+            f"{self.url}?q=black+trousers",
+        )
+        self.assertContains(response, "2 active")
+        self.assertContains(response, "Lifecycle — Active")
+        self.assertContains(response, "Availability — Available")
+        self.assertContains(response, "Clear search", count=1)
+        self.assertContains(response, "Clear filters", count=1)
+        self.assertContains(response, "Clear all", count=1)
+        self.assertContains(
+            response,
+            f'name="next" value="{expected_return_url.replace("&", "&amp;")}"',
+        )
+        self.assertNotContains(response, "discard-me")
+
+    def test_workspace_filter_empty_states_have_one_matching_recovery(self):
+        self.create_product_with_choice(
+            name="Only available product",
+            quantity=1,
+        )
+        self.client.force_login(self.owner)
+
+        filter_response = self.client.get(
+            self.url,
+            {"availability": "sold_out"},
+        )
+        combined_response = self.client.get(
+            self.url,
+            {"q": "missing", "availability": "available"},
+        )
+
+        self.assertContains(
+            filter_response,
+            "No products match the active filters.",
+        )
+        self.assertContains(filter_response, "<strong>0</strong> products ·")
+        self.assertContains(filter_response, "Clear filters", count=1)
+        self.assertNotContains(filter_response, "Clear all")
+        self.assertNotContains(filter_response, "No products yet.")
+        self.assertContains(
+            combined_response,
+            "No products match this search and filter combination.",
+        )
+        self.assertContains(combined_response, "Clear all", count=1)
+        self.assertNotContains(combined_response, "Clear filters")
+        self.assertNotContains(combined_response, "Clear search")
+
+    def test_invalid_filter_is_controlled_and_does_not_list_products(self):
+        Product.objects.create(
+            business=self.business,
+            name="Must not render unfiltered",
+            description="Invalid filters cannot widen the query.",
+        )
+        self.client.force_login(self.owner)
+
+        unknown_response = self.client.get(
+            self.url,
+            {"availability": "low_stock"},
+        )
+        repeated_response = self.client.get(
+            f"{self.url}?lifecycle=active&lifecycle=draft"
+        )
+
+        self.assertFalse(unknown_response.context["workspace_query_is_valid"])
+        self.assertContains(unknown_response, "Select a valid choice")
+        self.assertContains(unknown_response, "Filters were not applied.")
+        self.assertNotContains(unknown_response, "Must not render unfiltered")
+        self.assertFalse(repeated_response.context["workspace_query_is_valid"])
+        self.assertContains(
+            repeated_response,
+            "Select one lifecycle filter.",
+        )
+        self.assertNotContains(repeated_response, "Must not render unfiltered")
+
+    def test_true_empty_catalog_remains_distinct_with_active_filters(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get(
+            self.url,
+            {"q": "missing", "availability": "sold_out"},
+        )
+
+        self.assertContains(response, "No products yet.")
+        self.assertNotContains(response, "No products match")
+        self.assertContains(response, "Add product", count=2)
+        self.assertContains(response, "Clear all", count=1)
+
+    def test_native_stock_fallback_updates_availability_filter_membership(self):
+        product, choice = self.create_product_with_choice(
+            name="Availability transition",
+            quantity=1,
+        )
+        adjustment_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": choice.pk},
+        )
+        available_url = f"{self.url}?availability=available"
+        sold_out_url = f"{self.url}?availability=sold_out"
+        self.client.force_login(self.owner)
+
+        sold_out_response = self.client.post(
+            adjustment_url,
+            {"delta": "-1", "next": available_url},
+            follow=True,
+        )
+
+        self.assertEqual(sold_out_response.redirect_chain, [(available_url, 302)])
+        self.assertEqual(list(sold_out_response.context["products"]), [])
+        self.assertContains(
+            sold_out_response,
+            "No products match the active filters.",
+        )
+        choice.refresh_from_db()
+        self.assertEqual(choice.quantity, 0)
+
+        available_response = self.client.post(
+            adjustment_url,
+            {"delta": "1", "next": sold_out_url},
+            follow=True,
+        )
+
+        self.assertEqual(available_response.redirect_chain, [(sold_out_url, 302)])
+        self.assertEqual(list(available_response.context["products"]), [])
+        self.assertContains(
+            available_response,
+            "No products match the active filters.",
+        )
+        choice.refresh_from_db()
+        self.assertEqual(choice.quantity, 1)
+        self.assertEqual(InventoryAdjustment.objects.filter(choice=choice).count(), 2)
+        self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
 
     def test_native_stock_fallback_preserves_searched_workspace(self):
         product, choice = self.create_product_with_choice(

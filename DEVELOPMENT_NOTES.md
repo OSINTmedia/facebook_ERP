@@ -505,6 +505,14 @@ Retain the Django CI workflow's push and pull-request behavior and add `workflow
 Reason:
 A zero-job startup failure provides no application failure or job to repair or rerun, while creating an empty bookkeeping commit would add no durable capability. A manual trigger provides a reusable recovery path, and constraining the recovery commit to the workflow trigger keeps the previously audited application source unchanged and the evidence honest.
 
+### 2026-08-27 - Product Workspace filters stay bounded and server-owned
+
+Decision:
+Limit the P6.5 filter contract to single-select stored Lifecycle and computed Availability values in canonical URL state. Availability filtering uses the same active-positive-choice rule as Product cards and constrains the complete Product, choice, size, and color relation to the active Business. Product Type, Tag, material, choice attributes, readiness, low-stock policy, multi-select, and client-owned filter truth remain deferred.
+
+Reason:
+Lifecycle and sellability answer different operational questions, while a small composable set provides daily seller value without recreating the prototype's dense mobile filter wall. Keeping the predicate aligned with card truth also gives P6.6 one stable membership contract for sold-out and restock refreshes.
+
 ### 2026-07-28 - Private workflow artifacts stay local
 
 Decision:
