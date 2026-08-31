@@ -30,6 +30,7 @@ from catalog.models import (
 from catalog.workspace import (
     PRODUCT_DESCRIPTION_EXCERPT_LENGTH,
     ProductWorkspaceState,
+    build_product_workspace_context,
     build_product_workspace_cards,
     product_workspace_products,
 )
@@ -199,6 +200,47 @@ class ProductWorkspaceStateTests(SimpleTestCase):
             "Select a valid choice",
             search_form.errors["availability"][0],
         )
+
+    def test_return_url_state_accepts_only_exact_canonical_workspace_urls(self):
+        state = ProductWorkspaceState.from_return_url(
+            f'{reverse("catalog:product_list")}?q=black+trousers'
+            "&lifecycle=active&availability=available"
+        )
+
+        self.assertEqual(state.search_query, "black trousers")
+        self.assertEqual(state.lifecycle_filter, Product.Lifecycle.ACTIVE)
+        self.assertEqual(state.availability_filter, "available")
+
+        invalid_urls = (
+            "https://example.com/products/",
+            f'{reverse("catalog:product_list")}?unknown=value',
+            f'{reverse("catalog:product_list")}?q=trousers&q=private',
+            f'{reverse("catalog:product_list")}?q=+trousers+%20',
+            f'{reverse("catalog:product_list")}#stock',
+        )
+        for invalid_url in invalid_urls:
+            with self.subTest(invalid_url=invalid_url):
+                with self.assertRaises(ValueError):
+                    ProductWorkspaceState.from_return_url(invalid_url)
+
+    def test_workspace_context_exposes_one_canonical_state_contract(self):
+        state = ProductWorkspaceState.from_query_params(
+            QueryDict("q=trousers&lifecycle=active")
+        )
+
+        context = build_product_workspace_context(
+            state=state,
+            business=None,
+        )
+
+        self.assertEqual(context["workspace_search_query"], "trousers")
+        self.assertEqual(context["workspace_lifecycle_filter"], "active")
+        self.assertEqual(
+            context["workspace_return_url"],
+            f'{reverse("catalog:product_list")}?q=trousers&lifecycle=active',
+        )
+        self.assertEqual(context["product_cards"], ())
+        self.assertFalse(context["catalog_has_products"])
 
 
 class ProductWorkspaceQueryTests(TestCase):
@@ -1284,7 +1326,11 @@ class ProductWorkspaceViewTests(TestCase):
 
         sold_out_response = self.client.post(
             adjustment_url,
-            {"delta": "-1", "next": available_url},
+            {
+                "delta": "-1",
+                "next": available_url,
+                "response_scope": "workspace",
+            },
             follow=True,
         )
 
@@ -1299,7 +1345,11 @@ class ProductWorkspaceViewTests(TestCase):
 
         available_response = self.client.post(
             adjustment_url,
-            {"delta": "1", "next": sold_out_url},
+            {
+                "delta": "1",
+                "next": sold_out_url,
+                "response_scope": "workspace",
+            },
             follow=True,
         )
 
@@ -1328,7 +1378,11 @@ class ProductWorkspaceViewTests(TestCase):
 
         response = self.client.post(
             adjustment_url,
-            {"delta": "1", "next": searched_workspace_url},
+            {
+                "delta": "1",
+                "next": searched_workspace_url,
+                "response_scope": "workspace",
+            },
             follow=True,
         )
 
@@ -1416,6 +1470,24 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, 'value="1"')
         self.assertContains(
             response,
+            'name="response_scope" value="workspace"',
+        )
+        self.assertContains(response, f'hx-post="{active_url}"', count=2)
+        self.assertContains(
+            response,
+            'hx-target="#product-workspace-results"',
+            count=2,
+        )
+        self.assertContains(response, 'hx-swap="outerHTML"', count=2)
+        self.assertContains(
+            response,
+            'hx-sync="#product-workspace-results:drop"',
+            count=2,
+        )
+        self.assertContains(response, "js/product_workspace.js")
+        self.assertContains(response, "Refresh results")
+        self.assertContains(
+            response,
             f"Decrease stock for Choice #{active_choice.pk}, size M, color Black",
         )
         self.assertContains(
@@ -1424,7 +1496,6 @@ class ProductWorkspaceViewTests(TestCase):
         )
         self.assertNotContains(response, f'action="{inactive_url}"')
         self.assertContains(response, "1 inactive")
-        self.assertNotContains(response, "hx-post=")
 
     def test_native_stock_controls_recompute_full_workspace_truth(self):
         product, choice = self.create_product_with_choice(quantity=1)
@@ -1436,7 +1507,11 @@ class ProductWorkspaceViewTests(TestCase):
 
         sold_out_response = self.client.post(
             adjustment_url,
-            {"delta": "-1", "next": self.url},
+            {
+                "delta": "-1",
+                "next": self.url,
+                "response_scope": "workspace",
+            },
             follow=True,
         )
 
@@ -1457,7 +1532,11 @@ class ProductWorkspaceViewTests(TestCase):
 
         available_response = self.client.post(
             adjustment_url,
-            {"delta": "1", "next": self.url},
+            {
+                "delta": "1",
+                "next": self.url,
+                "response_scope": "workspace",
+            },
             follow=True,
         )
 
@@ -1493,7 +1572,11 @@ class ProductWorkspaceViewTests(TestCase):
 
         response = self.client.post(
             adjustment_url,
-            {"delta": "1", "next": self.url},
+            {
+                "delta": "1",
+                "next": self.url,
+                "response_scope": "workspace",
+            },
             follow=True,
         )
 
@@ -1517,7 +1600,11 @@ class ProductWorkspaceViewTests(TestCase):
 
         response = self.client.post(
             adjustment_url,
-            {"delta": "-1", "next": self.url},
+            {
+                "delta": "-1",
+                "next": self.url,
+                "response_scope": "workspace",
+            },
             follow=True,
         )
 

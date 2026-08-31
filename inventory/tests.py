@@ -8,7 +8,9 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, close_old_connections, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.db.models.deletion import ProtectedError
+from django.http import QueryDict
 from django.test import Client, TestCase, TransactionTestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from businesses.models import Business
@@ -1133,6 +1135,247 @@ class InventoryMutationRouteTests(TestCase):
         self.assertEqual(self.choice.quantity, 1)
         self.assertFalse(InventoryAdjustment.objects.exists())
 
+    def test_workspace_htmx_increment_returns_complete_authoritative_results(self):
+        self.client.force_login(self.owner)
+        workspace_url = reverse("catalog:product_list")
+
+        response = self.client.post(
+            self.url,
+            {
+                "delta": "1",
+                "next": workspace_url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_product_results.html")
+        self.assertTemplateUsed(response, "catalog/_product_card.html")
+        self.assertTemplateNotUsed(
+            response,
+            "inventory/_choice_stock_controls.html",
+        )
+        self.assertContains(response, 'id="product-workspace-results"', count=1)
+        self.assertContains(response, "Stock updated to 2.")
+        self.assertContains(response, "1 active · 2 total stock")
+        self.assertContains(response, ">2</output>")
+        self.assertContains(
+            response,
+            f'data-workspace-focus-choice-id="{self.choice.pk}"',
+        )
+        self.assertContains(response, 'aria-busy="false"')
+        self.assertContains(response, "Refresh results")
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 2)
+        self.assertEqual(InventoryAdjustment.objects.count(), 1)
+
+    def test_workspace_htmx_recomputes_availability_filter_membership(self):
+        self.client.force_login(self.owner)
+        workspace_path = reverse("catalog:product_list")
+        available_url = f"{workspace_path}?availability=available"
+        sold_out_url = f"{workspace_path}?availability=sold_out"
+
+        sold_out_response = self.client.post(
+            self.url,
+            {
+                "delta": "-1",
+                "next": available_url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(sold_out_response.status_code, 200)
+        self.assertContains(sold_out_response, "<strong>0</strong> products ·")
+        self.assertContains(
+            sold_out_response,
+            "The Product moved out of the current results because its "
+            "availability changed.",
+        )
+        self.assertContains(
+            sold_out_response,
+            'data-workspace-focus-results="true"',
+        )
+        self.assertContains(
+            sold_out_response,
+            "No products match the active filters.",
+        )
+        self.assertNotContains(sold_out_response, self.product.name)
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+
+        available_response = self.client.post(
+            self.url,
+            {
+                "delta": "1",
+                "next": sold_out_url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(available_response.status_code, 200)
+        self.assertContains(available_response, "<strong>0</strong> products ·")
+        self.assertContains(
+            available_response,
+            "The Product moved out of the current results because its "
+            "availability changed.",
+        )
+        self.assertContains(
+            available_response,
+            "No products match the active filters.",
+        )
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertEqual(InventoryAdjustment.objects.count(), 2)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.lifecycle, Product.Lifecycle.ACTIVE)
+
+    def test_workspace_htmx_underflow_returns_full_results_without_write(self):
+        self.choice.quantity = 0
+        self.choice.save(update_fields=["quantity", "updated_at"])
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                "delta": "-1",
+                "next": reverse("catalog:product_list"),
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_product_results.html")
+        self.assertContains(response, "Choice quantity cannot be negative.")
+        self.assertContains(response, f"Choice #{self.choice.pk}:")
+        self.assertContains(response, 'role="alert"')
+        self.assertContains(response, "Sold out")
+        self.assertContains(response, "1 active · 0 total stock")
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_workspace_htmx_keeps_feedback_when_acted_choice_is_no_longer_visible(self):
+        ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=3,
+        )
+        self.choice.is_active = False
+        self.choice.save(update_fields=["is_active", "updated_at"])
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                "delta": "1",
+                "next": (
+                    f'{reverse("catalog:product_list")}'
+                    "?availability=available"
+                ),
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.product.name)
+        self.assertContains(
+            response,
+            f"Choice #{self.choice.pk}: Stock updated to 2.",
+        )
+        self.assertNotContains(
+            response,
+            f'data-workspace-focus-choice-id="{self.choice.pk}"',
+        )
+        self.assertNotContains(
+            response,
+            "The Product moved out of the current results",
+        )
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 2)
+        self.assertEqual(InventoryAdjustment.objects.count(), 1)
+
+    def test_malformed_workspace_scope_is_rejected_before_stock_write(self):
+        self.client.force_login(self.owner)
+        workspace_path = reverse("catalog:product_list")
+        invalid_payloads = (
+            {
+                "delta": "1",
+                "next": f"{workspace_path}?unknown=value",
+                "response_scope": "workspace",
+            },
+            {
+                "delta": "1",
+                "next": "https://example.com/products/",
+                "response_scope": "workspace",
+            },
+            {
+                "delta": "1",
+                "next": workspace_path,
+                "response_scope": "unknown",
+            },
+        )
+
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                response = self.client.post(
+                    self.url,
+                    payload,
+                    HTTP_HX_REQUEST="true",
+                )
+                self.assertEqual(response.status_code, 400)
+
+        repeated_scope = QueryDict(mutable=True)
+        repeated_scope.update({"delta": "1", "next": workspace_path})
+        repeated_scope.setlist("response_scope", ["workspace", "unknown"])
+        repeated_response = self.client.post(
+            self.url,
+            repeated_scope,
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(repeated_response.status_code, 400)
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_workspace_htmx_response_query_count_is_bounded(self):
+        for index in range(8):
+            product = Product.objects.create(
+                business=self.business,
+                name=f"Bounded Product {index}",
+                description="Query bound fixture.",
+                lifecycle=Product.Lifecycle.ACTIVE,
+            )
+            ProductChoice.objects.create(
+                business=self.business,
+                product=product,
+                size=self.size,
+                color=self.color,
+                quantity=1,
+            )
+        self.client.force_login(self.owner)
+
+        with CaptureQueriesContext(connection) as query_context:
+            response = self.client.post(
+                self.url,
+                {
+                    "delta": "1",
+                    "next": reverse("catalog:product_list"),
+                    "response_scope": "workspace",
+                },
+                HTTP_HX_REQUEST="true",
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertLessEqual(len(query_context), 16)
+
     def test_unauthenticated_post_redirects_to_login_without_writes(self):
         response = self.client.post(self.url, {"delta": "1"})
 
@@ -1174,6 +1417,30 @@ class InventoryMutationRouteTests(TestCase):
         )
 
         response = self.client.post(other_url, {"delta": "1"})
+
+        self.assertEqual(response.status_code, 404)
+        self.choice.refresh_from_db()
+        self.other_choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertEqual(self.other_choice.quantity, 4)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_workspace_scope_cannot_render_or_mutate_cross_business_choice(self):
+        self.client.force_login(self.owner)
+        other_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": self.other_choice.pk},
+        )
+
+        response = self.client.post(
+            other_url,
+            {
+                "delta": "1",
+                "next": reverse("catalog:product_list"),
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
 
         self.assertEqual(response.status_code, 404)
         self.choice.refresh_from_db()

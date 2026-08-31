@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 and Phase 5 are `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. P5.1 through P5.8 are released, owner-reviewed where required, integrity-audited, and exact-SHA CI-passed; Gate 3 is `PASSED`. Phase 6 is `IN_PROGRESS`: P6.1 through P6.4 are `CLOSED`, and P6.5 is `AUDITED_READY` after locally verified implementation and required owner/browser acceptance of its owner-approved bounded filter set. The Workspace is now the first availability UI consumer; readiness and buyer replies do not exist, and exact delivery metadata remains Git/GitHub authority.
+- Current implementation state: Phase 4 and Phase 5 are `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. P5.1 through P5.8 are released, owner-reviewed where required, integrity-audited, and exact-SHA CI-passed; Gate 3 is `PASSED`. Phase 6 is `IN_PROGRESS`: P6.1 through P6.5 are `CLOSED`, and P6.6 is `AUDITED_READY` after implementation, audit hardening, local PostgreSQL verification, and required owner/browser acceptance. The Workspace is now the first availability UI consumer; readiness and buyer replies do not exist, and exact delivery metadata remains Git/GitHub authority.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -890,7 +890,7 @@ Avoid libraries that depend on:
 ### Phase 6: Operational Product Workspace
 
 - Refined objective: turn the existing authenticated Product list into the seller's mobile-first daily operational cockpit for finding one Product, understanding its lifecycle and computed availability, inspecting exact choice stock, making approved +1/-1 stock changes, and returning from correction work without losing Workspace context.
-- Dependency and current state: Phase 5 and Gate 3 are PASSED; the Product core, confirmed classification/material/choice truth, one-save initial stock, centralized subsequent stock mutation, immutable adjustment history, and computed availability are released. Phase 6 is IN_PROGRESS; P6.1 through P6.4 are CLOSED, and P6.5 is AUDITED_READY after locally verified implementation and required owner/browser acceptance of its owner-approved bounded filter set.
+- Dependency and current state: Phase 5 and Gate 3 are PASSED; the Product core, confirmed classification/material/choice truth, one-save initial stock, centralized subsequent stock mutation, immutable adjustment history, and computed availability are released. Phase 6 is IN_PROGRESS; P6.1 through P6.5 are CLOSED, and P6.6 is AUDITED_READY after implementation, audit hardening, local PostgreSQL verification, and required owner/browser acceptance.
 - Scope boundary: authenticated Business-scoped server-rendered Product listing, compact operational cards, exact-choice stock controls, deterministic search, owner-approved bounded filters, canonical URL/query state, explicit edit return paths, HTMX server-truth refresh, Phase 6 empty/loading/error/recovery states, mobile-first behavior, accessibility baseline, and a Phase 6-specific UX/regression gate.
 - Source-of-truth boundary: Product lifecycle remains stored and separate from computed availability; ProductChoice remains the quantity owner; duplicate same-size/color choices remain distinct identities; all subsequent quantity writes continue through the released Phase 5 inventory route and mutation service; no client state may own quantity, availability, lifecycle, Business scope, or confirmed facts.
 - Cross-phase firewall: no Dashboard or attention queue, readiness, buyer-question coverage, ready reply, Product Detail dependency, clone, archive/restore, direct stock set, arbitrary quantity mutation, reason codes, bulk stock editing, Product relations, measurements, fit guidance, media expansion, analytics, public buyer behavior, chatbot, LLM interpretation, orders, reservations, payments, or delivery.
@@ -1050,7 +1050,7 @@ Avoid libraries that depend on:
 - Proposed commit message: feat: add product workspace filters
 - Rollback/recovery note: remove filter parsing/UI while preserving q and the unfiltered Workspace; no schema or data rollback is needed. If owner rejects the recommended set, stop and revise the roadmap/UX contract before implementation.
 - Stop gate relation: supplies the approved filter contract required before truthful membership-aware HTMX refresh; it cannot close until required owner/browser acceptance, release, and exact-SHA CI succeed.
-- Status: AUDITED_READY; the owner-approved Lifecycle + Availability set is implemented, locally verified, and owner/browser accepted, with Prompt 5 release and exact-SHA CI still required for closure.
+- Status: CLOSED; the owner-approved Lifecycle + Availability set is released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
 
 #### P6.6 HTMX Workspace Truth Refresh and State Coherence
 
@@ -1081,7 +1081,7 @@ Avoid libraries that depend on:
 - Proposed commit message: feat: keep product workspace state coherent
 - Rollback/recovery note: remove the Workspace HTMX response scope and enhancement while retaining P6.3 native POST/redirect controls; no mutation service, ledger, schema, or persisted data rollback is required.
 - Stop gate relation: closes the Phase 6 server-truth and stale-state implementation boundary, leaving only the Phase 6-specific owner UX/accessibility/regression audit.
-- Status: NOT_STARTED.
+- Status: AUDITED_READY; implementation, audit hardening, local PostgreSQL verification, and required owner/browser acceptance passed. Functionally this slice works; the visual interface still needs improvement in later UI/UX work.
 
 #### P6.7 Phase 6 Workspace UX, Navigation, Accessibility, and Regression Gate
 

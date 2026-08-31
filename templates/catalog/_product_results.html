@@ -1,4 +1,74 @@
-<div id="product-workspace-results" class="product-workspace-results">
+<div
+  id="product-workspace-results"
+  class="product-workspace-results"
+  aria-busy="false"
+  {% if workspace_stock_choice_is_visible %}data-workspace-focus-choice-id="{{ workspace_stock_choice_id }}"{% endif %}
+  {% if workspace_stock_membership_changed %}data-workspace-focus-results="true"{% endif %}
+>
+  <div
+    id="product-workspace-transport-error"
+    class="product-workspace-transport-error"
+    role="alert"
+    tabindex="-1"
+    hidden
+  >
+    <p>The stock response could not be confirmed. Refresh to load current server truth.</p>
+    <a class="button button--secondary button--compact" href="{{ workspace_return_url }}">Refresh results</a>
+  </div>
+
+  {% if workspace_stock_feedback and not workspace_stock_choice_is_visible %}
+    <p id="product-workspace-stock-status" class="product-workspace-stock-status" role="status" tabindex="-1">
+      Choice #{{ workspace_stock_choice_id }}: {{ workspace_stock_feedback }}
+    </p>
+  {% endif %}
+  {% if workspace_stock_error and not workspace_stock_choice_is_visible %}
+    <p id="product-workspace-stock-status" class="product-workspace-stock-error" role="alert" tabindex="-1">
+      Choice #{{ workspace_stock_choice_id }}: {{ workspace_stock_error }}
+    </p>
+  {% endif %}
+
+  {% if workspace_query_is_valid and workspace_search_query %}
+    <div class="product-workspace-search__summary" role="status">
+      <p><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }} for “{{ workspace_search_query }}”</p>
+      {% if product_cards %}
+        <a class="button button--secondary button--compact" href="{{ workspace_clear_search_url }}">Clear search</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if workspace_query_is_valid and workspace_has_active_filters %}
+    <div class="product-workspace-filter-summary" role="status">
+      <p>
+        {% if not workspace_search_query %}
+          <strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }} ·
+        {% endif %}
+        <strong>Active filters:</strong>
+        {% if workspace_lifecycle_filter %}
+          Lifecycle — {% if workspace_lifecycle_filter == "active" %}Active{% else %}Draft{% endif %}
+        {% endif %}
+        {% if workspace_lifecycle_filter and workspace_availability_filter %} · {% endif %}
+        {% if workspace_availability_filter %}
+          Availability — {% if workspace_availability_filter == "available" %}Available{% else %}Sold out{% endif %}
+        {% endif %}
+      </p>
+      {% if product_cards %}
+        <div class="product-workspace-filter-summary__actions">
+          <a class="button button--secondary button--compact" href="{{ workspace_clear_filters_url }}">Clear filters</a>
+          {% if workspace_search_query %}
+            <a class="button button--secondary button--compact" href="{% url 'catalog:product_list' %}">Clear all</a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if product_cards %}
+    <div class="page-actions">
+      <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">Add product</a>
+      <a class="button button--secondary" href="{% url 'catalog:choice_vocabulary' %}?next={{ workspace_return_url|urlencode }}">Manage product vocabulary</a>
+    </div>
+  {% endif %}
+
   {% if not workspace_query_is_valid %}
     <div class="empty-state empty-state--warning" role="status">
       {% if not workspace_search_is_valid %}
@@ -11,7 +81,7 @@
     <ul class="product-list" aria-label="Products">
       {% for card in product_cards %}
         <li class="product-list__item">
-          {% include "catalog/_product_card.html" with card=card workspace_return_url=workspace_return_url csrf_token=csrf_token only %}
+          {% include "catalog/_product_card.html" with card=card workspace_return_url=workspace_return_url csrf_token=csrf_token workspace_stock_choice_id=workspace_stock_choice_id workspace_stock_feedback=workspace_stock_feedback workspace_stock_error=workspace_stock_error only %}
         </li>
       {% endfor %}
     </ul>

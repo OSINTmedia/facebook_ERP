@@ -35,8 +35,7 @@ from catalog.vocabulary import (
 )
 from catalog.workspace import (
     ProductWorkspaceState,
-    build_product_workspace_cards,
-    product_workspace_products,
+    build_product_workspace_context,
 )
 
 
@@ -119,68 +118,19 @@ class ProductListView(LoginRequiredMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        products = Product.objects.none()
-        product_cards = ()
-        catalog_has_products = False
-
-        if (
-            self.active_business is not None
-            and self.workspace_state.is_valid
-        ):
-            products = product_workspace_products(
-                business=self.active_business,
-                search_query=self.workspace_state.search_query,
-                lifecycle_filter=self.workspace_state.lifecycle_filter,
-                availability_filter=self.workspace_state.availability_filter,
-            )
-            product_cards = build_product_workspace_cards(
-                business=self.active_business,
-                products=products,
-            )
-            catalog_has_products = bool(product_cards)
-            if self.workspace_state.has_active_query and not product_cards:
-                catalog_has_products = Product.objects.filter(
-                    business=self.active_business
-                ).exists()
-
         context.update(
             {
                 "active_business": self.active_business,
                 "business_policy_blocked": self.business_policy_blocked,
                 "current_nav": "products",
-                "product_cards": product_cards,
-                "products": products,
                 "search_form": self.search_form,
-                "workspace_search_query": self.workspace_state.search_query,
-                "workspace_search_requested": (
-                    self.workspace_state.search_requested
-                ),
-                "workspace_search_is_valid": (
-                    self.workspace_state.search_is_valid
-                ),
-                "workspace_filters_are_valid": (
-                    self.workspace_state.filters_are_valid
-                ),
-                "workspace_query_is_valid": self.workspace_state.is_valid,
-                "workspace_lifecycle_filter": (
-                    self.workspace_state.lifecycle_filter
-                ),
-                "workspace_availability_filter": (
-                    self.workspace_state.availability_filter
-                ),
-                "workspace_has_active_filters": (
-                    self.workspace_state.has_active_filters
-                ),
-                "workspace_result_count": len(product_cards),
-                "catalog_has_products": catalog_has_products,
-                "workspace_return_url": self.workspace_state.return_url,
-                "workspace_clear_search_url": (
-                    self.workspace_state.clear_search_url
-                ),
-                "workspace_clear_filters_url": (
-                    self.workspace_state.clear_filters_url
-                ),
             }
+        )
+        context.update(
+            build_product_workspace_context(
+                state=self.workspace_state,
+                business=self.active_business,
+            )
         )
         return context
 

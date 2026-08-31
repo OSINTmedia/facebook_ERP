@@ -1,9 +1,10 @@
 """Read-side boundaries for the seller Product Workspace."""
 
 from dataclasses import dataclass
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from django.db.models import Exists, OuterRef, Prefetch, Q, QuerySet, Subquery
+from django.http import QueryDict
 from django.urls import reverse
 
 from businesses.models import Business
@@ -42,6 +43,32 @@ class ProductWorkspaceState:
     @classmethod
     def from_query_params(cls, query_params):
         return cls.from_search_form(ProductWorkspaceSearchForm(query_params))
+
+    @classmethod
+    def from_return_url(cls, return_url):
+        """Parse one exact canonical local Product Workspace URL."""
+
+        split_url = urlsplit(return_url)
+        workspace_path = reverse("catalog:product_list")
+        if (
+            split_url.scheme
+            or split_url.netloc
+            or split_url.fragment
+            or split_url.path != workspace_path
+        ):
+            raise ValueError("Unsupported Product Workspace return URL.")
+
+        query_params = QueryDict(split_url.query)
+        if any(
+            key not in SUPPORTED_PRODUCT_WORKSPACE_QUERY_KEYS
+            for key in query_params
+        ):
+            raise ValueError("Unsupported Product Workspace query state.")
+
+        state = cls.from_query_params(query_params)
+        if not state.is_valid or state.return_url != return_url:
+            raise ValueError("Invalid Product Workspace query state.")
+        return state
 
     @classmethod
     def from_search_form(cls, search_form):
@@ -145,6 +172,53 @@ class ProductCard:
     active_choice_count: int
     active_stock_total: int
     inactive_choice_count: int
+
+
+def build_product_workspace_context(
+    *,
+    state: ProductWorkspaceState,
+    business: Business | None,
+):
+    """Build the complete server-owned context for one Workspace results view."""
+
+    products = Product.objects.none()
+    product_cards = ()
+    catalog_has_products = False
+
+    if business is not None and state.is_valid:
+        products = product_workspace_products(
+            business=business,
+            search_query=state.search_query,
+            lifecycle_filter=state.lifecycle_filter,
+            availability_filter=state.availability_filter,
+        )
+        product_cards = build_product_workspace_cards(
+            business=business,
+            products=products,
+        )
+        catalog_has_products = bool(product_cards)
+        if state.has_active_query and not product_cards:
+            catalog_has_products = Product.objects.filter(
+                business=business
+            ).exists()
+
+    return {
+        "product_cards": product_cards,
+        "products": products,
+        "workspace_search_query": state.search_query,
+        "workspace_search_requested": state.search_requested,
+        "workspace_search_is_valid": state.search_is_valid,
+        "workspace_filters_are_valid": state.filters_are_valid,
+        "workspace_query_is_valid": state.is_valid,
+        "workspace_lifecycle_filter": state.lifecycle_filter,
+        "workspace_availability_filter": state.availability_filter,
+        "workspace_has_active_filters": state.has_active_filters,
+        "workspace_result_count": len(product_cards),
+        "catalog_has_products": catalog_has_products,
+        "workspace_return_url": state.return_url,
+        "workspace_clear_search_url": state.clear_search_url,
+        "workspace_clear_filters_url": state.clear_filters_url,
+    }
 
 
 def product_workspace_products(
