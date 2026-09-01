@@ -73,7 +73,7 @@
               >−1</button>
               <div class="product-card__quantity">
                 <span>Quantity</span>
-                <output aria-label="Current quantity for Choice #{{ choice.choice_id }}">{{ choice.quantity }}</output>
+                <output aria-label="Current quantity for Choice #{{ choice.choice_id }}, size {{ choice.size_name }}, color {{ choice.color_name }}">{{ choice.quantity }}</output>
               </div>
               <button
                 id="workspace-stock-increase-{{ choice.choice_id }}"
@@ -95,12 +95,13 @@
                 id="workspace-stock-loading-{{ choice.choice_id }}"
                 class="htmx-indicator product-card__stock-loading"
                 role="status"
+                aria-atomic="true"
               >Updating…</span>
               {% if workspace_stock_choice_id == choice.choice_id and workspace_stock_feedback %}
-                <p class="product-card__stock-feedback" role="status">{{ workspace_stock_feedback }}</p>
+                <p class="product-card__stock-feedback" role="status" aria-atomic="true">{{ workspace_stock_feedback }}</p>
               {% endif %}
               {% if workspace_stock_choice_id == choice.choice_id and workspace_stock_error %}
-                <p class="product-card__stock-error" role="alert">Choice #{{ choice.choice_id }}: {{ workspace_stock_error }}</p>
+                <p class="product-card__stock-error" role="alert" aria-atomic="true">Choice #{{ choice.choice_id }}: {{ workspace_stock_error }}</p>
               {% endif %}
             </form>
           </li>

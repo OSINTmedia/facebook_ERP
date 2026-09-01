@@ -1165,6 +1165,7 @@ class InventoryMutationRouteTests(TestCase):
             f'data-workspace-focus-choice-id="{self.choice.pk}"',
         )
         self.assertContains(response, 'aria-busy="false"')
+        self.assertContains(response, 'aria-atomic="true"')
         self.assertContains(response, "Refresh results")
         self.choice.refresh_from_db()
         self.assertEqual(self.choice.quantity, 2)
@@ -1252,6 +1253,7 @@ class InventoryMutationRouteTests(TestCase):
         self.assertContains(response, "Choice quantity cannot be negative.")
         self.assertContains(response, f"Choice #{self.choice.pk}:")
         self.assertContains(response, 'role="alert"')
+        self.assertContains(response, 'aria-atomic="true"')
         self.assertContains(response, "Sold out")
         self.assertContains(response, "1 active · 0 total stock")
         self.choice.refresh_from_db()

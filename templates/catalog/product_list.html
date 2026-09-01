@@ -39,9 +39,18 @@
             {{ search_form.q }}
             <button class="button button--primary" type="submit">Search</button>
           </div>
-          <small id="{{ search_form.q.id_for_label }}_helptext">{{ search_form.q.help_text }}</small>
+          <small
+            id="{{ search_form.q.id_for_label }}_helptext"
+            data-workspace-helptext-for="{{ search_form.q.id_for_label }}"
+          >{{ search_form.q.help_text }}</small>
           {% if search_form.q.errors %}
-            <div class="form-errors" role="alert">{{ search_form.q.errors }}</div>
+            <div
+              id="{{ search_form.q.id_for_label }}_errors"
+              class="form-errors"
+              role="alert"
+              aria-atomic="true"
+              data-workspace-error-for="{{ search_form.q.id_for_label }}"
+            >{{ search_form.q.errors }}</div>
           {% endif %}
         </div>
 
@@ -60,14 +69,26 @@
               {{ search_form.lifecycle.label_tag }}
               {{ search_form.lifecycle }}
               {% if search_form.lifecycle.errors %}
-                <div class="form-errors" role="alert">{{ search_form.lifecycle.errors }}</div>
+                <div
+                  id="{{ search_form.lifecycle.id_for_label }}_errors"
+                  class="form-errors"
+                  role="alert"
+                  aria-atomic="true"
+                  data-workspace-error-for="{{ search_form.lifecycle.id_for_label }}"
+                >{{ search_form.lifecycle.errors }}</div>
               {% endif %}
             </div>
             <div class="form-field">
               {{ search_form.availability.label_tag }}
               {{ search_form.availability }}
               {% if search_form.availability.errors %}
-                <div class="form-errors" role="alert">{{ search_form.availability.errors }}</div>
+                <div
+                  id="{{ search_form.availability.id_for_label }}_errors"
+                  class="form-errors"
+                  role="alert"
+                  aria-atomic="true"
+                  data-workspace-error-for="{{ search_form.availability.id_for_label }}"
+                >{{ search_form.availability.errors }}</div>
               {% endif %}
             </div>
             <button class="button button--secondary" type="submit">Apply filters</button>

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.contrib.auth import get_user_model
 from django.db import connection
 from django.http import QueryDict
@@ -1329,6 +1331,48 @@ class ProductWorkspaceViewTests(TestCase):
         )
         self.assertNotContains(repeated_response, "Must not render unfiltered")
 
+    def test_workspace_validation_errors_expose_accessibility_hooks(self):
+        self.client.force_login(self.owner)
+
+        search_response = self.client.get(f"{self.url}?q=one&q=two")
+        filter_response = self.client.get(
+            self.url,
+            {"availability": "low_stock"},
+        )
+
+        self.assertContains(
+            search_response,
+            'data-workspace-helptext-for="id_q"',
+        )
+        self.assertContains(search_response, 'id="id_q_errors"')
+        self.assertContains(
+            search_response,
+            'data-workspace-error-for="id_q"',
+        )
+        self.assertContains(filter_response, 'id="id_availability_errors"')
+        self.assertContains(
+            filter_response,
+            'data-workspace-error-for="id_availability"',
+        )
+
+    def test_workspace_accessibility_script_and_styles_cover_feedback_contract(self):
+        project_root = Path(__file__).resolve().parents[1]
+        workspace_script = (
+            project_root / "static" / "js" / "product_workspace.js"
+        ).read_text()
+        workspace_styles = (
+            project_root / "static" / "css" / "app.css"
+        ).read_text()
+
+        self.assertIn("syncWorkspaceFormAccessibility", workspace_script)
+        self.assertIn('field.setAttribute("aria-describedby", describedBy)', workspace_script)
+        self.assertIn('field.setAttribute("aria-errormessage", errorId)', workspace_script)
+        self.assertIn("setWorkspaceActionBusy", workspace_script)
+        self.assertIn('form.setAttribute("aria-busy", String(isBusy))', workspace_script)
+        self.assertIn('button.setAttribute("aria-disabled", "true")', workspace_script)
+        self.assertIn(".product-workspace :is(", workspace_styles)
+        self.assertIn(".product-workspace .button[aria-disabled=\"true\"]", workspace_styles)
+
     def test_true_empty_catalog_remains_distinct_with_active_filters(self):
         self.client.force_login(self.owner)
 
@@ -1463,6 +1507,13 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, "Size")
         self.assertContains(response, "Color")
         self.assertContains(response, "Quantity")
+        self.assertContains(
+            response,
+            (
+                f'aria-label="Current quantity for Choice #{choice.pk}, '
+                'size M, color Black"'
+            ),
+        )
         self.assertContains(response, 'aria-label="Edit Black trousers"')
         self.assertNotContains(response, "Ready reply")
         rendered = response.content.decode()

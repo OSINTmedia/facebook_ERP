@@ -340,6 +340,18 @@ h1 {
   outline-offset: 3px;
 }
 
+.product-workspace :is(a.button, button, input, select, summary):focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+.product-workspace [aria-busy="true"] .button,
+.product-workspace .button:disabled,
+.product-workspace .button[aria-disabled="true"] {
+  cursor: progress;
+  opacity: 0.7;
+}
+
 .product-workspace-filters__count {
   color: var(--color-muted);
   font-size: 0.8rem;

@@ -9,6 +9,7 @@
     id="product-workspace-transport-error"
     class="product-workspace-transport-error"
     role="alert"
+    aria-atomic="true"
     tabindex="-1"
     hidden
   >
@@ -17,12 +18,12 @@
   </div>
 
   {% if workspace_stock_feedback and not workspace_stock_choice_is_visible %}
-    <p id="product-workspace-stock-status" class="product-workspace-stock-status" role="status" tabindex="-1">
+    <p id="product-workspace-stock-status" class="product-workspace-stock-status" role="status" aria-atomic="true" tabindex="-1">
       Choice #{{ workspace_stock_choice_id }}: {{ workspace_stock_feedback }}
     </p>
   {% endif %}
   {% if workspace_stock_error and not workspace_stock_choice_is_visible %}
-    <p id="product-workspace-stock-status" class="product-workspace-stock-error" role="alert" tabindex="-1">
+    <p id="product-workspace-stock-status" class="product-workspace-stock-error" role="alert" aria-atomic="true" tabindex="-1">
       Choice #{{ workspace_stock_choice_id }}: {{ workspace_stock_error }}
     </p>
   {% endif %}
@@ -30,7 +31,7 @@
   {% if workspace_query_is_valid %}
     {% if workspace_search_query or workspace_has_active_filters %}
       <div class="product-workspace-state-summary" aria-label="Current Product Workspace view">
-        <p role="status"><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }}{% if workspace_search_query %} for “{{ workspace_search_query }}”{% endif %}{% if workspace_lifecycle_filter %} · Lifecycle — {% if workspace_lifecycle_filter == "active" %}Active{% else %}Draft{% endif %}{% endif %}{% if workspace_availability_filter %} · Availability — {% if workspace_availability_filter == "available" %}Available{% else %}Sold out{% endif %}{% endif %}</p>
+        <p role="status" aria-atomic="true"><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }}{% if workspace_search_query %} for “{{ workspace_search_query }}”{% endif %}{% if workspace_lifecycle_filter %} · Lifecycle — {% if workspace_lifecycle_filter == "active" %}Active{% else %}Draft{% endif %}{% endif %}{% if workspace_availability_filter %} · Availability — {% if workspace_availability_filter == "available" %}Available{% else %}Sold out{% endif %}{% endif %}</p>
         {% if product_cards %}
           <div class="product-workspace-state-summary__actions">
             {% if workspace_search_query %}

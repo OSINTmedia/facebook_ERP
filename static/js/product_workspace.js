@@ -3,6 +3,22 @@
 
   let pendingControlId = null;
 
+  const workspaceFormFields = [
+    {
+      fieldId: "id_q",
+      helpTextId: "id_q_helptext",
+      errorId: "id_q_errors",
+    },
+    {
+      fieldId: "id_lifecycle",
+      errorId: "id_lifecycle_errors",
+    },
+    {
+      fieldId: "id_availability",
+      errorId: "id_availability_errors",
+    },
+  ];
+
   const workspaceControl = (event) => {
     const element = event.detail?.elt;
     return element?.matches?.("[data-workspace-stock-button]")
@@ -12,6 +28,54 @@
 
   const currentResults = () =>
     document.getElementById("product-workspace-results");
+
+  const syncWorkspaceFormAccessibility = () => {
+    for (const { fieldId, helpTextId, errorId } of workspaceFormFields) {
+      const field = document.getElementById(fieldId);
+      if (!field) {
+        continue;
+      }
+
+      const describedBy = [helpTextId, errorId]
+        .filter((id) => id && document.getElementById(id))
+        .join(" ");
+      if (describedBy) {
+        field.setAttribute("aria-describedby", describedBy);
+      } else {
+        field.removeAttribute("aria-describedby");
+      }
+
+      const error = errorId && document.getElementById(errorId);
+      if (error) {
+        field.setAttribute("aria-invalid", "true");
+        field.setAttribute("aria-errormessage", errorId);
+      } else {
+        field.removeAttribute("aria-invalid");
+        field.removeAttribute("aria-errormessage");
+      }
+    }
+  };
+
+  const setWorkspaceActionBusy = (control, isBusy) => {
+    const form = control?.closest("form");
+    if (!form) {
+      return;
+    }
+
+    form.setAttribute("aria-busy", String(isBusy));
+    for (const button of form.querySelectorAll(
+      "[data-workspace-stock-button]",
+    )) {
+      if (isBusy) {
+        button.setAttribute("aria-disabled", "true");
+      } else {
+        button.removeAttribute("aria-disabled");
+      }
+    }
+  };
+
+  const pendingControl = () =>
+    pendingControlId ? document.getElementById(pendingControlId) : null;
 
   const hideTransportRecovery = () => {
     const recovery = document.getElementById(
@@ -23,6 +87,7 @@
   };
 
   const showTransportRecovery = () => {
+    setWorkspaceActionBusy(pendingControl(), false);
     const results = currentResults();
     if (results) {
       results.setAttribute("aria-busy", "false");
@@ -44,6 +109,7 @@
     }
     pendingControlId = control.id;
     hideTransportRecovery();
+    setWorkspaceActionBusy(control, true);
     currentResults()?.setAttribute("aria-busy", "true");
   });
 
@@ -54,9 +120,8 @@
 
     const results = currentResults();
     results?.setAttribute("aria-busy", "false");
-    const restoredControl = pendingControlId
-      ? document.getElementById(pendingControlId)
-      : null;
+    const restoredControl = pendingControl();
+    setWorkspaceActionBusy(restoredControl, false);
     if (restoredControl) {
       restoredControl.focus();
     } else {
@@ -78,4 +143,6 @@
       }
     });
   }
+
+  syncWorkspaceFormAccessibility();
 })();

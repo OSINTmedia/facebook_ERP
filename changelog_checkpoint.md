@@ -37,6 +37,7 @@
 - P6.7 Phase 6 Workspace UX, Navigation, Accessibility, and Regression Gate: `IN_PROGRESS`.
 - P6.7a Workspace First-Viewport and Mobile-Density Repair: `CLOSED`; released and exact-SHA CI-passed after implementation, integrity audit, focused verification, full PostgreSQL regression, and required owner/browser acceptance, with delivery metadata retained in Git/GitHub.
 - P6.7b Canonical Workspace Return-Path Hardening: `CLOSED`; implementation, integrity audit, required owner/browser return-path verification, release, and exact-SHA CI passed, with delivery metadata retained in Git/GitHub.
+- P6.7c Workspace Accessibility and Recovery Hardening: `NEEDS_OWNER_REVIEW`; implementation and local audit verification passed, while required owner/browser verification and release remain pending.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
@@ -55,16 +56,17 @@ P6.7b hardens Product Add/Edit return context without changing Product, vocabula
 - Django system, migration dry-run, and unapplied-migration checks passed with no schema change.
 - Integrity audit confirmed canonical Product Workspace parsing is isolated to Product Add/Edit while generic vocabulary recovery remains unchanged; it found no change to Business-scoped reads or mutations, atomic ProductBundle persistence, exact-choice identity, Phase 5 inventory ownership, lifecycle/availability separation, HTMX server truth, dependencies, schema, or hosted compatibility.
 - Required P6.7b owner/browser verification passed by owner report for exact combined-state Cancel and save return paths.
+- P6.7c focused Workspace/inventory regression passed 114 tests and the PostgreSQL-backed full regression suite passed 407 tests; Django system and migration checks, JavaScript syntax, whitespace, scope-whitelist, and no-drift checks passed. Required owner/browser verification remains pending.
 
 ## Current Gate and Next Work
 
-- Current gate: contract and approve the P6.7c functional slice; P6.7b has no remaining release or operational gate.
-- Next functional slice: P6.7c Workspace Accessibility and Recovery Hardening.
-- Controlled remaining order: P6.7c accessibility/recovery, then the P6.7d integrated regression and owner closure gate; a P6.7d defect requires the smallest separate recovery slice.
+- Current gate: required P6.7c owner/browser verification; after an owner pass report, Prompt 5 may release the audited exact set.
+- Next functional slice after P6.7c release: P6.7d Phase 6 Integrated Regression and Owner Closure Gate.
+- Controlled remaining order: complete P6.7c owner review and release, then P6.7d integrated regression and owner closure; a P6.7d defect requires the smallest separate recovery slice.
 
 ## Active Blockers and Decisions
 
-- P6.7a and P6.7b are closed. P6.7c is the next functional slice; P6.7d remains blocked by the P6.7c dependency and is not started.
+- P6.7a and P6.7b are closed. P6.7c is locally verified and awaiting required owner/browser review; P6.7d remains blocked by the P6.7c closure dependency and is not started.
 - P6.7a changes only Workspace hierarchy and responsive presentation. Backend query/mutation behavior, live search/filter navigation, optimistic state, Dashboard synchronization, polling, readiness, replies, direct set, bulk mutation, and lifecycle mutation remain excluded.
 - Existing choices retain read-only quantity plus P5.6 controls; one-time initialization is not approval for ongoing direct set or arbitrary subsequent deltas.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
