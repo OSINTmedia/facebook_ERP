@@ -4,10 +4,18 @@
 {% block title %}Products | Seller Workspace{% endblock %}
 
 {% block content %}
-  <section class="shell-page" aria-labelledby="products-title">
-    <div class="shell-heading">
-      <p class="eyebrow">Seller workspace</p>
-      <h1 id="products-title">Products</h1>
+  <section class="shell-page product-workspace" aria-labelledby="products-title">
+    <div class="product-workspace-heading">
+      <div class="shell-heading">
+        <p class="eyebrow">Seller workspace</p>
+        <h1 id="products-title">Products</h1>
+      </div>
+      {% if active_business and product_cards %}
+        <a
+          class="button button--primary product-workspace-heading__action"
+          href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}"
+        >Add product</a>
+      {% endif %}
     </div>
 
     {% if business_policy_blocked %}
@@ -25,22 +33,19 @@
         action="{% url 'catalog:product_list' %}"
         role="search"
       >
-        <div class="product-workspace-search__controls">
-          <div class="form-field">
-            {{ search_form.q.label_tag }}
+        <div class="form-field product-workspace-search__field">
+          {{ search_form.q.label_tag }}
+          <div class="product-workspace-search__input-row">
             {{ search_form.q }}
-            <small id="{{ search_form.q.id_for_label }}_helptext">{{ search_form.q.help_text }}</small>
-            {% if search_form.q.errors %}
-              <div class="form-errors" role="alert">{{ search_form.q.errors }}</div>
-            {% endif %}
+            <button class="button button--primary" type="submit">Search</button>
           </div>
-          <button class="button button--primary" type="submit">Search</button>
+          <small id="{{ search_form.q.id_for_label }}_helptext">{{ search_form.q.help_text }}</small>
+          {% if search_form.q.errors %}
+            <div class="form-errors" role="alert">{{ search_form.q.errors }}</div>
+          {% endif %}
         </div>
 
-        <details
-          class="product-workspace-filters"
-          {% if workspace_has_active_filters or not workspace_filters_are_valid %}open{% endif %}
-        >
+        <details class="product-workspace-filters"{% if not workspace_filters_are_valid %} open{% endif %}>
           <summary>
             Filters
             {% if workspace_has_active_filters %}

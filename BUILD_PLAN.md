@@ -467,7 +467,7 @@ Avoid libraries that depend on:
 - Objective: add the description-first assistant layer that recognizes Product Type, Tag, material, and size/color candidates while preserving observed text, candidate meaning, confirmed fact boundaries, and choice-level stock truth.
 - Dependency: Phase 3.
 - Scope boundary: `docs/domain/CLOTHING_DATA_SPEC_V1.md`, observed text, recognized candidates, confirmed structured facts, business-scoped vocabulary and aliases, material as typed semantic fact, distinct stock-bearing choice rows, owner-approved duplicate size/color preservation, minimum valid active-product choice behavior at the bundle boundary, compact create/edit integration, and product bundle validation.
-- Current implementation state: Phase 4 and Phase 5 are `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. P5.1 through P5.8 are released, owner-reviewed where required, integrity-audited, and exact-SHA CI-passed; Gate 3 is `PASSED`. Phase 6 is `IN_PROGRESS`: P6.1 through P6.5 are `CLOSED`, and P6.6 is `AUDITED_READY` after implementation, audit hardening, local PostgreSQL verification, and required owner/browser acceptance. The Workspace is now the first availability UI consumer; readiness and buyer replies do not exist, and exact delivery metadata remains Git/GitHub authority.
+- Current implementation state: Phase 4 and Phase 5 are `PASSED`. P4.1 through P4.9f, including P4.9d_expand and P4.9e_expand, are released, owner-reviewed, and `PASSED`; P4.10 passed its code-first scope/integrity audit, local PostgreSQL verification, release, and exact-SHA CI without source repair. P5.1 through P5.8 are released, owner-reviewed where required, integrity-audited, and exact-SHA CI-passed; Gate 3 is `PASSED`. Phase 6 is `IN_PROGRESS`: P6.1 through P6.6 are `CLOSED`, P6.7 is `IN_PROGRESS`, and P6.7a is `AUDITED_READY` after implementation, integrity audit, focused verification, full PostgreSQL regression, and required owner/browser acceptance. The Workspace is now the first availability UI consumer; readiness and buyer replies do not exist, and exact delivery metadata remains Git/GitHub authority.
 - Separate deferred micro-slice: detailed garment measurements remain outside Phase 4 implementation until measurement type, value, unit, method, applicable product/choice boundary, category-specific capture rules, buyer-reply wording, and seller UI are owner-approved.
 - Stop gate: product bundle save cannot persist partial invalid choice state, size/color truth comes from confirmed choices, and buyer replies consume confirmed facts only.
 
@@ -890,12 +890,12 @@ Avoid libraries that depend on:
 ### Phase 6: Operational Product Workspace
 
 - Refined objective: turn the existing authenticated Product list into the seller's mobile-first daily operational cockpit for finding one Product, understanding its lifecycle and computed availability, inspecting exact choice stock, making approved +1/-1 stock changes, and returning from correction work without losing Workspace context.
-- Dependency and current state: Phase 5 and Gate 3 are PASSED; the Product core, confirmed classification/material/choice truth, one-save initial stock, centralized subsequent stock mutation, immutable adjustment history, and computed availability are released. Phase 6 is IN_PROGRESS; P6.1 through P6.5 are CLOSED, and P6.6 is AUDITED_READY after implementation, audit hardening, local PostgreSQL verification, and required owner/browser acceptance.
+- Dependency and current state: Phase 5 and Gate 3 are PASSED; the Product core, confirmed classification/material/choice truth, one-save initial stock, centralized subsequent stock mutation, immutable adjustment history, and computed availability are released. Phase 6 is IN_PROGRESS; P6.1 through P6.6 are CLOSED, P6.7 is IN_PROGRESS, and P6.7a is AUDITED_READY after implementation, integrity audit, focused verification, full PostgreSQL regression, and required owner/browser acceptance.
 - Scope boundary: authenticated Business-scoped server-rendered Product listing, compact operational cards, exact-choice stock controls, deterministic search, owner-approved bounded filters, canonical URL/query state, explicit edit return paths, HTMX server-truth refresh, Phase 6 empty/loading/error/recovery states, mobile-first behavior, accessibility baseline, and a Phase 6-specific UX/regression gate.
 - Source-of-truth boundary: Product lifecycle remains stored and separate from computed availability; ProductChoice remains the quantity owner; duplicate same-size/color choices remain distinct identities; all subsequent quantity writes continue through the released Phase 5 inventory route and mutation service; no client state may own quantity, availability, lifecycle, Business scope, or confirmed facts.
 - Cross-phase firewall: no Dashboard or attention queue, readiness, buyer-question coverage, ready reply, Product Detail dependency, clone, archive/restore, direct stock set, arbitrary quantity mutation, reason codes, bulk stock editing, Product relations, measurements, fit guidance, media expansion, analytics, public buyer behavior, chatbot, LLM interpretation, orders, reservations, payments, or delivery.
 - Owner-decision boundary: the owner approved the exact P6.5 set as stored lifecycle plus computed availability. Product Type and Tag filters remain excluded unless a later bounded change is separately approved. Phase 6 does not depend on any other unresolved optional feature.
-- Delivery order: P6.1 establishes the Workspace/query boundary; P6.2 establishes truthful compact cards; P6.3 makes exact choice stock actionable through a truthful full-page fallback; P6.4 adds retrieval by search; P6.5 adds only the approved bounded filters; P6.6 adds coherent HTMX results refresh; P6.7 performs the Phase 6-only UX, accessibility, navigation, and regression gate.
+- Delivery order: P6.1 establishes the Workspace/query boundary; P6.2 establishes truthful compact cards; P6.3 makes exact choice stock actionable through a truthful full-page fallback; P6.4 adds retrieval by search; P6.5 adds only the approved bounded filters; P6.6 adds coherent HTMX results refresh; P6.7 performs the Phase 6-only UX, accessibility, navigation, and regression gate through small reviewable repairs beginning with P6.7a.
 
 #### P6.1 Product Workspace Route and Query Baseline
 
@@ -1081,7 +1081,7 @@ Avoid libraries that depend on:
 - Proposed commit message: feat: keep product workspace state coherent
 - Rollback/recovery note: remove the Workspace HTMX response scope and enhancement while retaining P6.3 native POST/redirect controls; no mutation service, ledger, schema, or persisted data rollback is required.
 - Stop gate relation: closes the Phase 6 server-truth and stale-state implementation boundary, leaving only the Phase 6-specific owner UX/accessibility/regression audit.
-- Status: AUDITED_READY; implementation, audit hardening, local PostgreSQL verification, and required owner/browser acceptance passed. Functionally this slice works; the visual interface still needs improvement in later UI/UX work.
+- Status: CLOSED; released and exact-SHA CI-passed after implementation, audit hardening, local PostgreSQL verification, and required owner/browser acceptance. Delivery metadata remains Git/GitHub authority.
 
 #### P6.7 Phase 6 Workspace UX, Navigation, Accessibility, and Regression Gate
 
@@ -1112,7 +1112,19 @@ Avoid libraries that depend on:
 - Proposed commit message: test: verify product workspace release readiness
 - Rollback/recovery note: revert only the failing Phase 6 audit repair or added regression assertion with evidence; never roll back released Phase 5 facts or broaden into another phase to make the gate pass.
 - Stop gate relation: this is the Phase 6 completion gate. Passing it permits Phase 7 planning, but Gate 4 remains open because it spans later UX-relevant phases and the Phase 9 stabilization gate.
-- Status: NOT_STARTED.
+- Status: IN_PROGRESS; P6.7a is audited and owner-accepted, with release and exact-SHA CI remaining. Remaining P6.7 work is not yet contracted.
+
+##### P6.7a Workspace First-Viewport and Mobile-Density Repair
+
+- Objective: make daily Product and exact-choice stock work dominate the first viewport while reducing responsive density without changing server-owned behavior.
+- Exact scope: move Add Product into the Workspace heading for populated results; keep search compact; keep valid filters collapsed while canonical active state and clear actions remain visible; open invalid filters with their errors; place Lifecycle and computed Availability before the description excerpt; move vocabulary management after Product results; harden card, choice, and stock-control wrapping and tap targets at mobile width.
+- Explicit exclusions: backend/query/state changes, new filters, Product create/edit redesign, Dashboard, readiness, replies, final Georgian terminology, broad Phase 9 work, dependencies, schema, and deployment behavior.
+- Source whitelist: `catalog/test_workspace.py`, `static/css/app.css`, `templates/catalog/product_list.html`, `templates/catalog/_product_results.html`, and `templates/catalog/_product_card.html`.
+- Acceptance: populated DOM order is Add Product, search/filter, Product cards, then vocabulary settings; valid active filter state remains visible with a collapsed disclosure; invalid filters open with errors; Lifecycle and Availability precede secondary description text; exact-choice controls remain readable with approximately 44-pixel targets and no horizontal page overflow at approximately 390px; existing empty/error, canonical URL, native stock, and HTMX results contracts remain intact.
+- Automated verification: focused Workspace and inventory route/HTMX suite; full PostgreSQL regression; Django system check, migration dry-run, unapplied-migration check, and diff checks.
+- Manual owner/browser verification: required on desktop and approximately 390px mobile for populated and filtered states, invalid-filter recovery, keyboard basics, exact-choice controls, wrapping, tap targets, and horizontal overflow.
+- Proposed commit message: `fix: improve product workspace hierarchy`.
+- Status: AUDITED_READY; implementation and integrity audit passed without source repair, the focused 74-test suite and full 402-test PostgreSQL regression passed, and required owner/browser acceptance passed by owner report. Prompt 5 release and exact-SHA CI remain.
 
 #### Phase 6 Measurable Stop Condition
 

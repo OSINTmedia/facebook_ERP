@@ -1070,6 +1070,28 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, later.name)
         self.assertNotContains(response, "Private product")
 
+    def test_workspace_prioritizes_daily_actions_before_secondary_settings(self):
+        self.create_product_with_choice(name="Daily stock product")
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        content = response.content.decode()
+        add_product = (
+            f'href="{reverse("catalog:product_create")}?next={self.url}"'
+        )
+        search = 'class="product-workspace-search"'
+        product_card = 'class="product-card"'
+        vocabulary = (
+            f'href="{reverse("catalog:choice_vocabulary")}?next={self.url}"'
+        )
+        self.assertContains(response, add_product, count=1)
+        self.assertContains(response, vocabulary, count=1)
+        self.assertContains(response, "<strong>1</strong> product")
+        self.assertLess(content.index(add_product), content.index(search))
+        self.assertLess(content.index(search), content.index(product_card))
+        self.assertLess(content.index(product_card), content.index(vocabulary))
+
     def test_workspace_preserves_q_and_drops_unknown_workflow_state(self):
         product = Product.objects.create(
             business=self.business,
@@ -1230,6 +1252,11 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, "2 active")
         self.assertContains(response, "Lifecycle — Active")
         self.assertContains(response, "Availability — Available")
+        self.assertContains(response, 'class="product-workspace-state-summary"')
+        self.assertNotContains(
+            response,
+            'class="product-workspace-filters" open',
+        )
         self.assertContains(response, "Clear search", count=1)
         self.assertContains(response, "Clear filters", count=1)
         self.assertContains(response, "Clear all", count=1)
@@ -1290,6 +1317,10 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertFalse(unknown_response.context["workspace_query_is_valid"])
         self.assertContains(unknown_response, "Select a valid choice")
         self.assertContains(unknown_response, "Filters were not applied.")
+        self.assertContains(
+            unknown_response,
+            'class="product-workspace-filters" open',
+        )
         self.assertNotContains(unknown_response, "Must not render unfiltered")
         self.assertFalse(repeated_response.context["workspace_query_is_valid"])
         self.assertContains(
@@ -1434,6 +1465,11 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, "Quantity")
         self.assertContains(response, 'aria-label="Edit Black trousers"')
         self.assertNotContains(response, "Ready reply")
+        rendered = response.content.decode()
+        self.assertLess(
+            rendered.index("Lifecycle"),
+            rendered.index(product.description),
+        )
 
     def test_workspace_renders_native_stock_controls_only_for_active_choices(self):
         product, active_choice = self.create_product_with_choice(quantity=2)

@@ -27,46 +27,29 @@
     </p>
   {% endif %}
 
-  {% if workspace_query_is_valid and workspace_search_query %}
-    <div class="product-workspace-search__summary" role="status">
-      <p><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }} for “{{ workspace_search_query }}”</p>
-      {% if product_cards %}
-        <a class="button button--secondary button--compact" href="{{ workspace_clear_search_url }}">Clear search</a>
-      {% endif %}
-    </div>
-  {% endif %}
-
-  {% if workspace_query_is_valid and workspace_has_active_filters %}
-    <div class="product-workspace-filter-summary" role="status">
-      <p>
-        {% if not workspace_search_query %}
-          <strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }} ·
+  {% if workspace_query_is_valid %}
+    {% if workspace_search_query or workspace_has_active_filters %}
+      <div class="product-workspace-state-summary" aria-label="Current Product Workspace view">
+        <p role="status"><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }}{% if workspace_search_query %} for “{{ workspace_search_query }}”{% endif %}{% if workspace_lifecycle_filter %} · Lifecycle — {% if workspace_lifecycle_filter == "active" %}Active{% else %}Draft{% endif %}{% endif %}{% if workspace_availability_filter %} · Availability — {% if workspace_availability_filter == "available" %}Available{% else %}Sold out{% endif %}{% endif %}</p>
+        {% if product_cards %}
+          <div class="product-workspace-state-summary__actions">
+            {% if workspace_search_query %}
+              <a class="button button--secondary button--compact" href="{{ workspace_clear_search_url }}">Clear search</a>
+            {% endif %}
+            {% if workspace_has_active_filters %}
+              <a class="button button--secondary button--compact" href="{{ workspace_clear_filters_url }}">Clear filters</a>
+            {% endif %}
+            {% if workspace_search_query and workspace_has_active_filters %}
+              <a class="button button--secondary button--compact" href="{% url 'catalog:product_list' %}">Clear all</a>
+            {% endif %}
+          </div>
         {% endif %}
-        <strong>Active filters:</strong>
-        {% if workspace_lifecycle_filter %}
-          Lifecycle — {% if workspace_lifecycle_filter == "active" %}Active{% else %}Draft{% endif %}
-        {% endif %}
-        {% if workspace_lifecycle_filter and workspace_availability_filter %} · {% endif %}
-        {% if workspace_availability_filter %}
-          Availability — {% if workspace_availability_filter == "available" %}Available{% else %}Sold out{% endif %}
-        {% endif %}
+      </div>
+    {% elif product_cards %}
+      <p class="product-workspace-result-count" role="status">
+        <strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }}
       </p>
-      {% if product_cards %}
-        <div class="product-workspace-filter-summary__actions">
-          <a class="button button--secondary button--compact" href="{{ workspace_clear_filters_url }}">Clear filters</a>
-          {% if workspace_search_query %}
-            <a class="button button--secondary button--compact" href="{% url 'catalog:product_list' %}">Clear all</a>
-          {% endif %}
-        </div>
-      {% endif %}
-    </div>
-  {% endif %}
-
-  {% if product_cards %}
-    <div class="page-actions">
-      <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">Add product</a>
-      <a class="button button--secondary" href="{% url 'catalog:choice_vocabulary' %}?next={{ workspace_return_url|urlencode }}">Manage product vocabulary</a>
-    </div>
+    {% endif %}
   {% endif %}
 
   {% if not workspace_query_is_valid %}
@@ -85,6 +68,13 @@
         </li>
       {% endfor %}
     </ul>
+    <nav class="product-workspace-tools" aria-label="Product Workspace settings">
+      <span>Catalog setup</span>
+      <a
+        class="button button--secondary button--compact"
+        href="{% url 'catalog:choice_vocabulary' %}?next={{ workspace_return_url|urlencode }}"
+      >Manage product vocabulary</a>
+    </nav>
   {% elif workspace_search_query and workspace_has_active_filters and catalog_has_products %}
     <div class="empty-state" role="status">
       <p>No products match this search and filter combination.</p>

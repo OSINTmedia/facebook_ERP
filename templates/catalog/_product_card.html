@@ -2,7 +2,6 @@
   <header class="product-card__header">
     <div class="product-card__identity">
       <h2 id="product-card-title-{{ card.product_id }}">{{ card.name }}</h2>
-      <p class="product-card__description">{{ card.description_excerpt }}</p>
       {% if card.product_type_name %}
         <p class="product-card__type">
           <span>Product type</span>
@@ -21,6 +20,10 @@
         <dd><span class="status-pill status-pill--{{ card.availability_state }}">{{ card.availability_label }}</span></dd>
       </div>
     </dl>
+
+    {% if card.description_excerpt %}
+      <p class="product-card__description">{{ card.description_excerpt }}</p>
+    {% endif %}
   </header>
 
   <section class="product-card__choices" aria-labelledby="product-card-choices-{{ card.product_id }}">
