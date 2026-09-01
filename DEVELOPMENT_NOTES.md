@@ -521,6 +521,14 @@ After an HTMX stock intent commits through the released Phase 5 mutation service
 Reason:
 A choice-only or card-only swap can leave Product totals, computed Availability, result count, filter membership, and no-result state contradictory after a final decrement or first restock. Replacing the results region is the smallest uniform truthful boundary. The audit also distinguished exact acted-choice visibility from Product visibility so a stale page still receives feedback when that choice no longer renders, without falsely claiming that the Product left an Availability filter.
 
+### 2026-09-01 - Workflow-canonical returns are stricter than generic safe internal returns
+
+Decision:
+Use `ProductWorkspaceState` to validate and reconstruct Product Add/Edit return context, accepting only one exact canonical local Workspace URL. Retain the existing same-host safe-return helper for vocabulary recovery, whose valid destination contract is intentionally broader.
+
+Reason:
+Host safety prevents external redirects but does not prove that a destination or query string belongs to a specific workflow. Separating generic recovery safety from canonical Workspace state prevents unsupported, ambiguous, or malformed navigation context from crossing Product correction flows without narrowing unrelated vocabulary behavior.
+
 ### 2026-07-28 - Private workflow artifacts stay local
 
 Decision:

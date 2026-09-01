@@ -36,35 +36,35 @@
 - P6.6 HTMX Workspace Truth Refresh and State Coherence: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
 - P6.7 Phase 6 Workspace UX, Navigation, Accessibility, and Regression Gate: `IN_PROGRESS`.
 - P6.7a Workspace First-Viewport and Mobile-Density Repair: `CLOSED`; released and exact-SHA CI-passed after implementation, integrity audit, focused verification, full PostgreSQL regression, and required owner/browser acceptance, with delivery metadata retained in Git/GitHub.
-- P6.7b Canonical Workspace Return-Path Hardening: `APPROVED`; implementation begins only after the governance release is closed.
+- P6.7b Canonical Workspace Return-Path Hardening: `AUDITED_READY`; implementation, integrity audit, and required owner/browser return-path verification are accepted, with the Prompt 5 release gate pending.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
 
-P6.7a repairs the Workspace hierarchy and responsive presentation without changing server-owned Product or inventory behavior:
+P6.7b hardens Product Add/Edit return context without changing Product, vocabulary, or inventory truth:
 
-- daily Add Product, search/filter, Product cards, and exact-choice stock work appear before secondary vocabulary settings;
-- valid active filters remain collapsed while their canonical server-owned state and clear actions stay visible; invalid filters open with field errors;
-- Lifecycle and computed Availability precede the secondary description excerpt on each card;
-- responsive card, choice, and stock-control styling improves compactness, wrapping, and approximately 44-pixel action targets at mobile width.
+- Product Add/Edit accepts only one exact canonical local `/products/` return URL containing the approved search, Lifecycle, and Availability state;
+- Back, Cancel, invalid-form and existing HTMX rerenders, and successful save preserve accepted Workspace state exactly;
+- external, non-Workspace, fragmented, repeated, unknown, invalid, and non-canonical return input falls back to unfiltered `/products/`;
+- vocabulary recovery retains its established generic safe-internal return behavior.
 
 ## Verification and Audit
 
-- The focused Workspace and inventory route/HTMX suite passed 74 tests; the PostgreSQL-backed full regression suite passed 402 tests.
-- Source, template, responsive-style, whitespace, scope-whitelist, documentation, and no-drift checks passed.
+- The focused Workspace-state, Product create/edit, ProductBundle, recognition/transfer, Business-isolation, and inventory-return regression set passed 152 tests; the PostgreSQL-backed full regression suite passed 405 tests. A fresh audit rerun of the canonical Workspace state and Product create/edit matrix passed 71 tests.
+- Source, tests, whitespace, scope-whitelist, documentation, and no-drift checks passed.
 - Django system, migration dry-run, and unapplied-migration checks passed with no schema change.
-- Integrity audit found no change to Business-scoped reads or mutations, exact-choice identity, canonical URL state, Phase 5 inventory ownership, lifecycle/availability separation, HTMX server truth, native fallback, dependencies, schema, or hosted compatibility.
-- Required P6.7a desktop and approximately 390px mobile owner/browser verification passed by owner report; this is bounded slice acceptance, not a broader WCAG or cross-browser certification.
+- Integrity audit confirmed canonical Product Workspace parsing is isolated to Product Add/Edit while generic vocabulary recovery remains unchanged; it found no change to Business-scoped reads or mutations, atomic ProductBundle persistence, exact-choice identity, Phase 5 inventory ownership, lifecycle/availability separation, HTMX server truth, dependencies, schema, or hosted compatibility.
+- Required P6.7b owner/browser verification passed by owner report for exact combined-state Cancel and save return paths.
 
 ## Current Gate and Next Work
 
-- Current gate: release the approved P6.7 governance decomposition and restore a clean, aligned, exact-SHA CI-passed baseline.
-- Next functional slice after this governance release closes: P6.7b Canonical Workspace Return-Path Hardening.
+- Current gate: release the exact audited P6.7b set through Prompt 5 and require clean remote alignment plus successful exact-SHA CI.
+- Next functional slice after P6.7b closes: P6.7c Workspace Accessibility and Recovery Hardening.
 - Controlled remaining order: P6.7b return paths, P6.7c accessibility/recovery, then the P6.7d integrated regression and owner closure gate; a P6.7d defect requires the smallest separate recovery slice.
 
 ## Active Blockers and Decisions
 
-- P6.7a is closed with no remaining operational gate; P6.7b is owner-approved with no known implementation blocker after this governance release closes.
+- P6.7a is closed. P6.7b has no known implementation or owner-review blocker, but it is not closed before commit, push, alignment, and exact-SHA CI success.
 - P6.7a changes only Workspace hierarchy and responsive presentation. Backend query/mutation behavior, live search/filter navigation, optimistic state, Dashboard synchronization, polling, readiness, replies, direct set, bulk mutation, and lifecycle mutation remain excluded.
 - Existing choices retain read-only quantity plus P5.6 controls; one-time initialization is not approval for ongoing direct set or arbitrary subsequent deltas.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.

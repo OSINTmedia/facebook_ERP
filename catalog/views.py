@@ -82,6 +82,19 @@ def get_safe_product_return_url(request):
     return fallback
 
 
+def get_canonical_product_workspace_return_url(request):
+    fallback = reverse("catalog:product_list")
+    source = request.POST if "next" in request.POST else request.GET
+    candidates = source.getlist("next")
+    if len(candidates) != 1:
+        return fallback
+
+    try:
+        return ProductWorkspaceState.from_return_url(candidates[0]).return_url
+    except ValueError:
+        return fallback
+
+
 def add_validation_errors_to_form(form, error):
     if hasattr(error, "message_dict"):
         for field_name, messages_for_field in error.message_dict.items():
@@ -477,7 +490,10 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
         context.setdefault("business_policy_blocked", self.business_policy_blocked)
         context.setdefault("current_nav", "products")
         context.setdefault("page_title", "Product")
-        context.setdefault("return_url", get_safe_product_return_url(request))
+        context.setdefault(
+            "return_url",
+            get_canonical_product_workspace_return_url(request),
+        )
         return context
 
     def render_business_blocked(self, request):
@@ -776,7 +792,7 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
         if bundle.is_valid():
             bundle.save(actor=request.user)
             messages.success(request, "Product created.")
-            return redirect(get_safe_product_return_url(request))
+            return redirect(get_canonical_product_workspace_return_url(request))
 
         return render(
             request,
@@ -888,7 +904,7 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
         if bundle.is_valid():
             bundle.save(actor=request.user)
             messages.success(request, "Product updated.")
-            return redirect(get_safe_product_return_url(request))
+            return redirect(get_canonical_product_workspace_return_url(request))
 
         return render(
             request,

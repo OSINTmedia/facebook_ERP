@@ -4692,6 +4692,41 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, 'name="materials-0-product"')
         self.assertNotContains(response, 'name="materials-0-confirmation_state"')
 
+    def test_product_create_preserves_canonical_workspace_return_states(self):
+        self.client.force_login(self.owner)
+        return_urls = (
+            self.list_url,
+            f"{self.list_url}?q=black+trousers",
+            f"{self.list_url}?lifecycle=active",
+            f"{self.list_url}?availability=sold_out",
+            (
+                f"{self.list_url}?q=black+trousers"
+                "&lifecycle=active&availability=available"
+            ),
+        )
+
+        for return_url in return_urls:
+            with self.subTest(return_url=return_url):
+                response = self.client.get(self.url, {"next": return_url})
+                escaped_return_url = return_url.replace("&", "&amp;")
+
+                self.assertEqual(response.context["return_url"], return_url)
+                self.assertContains(
+                    response,
+                    f'class="return-link" href="{escaped_return_url}"',
+                    count=1,
+                )
+                self.assertContains(
+                    response,
+                    f'class="button button--secondary" href="{escaped_return_url}"',
+                    count=1,
+                )
+                self.assertContains(
+                    response,
+                    f'name="next" value="{escaped_return_url}"',
+                    count=1,
+                )
+
     def test_product_create_classification_options_are_business_scoped(self):
         owned_type = BusinessProductType.objects.create(
             business=self.business,
@@ -5116,7 +5151,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
             name="Unsaved full-page product",
             description="Black",
         )
-        data["next"] = f"{self.list_url}?from=transfer"
+        data["next"] = f"{self.list_url}?q=transfer"
         data["intent"] = self.transfer_intent(
             0,
             SemanticDestination.CHOICE_COLOR,
@@ -5136,7 +5171,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, "Black")
         self.assertEqual(
             response.context["return_url"],
-            f"{self.list_url}?from=transfer",
+            f"{self.list_url}?q=transfer",
         )
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
@@ -5663,23 +5698,84 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
     def test_product_create_preserves_validation_errors_without_creating_product(self):
         self.client.force_login(self.owner)
+        return_url = (
+            f"{self.list_url}?q=black+trousers"
+            "&lifecycle=active&availability=available"
+        )
+        data = self.bundle_post_data(
+            [self.active_choice_row()],
+            name="",
+            description="",
+        )
+        data["next"] = return_url
 
         response = self.client.post(
             self.url,
-            self.bundle_post_data(
-                [self.active_choice_row()],
-                name="",
-                description="",
-            ),
+            data,
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/product_form.html")
         self.assertContains(response, "This field is required.")
+        self.assertEqual(response.context["return_url"], return_url)
         self.assertEqual(Product.objects.count(), 0)
 
-    def test_product_create_rejects_external_next_url(self):
+    def test_product_create_redirects_to_canonical_workspace_state(self):
         self.client.force_login(self.owner)
+        return_url = (
+            f"{self.list_url}?q=black+trousers"
+            "&lifecycle=active&availability=available"
+        )
+        data = self.bundle_post_data([self.active_choice_row()])
+        data["next"] = return_url
+
+        response = self.client.post(self.url, data)
+
+        self.assertRedirects(response, return_url)
+
+    def test_product_create_rejects_unsupported_workspace_return_urls(self):
+        self.client.force_login(self.owner)
+        unsupported_urls = (
+            "https://example.com/products/",
+            reverse("accounts:login"),
+            f"{self.list_url}#stock",
+            f"{self.list_url}?unknown=value",
+            f"{self.list_url}?q=+trousers+%20",
+        )
+
+        for return_url in unsupported_urls:
+            with self.subTest(return_url=return_url):
+                response = self.client.get(self.url, {"next": return_url})
+                self.assertEqual(response.context["return_url"], self.list_url)
+
+        repeated_response = self.client.get(
+            self.url,
+            {
+                "next": [
+                    self.list_url,
+                    f"{self.list_url}?q=private",
+                ]
+            },
+        )
+        self.assertEqual(
+            repeated_response.context["return_url"],
+            self.list_url,
+        )
+
+        repeated_post_data = self.bundle_post_data(
+            [{}],
+            lifecycle=Product.Lifecycle.DRAFT,
+            name="Repeated return product",
+        )
+        repeated_post_data["next"] = [
+            self.list_url,
+            f"{self.list_url}?q=private",
+        ]
+        repeated_post_response = self.client.post(
+            self.url,
+            repeated_post_data,
+        )
+        self.assertRedirects(repeated_post_response, self.list_url)
 
         response = self.client.post(
             f"{self.url}?next=https://example.com/escape",
@@ -5738,6 +5834,41 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
             response,
             f"{reverse('accounts:login')}?next={self.url}",
         )
+
+    def test_product_edit_preserves_canonical_workspace_return_states(self):
+        self.client.force_login(self.owner)
+        return_urls = (
+            self.list_url,
+            f"{self.list_url}?q=black+trousers",
+            f"{self.list_url}?lifecycle=draft",
+            f"{self.list_url}?availability=sold_out",
+            (
+                f"{self.list_url}?q=black+trousers"
+                "&lifecycle=draft&availability=sold_out"
+            ),
+        )
+
+        for return_url in return_urls:
+            with self.subTest(return_url=return_url):
+                response = self.client.get(self.url, {"next": return_url})
+                escaped_return_url = return_url.replace("&", "&amp;")
+
+                self.assertEqual(response.context["return_url"], return_url)
+                self.assertContains(
+                    response,
+                    f'class="return-link" href="{escaped_return_url}"',
+                    count=1,
+                )
+                self.assertContains(
+                    response,
+                    f'class="button button--secondary" href="{escaped_return_url}"',
+                    count=1,
+                )
+                self.assertContains(
+                    response,
+                    f'name="next" value="{escaped_return_url}"',
+                    count=1,
+                )
 
     def test_product_edit_renders_form_for_owned_product(self):
         product_type = BusinessProductType.objects.create(
@@ -6152,7 +6283,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
             name="Unsaved edit name",
             description="Navy",
         )
-        data["next"] = f"{self.list_url}?from=transfer"
+        data["next"] = f"{self.list_url}?q=transfer"
         data["intent"] = self.transfer_intent(
             0,
             SemanticDestination.CHOICE_COLOR,
@@ -6173,7 +6304,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(transferred_form["quantity"].value(), 2)
         self.assertEqual(
             response.context["return_url"],
-            f"{self.list_url}?from=transfer",
+            f"{self.list_url}?q=transfer",
         )
         self.product.refresh_from_db()
         choice.refresh_from_db()
@@ -6184,7 +6315,10 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
 
     def test_product_edit_updates_owned_product(self):
         self.client.force_login(self.owner)
-        return_url = f"{self.list_url}?from=edit"
+        return_url = (
+            f"{self.list_url}?q=edit"
+            "&lifecycle=active&availability=available"
+        )
 
         data = self.bundle_post_data(
             [self.active_choice_row(size=str(self.large_size.pk), quantity="5")],
@@ -6357,20 +6491,27 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
 
     def test_product_edit_preserves_validation_errors_without_changing_product(self):
         self.client.force_login(self.owner)
+        return_url = (
+            f"{self.list_url}?q=black+trousers"
+            "&lifecycle=draft&availability=sold_out"
+        )
+        data = self.bundle_post_data(
+            [self.active_choice_row()],
+            lifecycle="archived",
+            name="",
+            description="",
+        )
+        data["next"] = return_url
 
         response = self.client.post(
             self.url,
-            self.bundle_post_data(
-                [self.active_choice_row()],
-                lifecycle="archived",
-                name="",
-                description="",
-            ),
+            data,
         )
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/product_form.html")
         self.assertContains(response, "This field is required.")
+        self.assertEqual(response.context["return_url"], return_url)
         self.product.refresh_from_db()
         self.assertEqual(self.product.name, "Black trousers")
         self.assertEqual(self.product.description, "Classic black trousers.")
