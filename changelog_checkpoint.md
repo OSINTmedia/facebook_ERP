@@ -35,7 +35,8 @@
 - P6.5 V1 Product Workspace Filter Baseline: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
 - P6.6 HTMX Workspace Truth Refresh and State Coherence: `CLOSED`; released and exact-SHA CI-passed, with delivery metadata retained in Git/GitHub.
 - P6.7 Phase 6 Workspace UX, Navigation, Accessibility, and Regression Gate: `IN_PROGRESS`.
-- P6.7a Workspace First-Viewport and Mobile-Density Repair: `AUDITED_READY`; implementation, integrity audit, focused verification, full PostgreSQL regression, and required owner/browser acceptance passed; Prompt 5 release and exact-SHA CI remain.
+- P6.7a Workspace First-Viewport and Mobile-Density Repair: `CLOSED`; released and exact-SHA CI-passed after implementation, integrity audit, focused verification, full PostgreSQL regression, and required owner/browser acceptance, with delivery metadata retained in Git/GitHub.
+- P6.7b Canonical Workspace Return-Path Hardening: `APPROVED`; implementation begins only after the governance release is closed.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
@@ -57,12 +58,13 @@ P6.7a repairs the Workspace hierarchy and responsive presentation without changi
 
 ## Current Gate and Next Work
 
-- Current gate: Prompt 5 release, remote alignment, and exact-SHA CI for P6.7a.
-- Next functional work after P6.7a closes: contract the remaining P6.7 navigation, accessibility, and Phase 6 regression gate as the next smallest slice before Phase 7.
+- Current gate: release the approved P6.7 governance decomposition and restore a clean, aligned, exact-SHA CI-passed baseline.
+- Next functional slice after this governance release closes: P6.7b Canonical Workspace Return-Path Hardening.
+- Controlled remaining order: P6.7b return paths, P6.7c accessibility/recovery, then the P6.7d integrated regression and owner closure gate; a P6.7d defect requires the smallest separate recovery slice.
 
 ## Active Blockers and Decisions
 
-- P6.7a has no pre-release blocker.
+- P6.7a is closed with no remaining operational gate; P6.7b is owner-approved with no known implementation blocker after this governance release closes.
 - P6.7a changes only Workspace hierarchy and responsive presentation. Backend query/mutation behavior, live search/filter navigation, optimistic state, Dashboard synchronization, polling, readiness, replies, direct set, bulk mutation, and lifecycle mutation remain excluded.
 - Existing choices retain read-only quantity plus P5.6 controls; one-time initialization is not approval for ongoing direct set or arbitrary subsequent deltas.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
