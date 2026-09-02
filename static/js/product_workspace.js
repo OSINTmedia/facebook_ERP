@@ -67,8 +67,10 @@
       "[data-workspace-stock-button]",
     )) {
       if (isBusy) {
+        button.disabled = true;
         button.setAttribute("aria-disabled", "true");
       } else {
+        button.disabled = false;
         button.removeAttribute("aria-disabled");
       }
     }

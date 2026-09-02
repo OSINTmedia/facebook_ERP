@@ -1369,6 +1369,8 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertIn('field.setAttribute("aria-errormessage", errorId)', workspace_script)
         self.assertIn("setWorkspaceActionBusy", workspace_script)
         self.assertIn('form.setAttribute("aria-busy", String(isBusy))', workspace_script)
+        self.assertIn("button.disabled = true", workspace_script)
+        self.assertIn("button.disabled = false", workspace_script)
         self.assertIn('button.setAttribute("aria-disabled", "true")', workspace_script)
         self.assertIn(".product-workspace :is(", workspace_styles)
         self.assertIn(".product-workspace .button[aria-disabled=\"true\"]", workspace_styles)

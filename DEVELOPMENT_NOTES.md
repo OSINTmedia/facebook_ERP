@@ -529,6 +529,14 @@ Use `ProductWorkspaceState` to validate and reconstruct Product Add/Edit return 
 Reason:
 Host safety prevents external redirects but does not prove that a destination or query string belongs to a specific workflow. Separating generic recovery safety from canonical Workspace state prevents unsupported, ambiguous, or malformed navigation context from crossing Product correction flows without narrowing unrelated vocabulary behavior.
 
+### 2026-09-02 - In-flight stock controls use native disabled state as well as ARIA state
+
+Decision:
+When a Workspace HTMX stock request is in flight, disable both exact choice buttons through the DOM `disabled` property and expose the matching `aria-disabled` and form busy state; restore the controls only after the authoritative response or transport recovery path.
+
+Reason:
+`aria-disabled` communicates state but does not itself prevent keyboard or pointer activation. Native disabling makes the temporary request lock operable while preserving the server-owned mutation, full-results refresh, native fallback, and established focus/recovery behavior.
+
 ### 2026-07-28 - Private workflow artifacts stay local
 
 Decision:
