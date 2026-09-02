@@ -37,7 +37,7 @@
 - P6.7 Phase 6 Workspace UX, Navigation, Accessibility, and Regression Gate: `IN_PROGRESS`.
 - P6.7a Workspace First-Viewport and Mobile-Density Repair: `CLOSED`; released and exact-SHA CI-passed after implementation, integrity audit, focused verification, full PostgreSQL regression, and required owner/browser acceptance, with delivery metadata retained in Git/GitHub.
 - P6.7b Canonical Workspace Return-Path Hardening: `CLOSED`; implementation, integrity audit, required owner/browser return-path verification, release, and exact-SHA CI passed, with delivery metadata retained in Git/GitHub.
-- P6.7c Workspace Accessibility and Recovery Hardening: `IN_PROGRESS`; owner/browser verification and local audit passed, with the audited release pending.
+- P6.7c Workspace Accessibility and Recovery Hardening: `CLOSED`; released and exact-SHA CI-passed after local audit and required owner/browser verification, with delivery metadata retained in Git/GitHub.
 - Online demo: not deployed.
 
 ## Last Accepted Functional Work
@@ -59,13 +59,13 @@ P6.7c hardens in-flight Workspace stock controls without changing Product, vocab
 
 ## Current Gate and Next Work
 
-- Current gate: Prompt 5 releases the audited P6.7c set; exact-SHA CI then determines P6.7c closure.
-- Next functional slice after P6.7c release: P6.7d Phase 6 Integrated Regression and Owner Closure Gate.
-- Controlled remaining order: release P6.7c, then P6.7d integrated regression and owner closure; a P6.7d defect requires the smallest separate recovery slice.
+- Current gate: P6.7d Phase 6 Integrated Regression and Owner Closure Gate.
+- Next functional slice: P6.7d Phase 6 Integrated Regression and Owner Closure Gate.
+- Controlled remaining order: P6.7d integrated regression and owner closure; a P6.7d defect requires the smallest separate recovery slice.
 
 ## Active Blockers and Decisions
 
-- P6.7a and P6.7b are closed. P6.7c is audited and owner/browser-verified, with release pending; P6.7d remains blocked by the P6.7c closure dependency and is not started.
+- P6.7a through P6.7c are closed. P6.7d is not started and is the remaining Phase 6 closure gate.
 - P6.7a changes only Workspace hierarchy and responsive presentation. Backend query/mutation behavior, live search/filter navigation, optimistic state, Dashboard synchronization, polling, readiness, replies, direct set, bulk mutation, and lifecycle mutation remain excluded.
 - Existing choices retain read-only quantity plus P5.6 controls; one-time initialization is not approval for ongoing direct set or arbitrary subsequent deltas.
 - Direct stock set remains `OWNER_DECISION_REQUIRED`; stock-movement reason codes remain excluded unless separately approved.
