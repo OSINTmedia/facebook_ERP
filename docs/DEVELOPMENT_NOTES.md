@@ -572,3 +572,17 @@ P6.7d Phase 6 Integrated Regression and Owner Closure Gate is the next execution
 
 Documentation governance:
 Active project documentation is limited to `docs/PROJECT_BIBLE.md`, `docs/BUILD_PLAN.md`, and `docs/DEVELOPMENT_NOTES.md`. `README.md` is public presentation only, `docs/archive/` is provenance only, and Git/GitHub/CI remain the authority for exact commit, push, remote-alignment, and CI truth. Earlier entries that name retired planning, discovery, checkpoint, experience-plan, or domain-document paths remain historical decision evidence only.
+
+### 2026-09-03 - P6.7d Phase 6 integrated regression and owner closure gate
+
+Code status: PASS.
+
+The Phase 6 release matrix passed adversarial review. One test-only integrated regression now proves canonical combined Workspace state across HTMX `1 -> 0 -> 1` availability transitions while preserving exact duplicate-looking ProductChoice identity, truthful result membership/focus recovery, and exact adjustment-ledger facts. No production behavior changed and no repair was required.
+
+Verification: 158 focused and 408 full PostgreSQL tests passed; Django system and migration consistency checks, JavaScript syntax, and diff/whitespace checks passed. Required owner desktop and approximately 390px browser testing passed.
+
+Known non-blocking drift: the README still describes Direct Set and Archive/Restore as owner-decision-required. The owner deferred that D4 public-documentation correction to a controlled documentation/governance cleanup outside P6.7d.
+
+Release: READY.
+
+Next on Git PASS: P7.1 Price Truth Integration.

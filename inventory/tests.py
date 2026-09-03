@@ -1233,6 +1233,121 @@ class InventoryMutationRouteTests(TestCase):
         self.product.refresh_from_db()
         self.assertEqual(self.product.lifecycle, Product.Lifecycle.ACTIVE)
 
+    def test_workspace_htmx_combines_state_and_exact_choice_transitions(self):
+        duplicate_choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=0,
+        )
+        self.client.force_login(self.owner)
+        workspace_path = reverse("catalog:product_list")
+        available_url = (
+            f"{workspace_path}?q=route+trousers"
+            "&lifecycle=active&availability=available"
+        )
+        sold_out_url = (
+            f"{workspace_path}?q=route+trousers"
+            "&lifecycle=active&availability=sold_out"
+        )
+
+        sold_out_response = self.client.post(
+            self.url,
+            {
+                "delta": "-1",
+                "next": available_url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(sold_out_response.status_code, 200)
+        self.assertEqual(
+            sold_out_response.context["workspace_return_url"],
+            available_url,
+        )
+        self.assertEqual(
+            sold_out_response.context["workspace_search_query"],
+            "route trousers",
+        )
+        self.assertEqual(
+            sold_out_response.context["workspace_lifecycle_filter"],
+            Product.Lifecycle.ACTIVE,
+        )
+        self.assertEqual(
+            sold_out_response.context["workspace_availability_filter"],
+            "available",
+        )
+        self.assertContains(
+            sold_out_response,
+            "No products match this search and filter combination.",
+        )
+        self.assertContains(
+            sold_out_response,
+            'data-workspace-focus-results="true"',
+        )
+        self.assertNotContains(sold_out_response, self.product.name)
+        self.choice.refresh_from_db()
+        duplicate_choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertEqual(duplicate_choice.quantity, 0)
+
+        available_response = self.client.post(
+            self.url,
+            {
+                "delta": "1",
+                "next": sold_out_url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(available_response.status_code, 200)
+        self.assertEqual(
+            available_response.context["workspace_return_url"],
+            sold_out_url,
+        )
+        self.assertEqual(
+            available_response.context["workspace_search_query"],
+            "route trousers",
+        )
+        self.assertEqual(
+            available_response.context["workspace_lifecycle_filter"],
+            Product.Lifecycle.ACTIVE,
+        )
+        self.assertEqual(
+            available_response.context["workspace_availability_filter"],
+            "sold_out",
+        )
+        self.assertContains(
+            available_response,
+            "No products match this search and filter combination.",
+        )
+        self.assertContains(
+            available_response,
+            'data-workspace-focus-results="true"',
+        )
+        self.assertNotContains(available_response, self.product.name)
+        self.choice.refresh_from_db()
+        duplicate_choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 1)
+        self.assertEqual(duplicate_choice.quantity, 0)
+        self.assertEqual(
+            list(
+                InventoryAdjustment.objects.order_by("pk").values_list(
+                    "choice_id",
+                    "quantity_before",
+                    "quantity_after",
+                    "delta",
+                )
+            ),
+            [
+                (self.choice.pk, 1, 0, -1),
+                (self.choice.pk, 0, 1, 1),
+            ],
+        )
+
     def test_workspace_htmx_underflow_returns_full_results_without_write(self):
         self.choice.quantity = 0
         self.choice.save(update_fields=["quantity", "updated_at"])
