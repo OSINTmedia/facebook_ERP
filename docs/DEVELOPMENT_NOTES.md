@@ -4,22 +4,23 @@
 
 - Status: LIVE
 - Owner: osMit
-- Project: Social Commerce Seller Operations Assistant
-- Update rule: update only for a meaningful decision, rejected alternative, trade-off, bug, workaround, or engineering lesson
-- Read during context load: after APP_EXPERIENCE_PLAN.md
+- Project: Social Commerce Operating Assistant
+- Role: append-only operational handoff and meaningful decision history
+- Update rule: append concise execution outcomes, blockers, recoveries, plan splits/amendments, durable decisions, and next work; do not rewrite historical entries
+- Read during context load: after `docs/PROJECT_BIBLE.md` and the relevant section of `docs/BUILD_PLAN.md`
+- Historical path rule: legacy document paths in earlier dated entries are provenance only and do not make those files current authority
 - Daily implementation log: no
 
 ## Purpose
 
-This document records why meaningful product, architecture, workflow, and UX decisions were made.
+This document records meaningful product, architecture, workflow, and UX decisions and provides the latest concise operational handoff for actual execution state and next work.
 
 It is not:
 
-- a changelog;
-- a phase tracker;
-- a duplicate of BUILD_PLAN.md;
+- a routine daily changelog;
+- a duplicate of `docs/BUILD_PLAN.md`;
 - a copy of frozen scope documents;
-- a commit history.
+- an exact commit or CI ledger.
 
 ## Initial Decisions
 
@@ -560,3 +561,14 @@ Use `docs/discovery/ASSISTANT_FIRST_PRODUCT_DESIGN_SYNTHESIS.md` as discovery su
 
 Reason:
 The synthesis clearly explains the product's core boundary: assistant-first seller operations, not another ecommerce administration system. That reasoning supports active plans, but active frozen and semi-frozen documents remain the controlling sources.
+
+### 2026-09-03 - Documentation authority consolidation and P6.7c recovery handoff
+
+Recovery outcome:
+P6.7c Workspace Accessibility and Recovery Hardening is the previous accepted and released work. Its implementation, integrity audit, automated verification, and required owner/browser verification passed, and Git/GitHub/CI prove the released source and exact-SHA CI result. No unresolved P6.7c functional recovery remains.
+
+Current handoff:
+P6.7d Phase 6 Integrated Regression and Owner Closure Gate is the next execution gate. A defect found there requires the smallest separately approved P6.7 recovery slice; P6.7d must not absorb functional repair.
+
+Documentation governance:
+Active project documentation is limited to `docs/PROJECT_BIBLE.md`, `docs/BUILD_PLAN.md`, and `docs/DEVELOPMENT_NOTES.md`. `README.md` is public presentation only, `docs/archive/` is provenance only, and Git/GitHub/CI remain the authority for exact commit, push, remote-alignment, and CI truth. Earlier entries that name retired planning, discovery, checkpoint, experience-plan, or domain-document paths remain historical decision evidence only.

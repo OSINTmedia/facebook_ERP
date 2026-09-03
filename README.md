@@ -32,10 +32,10 @@ This rebuild is intended to demonstrate:
 
 ## Current Status
 
-Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User and Business Ownership is complete. Phase 3 Catalog Core is complete. Phase 4 Semantic Recognition and Choice Model is complete. Phase 5 Inventory and Computed Availability is complete with computed availability, an immutable Business-scoped adjustment ledger, centralized choice-level stock mutation, one-save initial stock, and Product-edit stock controls. Phase 6 Operational Product Workspace is in progress with an authenticated Business-scoped Workspace, compact Product cards, separate lifecycle and computed-availability states, exact active-choice stock truth, validated URL-backed search and bounded Lifecycle/Availability filters, and progressively enhanced `-1`/`+1` controls that refresh complete Workspace results from server truth. P6.6 functionality passed owner/browser verification; broader visual UI/UX improvement remains later work.
+Status: Phase 1 Django/PostgreSQL foundation and CI is complete. Phase 2 User and Business Ownership is complete. Phase 3 Catalog Core is complete. Phase 4 Semantic Recognition and Choice Model is complete. Phase 5 Inventory and Computed Availability is complete with computed availability, an immutable Business-scoped adjustment ledger, centralized choice-level stock mutation, one-save initial stock, and Product-edit stock controls. Phase 6 Operational Product Workspace is in progress with an authenticated Business-scoped Workspace, compact Product cards, separate lifecycle and computed-availability states, exact active-choice stock truth, validated URL-backed search and bounded Lifecycle/Availability filters, and progressively enhanced `-1`/`+1` controls that refresh complete Workspace results from server truth. P6.7c accessibility and recovery hardening is released and verified; P6.7d integrated regression and owner closure is next.
 
 - Product discovery completed from an earlier private prototype.
-- Owner-controlled planning documents are frozen for the Phase 1 starting baseline.
+- Historical planning and discovery evidence is preserved under `docs/archive/` for provenance only.
 - Python/Django dependency baseline exists in `requirements.txt`.
 - Minimal Django project scaffold exists with `manage.py` and the `config` project package.
 - Environment-specific Django settings exist for local, test, and production-safe startup paths.
@@ -113,16 +113,11 @@ The architecture will keep lifecycle, availability, readiness, and buyer-answer 
 
 The rebuild follows a documentation-first micro-slice workflow:
 
-1. read the live checkpoint;
-2. confirm the active micro-slice;
-3. get owner approval;
-4. implement only the approved slice;
-5. run automated verification;
-6. perform manual owner testing where needed;
-7. audit scope, UX, security, and regression risk;
-8. update documentation;
-9. commit with one clear intention;
-10. update the checkpoint for the next chat.
+1. establish current scope and state from the Project Bible, Build Plan, Development Notes, source, Git, and CI;
+2. freeze the approved micro-slice contract and owner-test requirement;
+3. implement only the approved slice;
+4. verify, audit, complete required owner testing, and synchronize durable documentation when needed;
+5. review the exact release set, commit one clear intention, push normally, and verify exact-SHA CI.
 
 ## AI-Assisted Development
 
@@ -134,16 +129,11 @@ AI output is not trusted without source inspection and verification. An LLM must
 
 ## Documentation Map
 
-- [Portfolio_MVP_V1.md](docs/Portfolio_MVP_V1.md)
-- [Technical_Planning_v1.md](docs/Technical_Planning_v1.md)
-- [User_Journey_Freeze_v1.md](docs/User_Journey_Freeze_v1.md)
-- [CLOTHING_DATA_SPEC_V1.md](docs/domain/CLOTHING_DATA_SPEC_V1.md)
-- [APP_EXPERIENCE_PLAN.md](APP_EXPERIENCE_PLAN.md)
-- [DEVELOPMENT_NOTES.md](DEVELOPMENT_NOTES.md)
-- [BUILD_PLAN.md](BUILD_PLAN.md)
-- [changelog_checkpoint.md](changelog_checkpoint.md)
+- [Project Bible](docs/PROJECT_BIBLE.md) — canonical durable product and system truth.
+- [Build Plan](docs/BUILD_PLAN.md) — execution order, acceptance, verification, and gates.
+- [Development Notes](docs/DEVELOPMENT_NOTES.md) — append-only operational handoff and decision history.
 
-Internal discovery evidence also exists in `docs/discovery/DISCOVERY_REPORT.md`, `docs/discovery/backend.md`, and `docs/discovery/frontend.md`.
+Legacy planning, discovery, UX, journey, and domain documents are retained under `docs/archive/` for provenance only and are not current implementation authority.
 
 ## Online Demo
 
