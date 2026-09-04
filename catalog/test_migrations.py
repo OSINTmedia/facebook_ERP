@@ -1,23 +1,31 @@
+from decimal import Decimal
+
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
 
 
 class ControlledSizeColorVocabularyMigrationTests(TransactionTestCase):
-    migrate_from = ("catalog", "0007_remove_unique_product_choice_per_product")
-    migrate_to = ("catalog", "0009_remove_legacy_choice_text")
+    migrate_from = [
+        ("businesses", "0001_initial"),
+        ("catalog", "0007_remove_unique_product_choice_per_product"),
+    ]
+    migrate_to = [
+        ("businesses", "0001_initial"),
+        ("catalog", "0009_remove_legacy_choice_text"),
+    ]
     reset_sequences = True
 
     def setUp(self):
         super().setUp()
         self.executor = MigrationExecutor(connection)
-        self.executor.migrate([self.migrate_from])
-        old_apps = self.executor.loader.project_state([self.migrate_from]).apps
+        self.executor.migrate(self.migrate_from)
+        old_apps = self.executor.loader.project_state(self.migrate_from).apps
         self.original_rows = self.create_legacy_rows(old_apps)
 
     def tearDown(self):
         executor = MigrationExecutor(connection)
-        executor.migrate([self.migrate_to])
+        executor.migrate(executor.loader.graph.leaf_nodes())
         super().tearDown()
 
     @staticmethod
@@ -84,8 +92,8 @@ class ControlledSizeColorVocabularyMigrationTests(TransactionTestCase):
 
     def test_forward_and_reverse_preserve_choice_rows_and_business_scope(self):
         self.executor = MigrationExecutor(connection)
-        self.executor.migrate([self.migrate_to])
-        new_apps = self.executor.loader.project_state([self.migrate_to]).apps
+        self.executor.migrate(self.migrate_to)
+        new_apps = self.executor.loader.project_state(self.migrate_to).apps
         BusinessSize = new_apps.get_model("catalog", "BusinessSize")
         BusinessColor = new_apps.get_model("catalog", "BusinessColor")
         ProductChoice = new_apps.get_model("catalog", "ProductChoice")
@@ -110,8 +118,8 @@ class ControlledSizeColorVocabularyMigrationTests(TransactionTestCase):
         self.assertEqual(BusinessColor.objects.count(), 2)
 
         self.executor = MigrationExecutor(connection)
-        self.executor.migrate([self.migrate_from])
-        reverse_apps = self.executor.loader.project_state([self.migrate_from]).apps
+        self.executor.migrate(self.migrate_from)
+        reverse_apps = self.executor.loader.project_state(self.migrate_from).apps
         LegacyChoice = reverse_apps.get_model("catalog", "ProductChoice")
         reversed_first = LegacyChoice.objects.get(pk=self.original_rows["first_id"])
         reversed_duplicate = LegacyChoice.objects.get(
@@ -124,3 +132,63 @@ class ControlledSizeColorVocabularyMigrationTests(TransactionTestCase):
         self.assertEqual(reversed_duplicate.color, "Black")
         self.assertEqual(reversed_duplicate.quantity, 3)
         self.assertTrue(reversed_duplicate.is_active)
+
+
+class ProductPriceMigrationTests(TransactionTestCase):
+    migrate_from = [
+        ("businesses", "0001_initial"),
+        ("catalog", "0011_product_type_tag_activation"),
+    ]
+    migrate_to = [
+        ("businesses", "0002_business_default_currency"),
+        ("catalog", "0012_product_price"),
+    ]
+    reset_sequences = True
+
+    def setUp(self):
+        super().setUp()
+        self.executor = MigrationExecutor(connection)
+        self.executor.migrate(self.migrate_from)
+        old_apps = self.executor.loader.project_state(self.migrate_from).apps
+        User = old_apps.get_model("accounts", "User")
+        Business = old_apps.get_model("businesses", "Business")
+        Product = old_apps.get_model("catalog", "Product")
+
+        owner = User.objects.create(
+            email="price-migration-owner@example.com",
+            password="unusable",
+        )
+        business = Business.objects.create(owner=owner, name="Seller Studio")
+        product = Product.objects.create(
+            business=business,
+            name="Existing trousers",
+            description="Existing Product without price truth.",
+        )
+        self.business_id = business.pk
+        self.product_id = product.pk
+
+    def tearDown(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+        super().tearDown()
+
+    def test_existing_rows_receive_currency_and_keep_missing_price(self):
+        self.executor = MigrationExecutor(connection)
+        self.executor.migrate(self.migrate_to)
+        apps = self.executor.loader.project_state(self.migrate_to).apps
+        Business = apps.get_model("businesses", "Business")
+        Product = apps.get_model("catalog", "Product")
+
+        business = Business.objects.get(pk=self.business_id)
+        product = Product.objects.get(pk=self.product_id)
+
+        self.assertEqual(business.default_currency, "GEL")
+        self.assertIsNone(product.price)
+
+        priced_product = Product.objects.create(
+            business=business,
+            name="New priced trousers",
+            description="Price truth after migration.",
+            price=Decimal("49.90"),
+        )
+        self.assertEqual(priced_product.price, Decimal("49.90"))

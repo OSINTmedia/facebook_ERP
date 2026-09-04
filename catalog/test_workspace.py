@@ -1,4 +1,5 @@
 from pathlib import Path
+from decimal import Decimal
 
 from django.contrib.auth import get_user_model
 from django.db import connection
@@ -871,6 +872,8 @@ class ProductCardReadModelTests(TestCase):
         card = self.cards()[0]
 
         self.assertEqual(card.lifecycle_label, "Active")
+        self.assertIsNone(card.price)
+        self.assertEqual(card.currency, "GEL")
         self.assertEqual(card.availability_label, "Available")
         self.assertEqual(card.availability_state, "available")
         self.assertEqual(card.product_type_name, "Trousers")
@@ -878,6 +881,16 @@ class ProductCardReadModelTests(TestCase):
         self.assertEqual(card.active_stock_total, 3)
         self.assertEqual(card.inactive_choice_count, 0)
         self.assertEqual(card.active_choices[0].choice_id, choice.pk)
+
+    def test_card_exposes_confirmed_price_with_business_currency(self):
+        self.business.default_currency = "USD"
+        self.business.save(update_fields=["default_currency", "updated_at"])
+        self.create_product(price=Decimal("49.90"))
+
+        card = self.cards()[0]
+
+        self.assertEqual(card.price, Decimal("49.90"))
+        self.assertEqual(card.currency, "USD")
 
     def test_active_card_is_sold_out_when_only_active_choice_is_zero(self):
         product = self.create_product()
@@ -1011,6 +1024,7 @@ class ProductWorkspaceViewTests(TestCase):
         quantity=1,
         is_active=True,
         lifecycle=Product.Lifecycle.ACTIVE,
+        price=None,
     ):
         size, _ = BusinessSize.objects.get_or_create(
             business=self.business,
@@ -1025,6 +1039,7 @@ class ProductWorkspaceViewTests(TestCase):
             name=name,
             description="Workspace stock controls product.",
             lifecycle=lifecycle,
+            price=price,
         )
         choice = ProductChoice.objects.create(
             business=self.business,
@@ -1486,6 +1501,7 @@ class ProductWorkspaceViewTests(TestCase):
             name="Black trousers",
             description="Classic black trousers.",
             lifecycle=Product.Lifecycle.ACTIVE,
+            price=Decimal("49.90"),
         )
         choice = ProductChoice.objects.create(
             business=self.business,
@@ -1501,6 +1517,8 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/_product_card.html")
         self.assertContains(response, "Lifecycle")
+        self.assertContains(response, "Price")
+        self.assertContains(response, "49.90 GEL")
         self.assertContains(response, "Availability")
         self.assertContains(response, "Available")
         self.assertContains(response, "Product type")
@@ -1519,10 +1537,25 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, 'aria-label="Edit Black trousers"')
         self.assertNotContains(response, "Ready reply")
         rendered = response.content.decode()
+        card_markup = rendered[rendered.index('<article class="product-card"') :]
         self.assertLess(
-            rendered.index("Lifecycle"),
-            rendered.index(product.description),
+            card_markup.index("Price"),
+            card_markup.index("Lifecycle"),
         )
+        self.assertLess(
+            card_markup.index("Lifecycle"),
+            card_markup.index(product.description),
+        )
+
+    def test_workspace_missing_price_is_explicit_and_never_free(self):
+        self.create_product_with_choice(name="Missing price product")
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, "Price")
+        self.assertContains(response, "Missing")
+        self.assertNotContains(response, "Free")
 
     def test_workspace_renders_native_stock_controls_only_for_active_choices(self):
         product, active_choice = self.create_product_with_choice(quantity=2)

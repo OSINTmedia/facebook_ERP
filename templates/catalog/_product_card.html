@@ -2,6 +2,14 @@
   <header class="product-card__header">
     <div class="product-card__identity">
       <h2 id="product-card-title-{{ card.product_id }}">{{ card.name }}</h2>
+      <p class="product-card__type product-card__price">
+        <span>Price</span>
+        {% if card.price is None %}
+          <strong>Missing</strong>
+        {% else %}
+          <strong>{{ card.price|floatformat:2 }} {{ card.currency }}</strong>
+        {% endif %}
+      </p>
       {% if card.product_type_name %}
         <p class="product-card__type">
           <span>Product type</span>

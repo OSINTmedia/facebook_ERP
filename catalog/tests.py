@@ -1,11 +1,12 @@
 from dataclasses import FrozenInstanceError
+from decimal import Decimal
 from types import SimpleNamespace
 from unittest.mock import patch
 from urllib.parse import quote
 
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.db.models.deletion import ProtectedError
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -2253,6 +2254,90 @@ class ProductModelTests(TestCase):
 
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
 
+    def test_product_price_is_nullable_or_positive(self):
+        missing_price = Product(
+            business=self.business,
+            name="Price unknown trousers",
+            description="Price will be confirmed later.",
+        )
+        confirmed_price = Product(
+            business=self.business,
+            name="Priced trousers",
+            description="Price is confirmed.",
+            price=Decimal("49.90"),
+        )
+
+        missing_price.full_clean()
+        confirmed_price.full_clean()
+
+        self.assertIsNone(missing_price.price)
+        self.assertEqual(confirmed_price.price, Decimal("49.90"))
+
+    def test_product_rejects_invalid_price_in_application_and_database(self):
+        invalid_prices = (
+            Decimal("0.00"),
+            Decimal("-0.01"),
+            Decimal("NaN"),
+            Decimal("Infinity"),
+            Decimal("-Infinity"),
+        )
+
+        for invalid_price in invalid_prices:
+            with self.subTest(invalid_price=invalid_price):
+                product = Product(
+                    business=self.business,
+                    name="Invalid price trousers",
+                    description="Price must remain trustworthy.",
+                    price=invalid_price,
+                )
+                with self.assertRaises(ValidationError):
+                    product.full_clean()
+
+        for invalid_price in (Decimal("0.00"), Decimal("-0.01")):
+            with self.subTest(database_price=invalid_price):
+                with self.assertRaises(IntegrityError):
+                    with transaction.atomic():
+                        Product.objects.create(
+                            business=self.business,
+                            name="Invalid database price",
+                            description="Database constraint coverage.",
+                            price=invalid_price,
+                        )
+
+    def test_product_database_rejects_non_finite_price(self):
+        for invalid_price in ("NaN", "Infinity", "-Infinity"):
+            with self.subTest(invalid_price=invalid_price):
+                with self.assertRaises(DatabaseError):
+                    with transaction.atomic(), connection.cursor() as cursor:
+                        cursor.execute(
+                            """
+                            INSERT INTO catalog_product (
+                                business_id,
+                                name,
+                                description,
+                                price,
+                                lifecycle,
+                                created_at,
+                                updated_at
+                            ) VALUES (
+                                %s,
+                                %s,
+                                %s,
+                                CAST(%s AS numeric),
+                                %s,
+                                CURRENT_TIMESTAMP,
+                                CURRENT_TIMESTAMP
+                            )
+                            """,
+                            [
+                                self.business.pk,
+                                "Invalid database price",
+                                "Database constraint coverage.",
+                                invalid_price,
+                                Product.Lifecycle.DRAFT,
+                            ],
+                        )
+
     def test_product_accepts_one_owned_product_type(self):
         product_type = BusinessProductType.objects.create(
             business=self.business,
@@ -2710,8 +2795,69 @@ class ProductFormTests(TestCase):
 
         self.assertEqual(
             list(form.fields),
-            ["name", "description", "product_type", "tags", "lifecycle"],
+            [
+                "name",
+                "description",
+                "price",
+                "product_type",
+                "tags",
+                "lifecycle",
+            ],
         )
+        self.assertEqual(form.fields["price"].label, "Price (GEL)")
+
+    def test_form_price_label_uses_the_active_business_currency(self):
+        self.other_business.default_currency = "USD"
+        self.other_business.save(
+            update_fields=["default_currency", "updated_at"]
+        )
+
+        form = ProductForm(business=self.other_business)
+
+        self.assertEqual(form.fields["price"].label, "Price (USD)")
+
+    def test_form_normalizes_blank_price_and_accepts_positive_price(self):
+        blank_form = ProductForm(
+            data={
+                "name": "Price unknown trousers",
+                "description": "Price will be confirmed later.",
+                "price": "",
+                "lifecycle": Product.Lifecycle.DRAFT,
+            },
+            business=self.business,
+        )
+        positive_form = ProductForm(
+            data={
+                "name": "Priced trousers",
+                "description": "Price is confirmed.",
+                "price": "49.90",
+                "lifecycle": Product.Lifecycle.DRAFT,
+            },
+            business=self.business,
+        )
+
+        self.assertTrue(blank_form.is_valid(), blank_form.errors)
+        self.assertTrue(positive_form.is_valid(), positive_form.errors)
+        self.assertIsNone(blank_form.cleaned_data["price"])
+        self.assertEqual(positive_form.cleaned_data["price"], Decimal("49.90"))
+
+    def test_form_rejects_nonpositive_precision_and_range_price_errors(self):
+        invalid_prices = ("0", "-0.01", "1.999", "10000000000.00")
+
+        for invalid_price in invalid_prices:
+            with self.subTest(invalid_price=invalid_price):
+                form = ProductForm(
+                    data={
+                        "name": "Invalid price trousers",
+                        "description": "Price must remain trustworthy.",
+                        "price": invalid_price,
+                        "lifecycle": Product.Lifecycle.DRAFT,
+                    },
+                    business=self.business,
+                )
+
+                self.assertFalse(form.is_valid())
+                self.assertIn("price", form.errors)
 
     def test_form_classification_choices_are_business_scoped(self):
         form = ProductForm(business=self.business)
@@ -3206,6 +3352,7 @@ class ProductBundleTests(TestCase):
         lifecycle=Product.Lifecycle.ACTIVE,
         initial_forms=0,
         name="Black trousers",
+        price="",
         product_type="",
         tags=(),
         material_rows=(),
@@ -3214,6 +3361,7 @@ class ProductBundleTests(TestCase):
         data = {
             "name": name,
             "description": "Classic black trousers.",
+            "price": price,
             "product_type": str(product_type or ""),
             "tags": [str(tag) for tag in tags],
             "lifecycle": lifecycle,
@@ -3269,6 +3417,7 @@ class ProductBundleTests(TestCase):
         product = bundle.save()
 
         self.assertEqual(product.business, self.business)
+        self.assertIsNone(product.price)
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
         self.assertEqual(product.product_type, self.product_type)
         self.assertEqual(set(product.tags.all()), {self.tag, self.second_tag})
@@ -3284,6 +3433,48 @@ class ProductBundleTests(TestCase):
         self.assertEqual(choice.size, self.size)
         self.assertEqual(choice.color, self.color)
         self.assertEqual(choice.quantity, 0)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_valid_create_saves_positive_price_in_the_product_bundle(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data(
+                [self.active_choice_row()],
+                price="49.90",
+                tags=(self.tag.pk,),
+            ),
+        )
+
+        self.assertTrue(bundle.is_valid(), bundle.product_form.errors)
+        product = bundle.save()
+
+        self.assertEqual(product.price, Decimal("49.90"))
+        self.assertEqual(product.tags.get(), self.tag)
+        self.assertEqual(product.choices.count(), 1)
+
+    def test_invalid_price_does_not_partially_persist_product_bundle(self):
+        bundle = ProductBundle(
+            business=self.business,
+            data=self.bundle_data(
+                [self.active_choice_row(quantity="4")],
+                price="0",
+                tags=(self.tag.pk,),
+                material_rows=[self.material_row()],
+            ),
+        )
+
+        self.assertFalse(bundle.is_valid())
+        self.assertIn("price", bundle.product_form.errors)
+        with self.assertRaisesMessage(
+            ValueError,
+            "Cannot save an invalid Product bundle.",
+        ):
+            bundle.save(actor=self.owner)
+
+        self.assertFalse(Product.objects.exists())
+        self.assertFalse(ProductChoice.objects.exists())
+        self.assertFalse(ProductTag.objects.exists())
+        self.assertFalse(ProductMaterialFact.objects.exists())
         self.assertFalse(InventoryAdjustment.objects.exists())
 
     def test_valid_create_records_positive_starting_stock_once(self):
@@ -4498,6 +4689,7 @@ class ProductBundleViewTestMixin:
         initial_forms=0,
         name="Black trousers",
         description="Classic black trousers.",
+        price="",
         product_type="",
         tags=(),
         material_rows=(),
@@ -4506,6 +4698,7 @@ class ProductBundleViewTestMixin:
         data = {
             "name": name,
             "description": description,
+            "price": price,
             "product_type": str(product_type or ""),
             "tags": [str(tag) for tag in tags],
             "lifecycle": lifecycle,
@@ -4646,6 +4839,9 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, "Add product")
         self.assertContains(response, 'name="name"')
         self.assertContains(response, 'name="description"')
+        self.assertContains(response, 'name="price"')
+        self.assertContains(response, 'min="0.01"')
+        self.assertContains(response, 'step="0.01"')
         self.assertContains(response, 'name="product_type"')
         self.assertIn("tags", response.context["form"].fields)
         self.assertContains(response, "Confirmed classification")
@@ -5785,6 +5981,45 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertRedirects(response, self.list_url)
         self.assertNotIn("example.com", response["Location"])
 
+    def test_product_create_saves_price_and_returns_to_canonical_workspace(self):
+        self.client.force_login(self.owner)
+        return_url = (
+            f"{self.list_url}?q=black+trousers"
+            "&lifecycle=active&availability=available"
+        )
+        data = self.bundle_post_data(
+            [self.active_choice_row()],
+            price="49.90",
+        )
+        data["next"] = return_url
+
+        response = self.client.post(self.url, data)
+
+        self.assertRedirects(response, return_url)
+        product = Product.objects.get()
+        self.assertEqual(product.price, Decimal("49.90"))
+        self.assertEqual(product.business.default_currency, "GEL")
+
+    def test_product_create_rejects_zero_price_without_partial_writes(self):
+        self.client.force_login(self.owner)
+        return_url = f"{self.list_url}?q=black+trousers&lifecycle=active"
+        data = self.bundle_post_data(
+            [self.active_choice_row(quantity="4")],
+            price="0",
+        )
+        data["next"] = return_url
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'name="price"')
+        self.assertContains(response, 'value="0"')
+        self.assertContains(response, "greater than or equal to 0.01")
+        self.assertEqual(response.context["return_url"], return_url)
+        self.assertFalse(Product.objects.exists())
+        self.assertFalse(ProductChoice.objects.exists())
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
 
 class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
     def setUp(self):
@@ -5869,6 +6104,66 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
                     f'name="next" value="{escaped_return_url}"',
                     count=1,
                 )
+
+    def test_product_edit_saves_price_and_returns_to_canonical_workspace(self):
+        self.client.force_login(self.owner)
+        return_url = (
+            f"{self.list_url}?q=black+trousers"
+            "&lifecycle=draft&availability=sold_out"
+        )
+        data = self.bundle_post_data(
+            [{}],
+            lifecycle=Product.Lifecycle.DRAFT,
+            price="79.50",
+        )
+        data["next"] = return_url
+
+        response = self.client.post(self.url, data)
+
+        self.assertRedirects(response, return_url)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.price, Decimal("79.50"))
+
+    def test_product_edit_can_clear_confirmed_price_to_missing(self):
+        self.product.price = Decimal("25.00")
+        self.product.save(update_fields=["price", "updated_at"])
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            self.bundle_post_data(
+                [{}],
+                lifecycle=Product.Lifecycle.DRAFT,
+                price="",
+            ),
+        )
+
+        self.assertRedirects(response, self.list_url)
+        self.product.refresh_from_db()
+        self.assertIsNone(self.product.price)
+
+    def test_product_edit_rejects_zero_price_and_preserves_confirmed_truth(self):
+        self.product.price = Decimal("25.00")
+        self.product.save(update_fields=["price", "updated_at"])
+        self.client.force_login(self.owner)
+        return_url = f"{self.list_url}?q=black+trousers&lifecycle=draft"
+        data = self.bundle_post_data(
+            [{}],
+            lifecycle=Product.Lifecycle.DRAFT,
+            name="Must not save",
+            price="0",
+        )
+        data["next"] = return_url
+
+        response = self.client.post(self.url, data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'value="0"')
+        self.assertContains(response, "greater than or equal to 0.01")
+        self.assertEqual(response.context["return_url"], return_url)
+        self.product.refresh_from_db()
+        self.assertEqual(self.product.name, "Black trousers")
+        self.assertEqual(self.product.price, Decimal("25.00"))
 
     def test_product_edit_renders_form_for_owned_product(self):
         product_type = BusinessProductType.objects.create(

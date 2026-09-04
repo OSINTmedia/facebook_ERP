@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models.functions import Lower, Trim
 
@@ -440,6 +443,13 @@ class Product(models.Model):
     )
     name = models.CharField(max_length=160)
     description = models.TextField()
+    price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
     lifecycle = models.CharField(
         max_length=20,
         choices=Lifecycle.choices,
@@ -450,6 +460,16 @@ class Product(models.Model):
 
     class Meta:
         ordering = ["name", "id"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(price__isnull=True)
+                | (
+                    models.Q(price__gt=0)
+                    & models.Q(price__lte=Decimal("9999999999.99"))
+                ),
+                name="product_price_null_or_positive",
+            ),
+        ]
 
     def clean(self):
         super().clean()

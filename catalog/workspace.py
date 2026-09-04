@@ -1,6 +1,7 @@
 """Read-side boundaries for the seller Product Workspace."""
 
 from dataclasses import dataclass
+from decimal import Decimal
 from urllib.parse import urlencode, urlsplit
 
 from django.db.models import Exists, OuterRef, Prefetch, Q, QuerySet, Subquery
@@ -164,6 +165,8 @@ class ProductCard:
     product_id: int
     name: str
     description_excerpt: str
+    price: Decimal | None
+    currency: str
     product_type_name: str | None
     lifecycle_label: str
     availability_label: str
@@ -421,6 +424,8 @@ def _build_product_card(*, business: Business, product: Product) -> ProductCard:
         product_id=product.pk,
         name=product.name,
         description_excerpt=_description_excerpt(product.description),
+        price=product.price,
+        currency=business.default_currency,
         product_type_name=product.workspace_product_type_name,
         lifecycle_label=product.get_lifecycle_display(),
         availability_label=availability_label,

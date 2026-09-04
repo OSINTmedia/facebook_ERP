@@ -56,6 +56,17 @@
           {% endif %}
         </div>
 
+        <div class="form-field">
+          <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+          {{ form.price }}
+          <small>Leave blank when the price is not known yet.</small>
+          {% if show_form_errors %}
+            {% for error in form.price.errors %}
+              <p class="field-error">{{ error }}</p>
+            {% endfor %}
+          {% endif %}
+        </div>
+
         {% include "catalog/_recognition_preview.html" %}
 
         {% include "catalog/_material_section.html" %}

@@ -111,7 +111,14 @@ class ProductForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        fields = ["name", "description", "product_type", "tags", "lifecycle"]
+        fields = [
+            "name",
+            "description",
+            "price",
+            "product_type",
+            "tags",
+            "lifecycle",
+        ]
         widgets = {
             "description": forms.Textarea(
                 attrs={
@@ -124,7 +131,14 @@ class ProductForm(forms.ModelForm):
                     "hx-indicator": "#recognition-preview-loading",
                     "hx-sync": "closest form:replace",
                 }
-            )
+            ),
+            "price": forms.NumberInput(
+                attrs={
+                    "min": "0.01",
+                    "step": "0.01",
+                    "inputmode": "decimal",
+                }
+            ),
         }
 
     def __init__(self, *args, business=None, **kwargs):
@@ -133,6 +147,7 @@ class ProductForm(forms.ModelForm):
         tags = BusinessTag.objects.none()
 
         if business is not None:
+            self.fields["price"].label = f"Price ({business.default_currency})"
             product_type_filter = Q(business=business, is_active=True)
             tag_filter = Q(business=business, is_active=True)
             if self.instance.pk and self.instance.business_id == business.pk:

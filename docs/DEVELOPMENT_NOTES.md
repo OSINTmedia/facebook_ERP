@@ -586,3 +586,15 @@ Known non-blocking drift: the README still describes Direct Set and Archive/Rest
 Release: READY.
 
 Next on Git PASS: P7.1 Price Truth Integration.
+
+### 2026-09-04 - P7.1 Price Truth Integration
+
+Code status: PASS.
+
+Product price is now nullable canonical truth: missing remains distinct from a positive confirmed value, while application and PostgreSQL constraints reject zero, negative, and non-finite values. Product create/edit persists price through the existing atomic bundle, identifies the active Business currency, preserves canonical Workspace return context on success and validation failure, and renders confirmed or explicitly missing price on Business-scoped Workspace cards. Existing Businesses migrate to GEL and existing Products migrate with missing price.
+
+Audit repairs hardened the database boundary against PostgreSQL `NaN`, exposed the active Business currency on the price field, and made cross-app migration tests restore coherent graph-leaf state. The full 426-test PostgreSQL suite, focused migration/integrity checks, Django system and migration consistency checks, and diff/whitespace checks passed. Required owner browser testing passed.
+
+Release: READY.
+
+Next on Git PASS: P7.2 Optional Product Media Baseline.

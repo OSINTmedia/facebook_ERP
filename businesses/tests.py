@@ -47,6 +47,40 @@ class BusinessModelTests(TestCase):
         with self.assertRaises(ValidationError):
             business.full_clean()
 
+    def test_business_defaults_to_gel_currency(self):
+        owner = get_user_model().objects.create_user(
+            email="currency-seller@example.com",
+            password="test-password",
+        )
+
+        business = Business.objects.create(owner=owner, name="Seller Studio")
+
+        self.assertEqual(business.default_currency, "GEL")
+
+    def test_business_currency_requires_an_uppercase_three_letter_code(self):
+        owner = get_user_model().objects.create_user(
+            email="invalid-currency-seller@example.com",
+            password="test-password",
+        )
+
+        for invalid_currency in ("gel", "GE", "GELD", "12$"):
+            with self.subTest(invalid_currency=invalid_currency):
+                business = Business(
+                    owner=owner,
+                    name="Seller Studio",
+                    default_currency=invalid_currency,
+                )
+                with self.assertRaises(ValidationError):
+                    business.full_clean()
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                Business.objects.create(
+                    owner=owner,
+                    name="Invalid Currency Studio",
+                    default_currency="gel",
+                )
+
     def test_business_string_uses_name(self):
         user_model = get_user_model()
         owner = user_model.objects.create_user(
