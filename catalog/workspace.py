@@ -15,6 +15,7 @@ from catalog.models import (
     Product,
     ProductChoice,
     ProductMaterialFact,
+    ProductMedia,
 )
 from inventory.availability import compute_availability_from_stock_state
 
@@ -165,6 +166,7 @@ class ProductCard:
     product_id: int
     name: str
     description_excerpt: str
+    primary_media_id: int | None
     price: Decimal | None
     currency: str
     product_type_name: str | None
@@ -242,6 +244,11 @@ def product_workspace_products(
         business=business,
         pk=OuterRef("product_type_id"),
     ).values("name")[:1]
+    primary_media_id = ProductMedia.objects.filter(
+        business=business,
+        product__business=business,
+        product_id=OuterRef("pk"),
+    ).values("pk")[:1]
     choices = (
         ProductChoice.objects.filter(
             business=business,
@@ -286,7 +293,10 @@ def product_workspace_products(
 
     return (
         products
-        .annotate(workspace_product_type_name=Subquery(product_type_name))
+        .annotate(
+            workspace_product_type_name=Subquery(product_type_name),
+            workspace_primary_media_id=Subquery(primary_media_id),
+        )
         .prefetch_related(
             Prefetch(
                 "choices",
@@ -385,9 +395,10 @@ def build_product_workspace_cards(
 def _build_product_card(*, business: Business, product: Product) -> ProductCard:
     if product.business_id != business.pk:
         raise ValueError("Product must belong to the active Business.")
-    if not hasattr(product, "workspace_choices") or not hasattr(
-        product,
-        "workspace_product_type_name",
+    if (
+        not hasattr(product, "workspace_choices")
+        or not hasattr(product, "workspace_product_type_name")
+        or not hasattr(product, "workspace_primary_media_id")
     ):
         raise ValueError("Product must come from the Product Workspace query.")
 
@@ -424,6 +435,7 @@ def _build_product_card(*, business: Business, product: Product) -> ProductCard:
         product_id=product.pk,
         name=product.name,
         description_excerpt=_description_excerpt(product.description),
+        primary_media_id=product.workspace_primary_media_id,
         price=product.price,
         currency=business.default_currency,
         product_type_name=product.workspace_product_type_name,

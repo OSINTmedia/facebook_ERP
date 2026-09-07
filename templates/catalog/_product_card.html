@@ -1,4 +1,17 @@
 <article class="product-card" aria-labelledby="product-card-title-{{ card.product_id }}">
+  {% if card.primary_media_id %}
+    <img
+      class="product-card__media"
+      src="{% url 'catalog:product_media' card.primary_media_id %}"
+      alt="Image of {{ card.name }}"
+      loading="lazy"
+      decoding="async"
+    >
+  {% else %}
+    <div class="product-card__media product-media-placeholder" role="img" aria-label="No image available for {{ card.name }}">
+      <span aria-hidden="true">No image</span>
+    </div>
+  {% endif %}
   <header class="product-card__header">
     <div class="product-card__identity">
       <h2 id="product-card-title-{{ card.product_id }}">{{ card.name }}</h2>

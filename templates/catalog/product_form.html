@@ -22,7 +22,7 @@
         <p>No business workspace yet.</p>
       </div>
     {% else %}
-      <form class="product-form" method="post" novalidate>
+      <form class="product-form" method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ return_url }}">
 
@@ -66,6 +66,36 @@
             {% endfor %}
           {% endif %}
         </div>
+
+        <fieldset class="product-media-field">
+          <legend>Product image</legend>
+          {% if current_media %}
+            <img
+              class="product-media-field__preview"
+              src="{% url 'catalog:product_media' current_media.pk %}"
+              alt="Current image for {{ product.name|default:'this Product' }}"
+            >
+          {% else %}
+            <div class="product-media-placeholder product-media-placeholder--form" role="img" aria-label="No Product image selected">
+              <span aria-hidden="true">No image</span>
+            </div>
+          {% endif %}
+          <div class="form-field">
+            <label for="{{ media_form.image.id_for_label }}">{{ media_form.image.label }}</label>
+            {{ media_form.image }}
+            <small id="{{ media_form.image.id_for_label }}_helptext">{{ media_form.image.help_text }}</small>
+            {% if show_form_errors and media_form.image.errors %}
+              <div id="{{ media_form.image.id_for_label }}_error" class="field-error" role="alert">
+              {% for error in media_form.image.errors %}
+                <p>{{ error }}</p>
+              {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+          {% if media_reselection_required %}
+            <p class="field-error" role="alert">The Product was not saved and this response cannot keep the selected file. Select the image again before saving.</p>
+          {% endif %}
+        </fieldset>
 
         {% include "catalog/_recognition_preview.html" %}
 

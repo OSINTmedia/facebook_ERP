@@ -1,4 +1,4 @@
-"""Atomic Product, ProductChoice, and material-fact persistence boundary."""
+"""Atomic Product, choice, material-fact, and media persistence boundary."""
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -7,19 +7,28 @@ from catalog.forms import (
     ProductChoiceFormSet,
     ProductForm,
     ProductMaterialFactFormSet,
+    ProductMediaForm,
 )
-from catalog.models import Product, ProductChoice, ProductMaterialFact, ProductTag
+from catalog.media_mutations import attach_or_replace_product_media
+from catalog.models import (
+    Product,
+    ProductChoice,
+    ProductMaterialFact,
+    ProductMedia,
+    ProductTag,
+)
 from inventory.mutations import initialize_choice_quantity
 
 
 class ProductBundle:
-    """Coordinate Product, choice, and material forms at one atomic boundary."""
+    """Coordinate Product and related truth forms at one atomic boundary."""
 
     def __init__(
         self,
         *,
         business,
         data=None,
+        files=None,
         instance=None,
         choice_prefix="choices",
         material_prefix="materials",
@@ -30,6 +39,19 @@ class ProductBundle:
             data=data,
             instance=self.product,
             business=business,
+        )
+        self.current_media = None
+        if self.product.pk:
+            self.current_media = ProductMedia.objects.filter(
+                business=business,
+                product=self.product,
+                product__business=business,
+            ).first()
+        self.media_upload_was_submitted = bool(files and files.get("image"))
+        self.media_form = ProductMediaForm(
+            data=data,
+            files=files,
+            existing_media=self.current_media,
         )
         self.choice_formset = ProductChoiceFormSet(
             data=data,
@@ -64,9 +86,13 @@ class ProductBundle:
 
         choices_are_valid = self.choice_formset.is_valid()
         materials_are_valid = self.material_formset.is_valid()
+        media_is_valid = self.media_form.is_valid()
         self._validated = True
         self._is_valid = (
-            product_is_valid and choices_are_valid and materials_are_valid
+            product_is_valid
+            and choices_are_valid
+            and materials_are_valid
+            and media_is_valid
         )
         return self._is_valid
 
@@ -77,67 +103,81 @@ class ProductBundle:
         if not self._is_valid:
             raise ValueError("Cannot save an invalid Product bundle.")
 
-        with transaction.atomic():
-            product = self.product_form.save(commit=False)
-            product.business = self.business
-            product.full_clean()
-            product.save()
+        media_write = None
+        try:
+            with transaction.atomic():
+                product = self.product_form.save(commit=False)
+                product.business = self.business
+                product.full_clean()
+                product.save()
 
-            self.choice_formset.instance = product
-            choices = self.choice_formset.save(commit=False)
+                self.choice_formset.instance = product
+                choices = self.choice_formset.save(commit=False)
 
-            for choice in self.choice_formset.deleted_objects:
-                raise ValidationError(
-                    "Saved choices cannot be removed. Deactivate the choice instead."
-                )
-
-            for choice in choices:
-                if choice.pk:
-                    self._validate_choice_scope(choice, product)
-                    choice.full_clean()
-                    choice.save(
-                        update_fields=[
-                            "size",
-                            "color",
-                            "is_active",
-                            "updated_at",
-                        ]
+                for choice in self.choice_formset.deleted_objects:
+                    raise ValidationError(
+                        "Saved choices cannot be removed. Deactivate the choice instead."
                     )
-                else:
-                    starting_quantity = choice.quantity
-                    choice.business = self.business
-                    choice.product = product
-                    choice.quantity = 0
-                    choice.full_clean()
-                    choice.save()
-                    if starting_quantity > 0:
-                        initialize_choice_quantity(
-                            business=self.business,
-                            choice=choice,
-                            actor=actor,
-                            quantity=starting_quantity,
+
+                for choice in choices:
+                    if choice.pk:
+                        self._validate_choice_scope(choice, product)
+                        choice.full_clean()
+                        choice.save(
+                            update_fields=[
+                                "size",
+                                "color",
+                                "is_active",
+                                "updated_at",
+                            ]
                         )
+                    else:
+                        starting_quantity = choice.quantity
+                        choice.business = self.business
+                        choice.product = product
+                        choice.quantity = 0
+                        choice.full_clean()
+                        choice.save()
+                        if starting_quantity > 0:
+                            initialize_choice_quantity(
+                                business=self.business,
+                                choice=choice,
+                                actor=actor,
+                                quantity=starting_quantity,
+                            )
 
-            self.choice_formset.save_m2m()
-            self._replace_product_tags(
-                product,
-                tuple(self.product_form.cleaned_data["tags"]),
-            )
-            self.material_formset.instance = product
-            material_facts = self.material_formset.save(commit=False)
-
-            for material_fact in self.material_formset.deleted_objects:
-                self._validate_material_scope(material_fact, product)
-                material_fact.delete()
-
-            for material_fact in material_facts:
-                material_fact.business = self.business
-                material_fact.product = product
-                material_fact.confirmation_state = (
-                    ProductMaterialFact.ConfirmationState.CONFIRMED
+                self.choice_formset.save_m2m()
+                self._replace_product_tags(
+                    product,
+                    tuple(self.product_form.cleaned_data["tags"]),
                 )
-                material_fact.full_clean()
-                material_fact.save()
+                self.material_formset.instance = product
+                material_facts = self.material_formset.save(commit=False)
+
+                for material_fact in self.material_formset.deleted_objects:
+                    self._validate_material_scope(material_fact, product)
+                    material_fact.delete()
+
+                for material_fact in material_facts:
+                    material_fact.business = self.business
+                    material_fact.product = product
+                    material_fact.confirmation_state = (
+                        ProductMaterialFact.ConfirmationState.CONFIRMED
+                    )
+                    material_fact.full_clean()
+                    material_fact.save()
+
+                image = self.media_form.cleaned_data["image"]
+                if image is not None:
+                    media_write = attach_or_replace_product_media(
+                        business=self.business,
+                        product=product,
+                        image=image,
+                    )
+        except Exception:
+            if media_write is not None:
+                media_write.discard_new_file()
+            raise
 
         return product
 

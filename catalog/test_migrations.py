@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from django.db import connection
+from django.db import IntegrityError, connection, transaction
 from django.db.migrations.executor import MigrationExecutor
 from django.test import TransactionTestCase
 
@@ -192,3 +192,73 @@ class ProductPriceMigrationTests(TransactionTestCase):
             price=Decimal("49.90"),
         )
         self.assertEqual(priced_product.price, Decimal("49.90"))
+
+
+class ProductMediaMigrationTests(TransactionTestCase):
+    migrate_from = [
+        ("businesses", "0002_business_default_currency"),
+        ("catalog", "0012_product_price"),
+    ]
+    migrate_to = [
+        ("businesses", "0002_business_default_currency"),
+        ("catalog", "0013_product_media"),
+    ]
+    reset_sequences = True
+
+    def setUp(self):
+        super().setUp()
+        self.executor = MigrationExecutor(connection)
+        self.executor.migrate(self.migrate_from)
+        old_apps = self.executor.loader.project_state(self.migrate_from).apps
+        User = old_apps.get_model("accounts", "User")
+        Business = old_apps.get_model("businesses", "Business")
+        Product = old_apps.get_model("catalog", "Product")
+
+        owner = User.objects.create(
+            email="media-migration-owner@example.com",
+            password="unusable",
+        )
+        business = Business.objects.create(owner=owner, name="Media Studio")
+        product = Product.objects.create(
+            business=business,
+            name="Existing product",
+            description="Existing Product without media.",
+        )
+        self.business_id = business.pk
+        self.product_id = product.pk
+
+    def tearDown(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+        super().tearDown()
+
+    def test_existing_products_remain_media_optional_and_one_primary_is_available(self):
+        self.executor = MigrationExecutor(connection)
+        self.executor.migrate(self.migrate_to)
+        apps = self.executor.loader.project_state(self.migrate_to).apps
+        Business = apps.get_model("businesses", "Business")
+        Product = apps.get_model("catalog", "Product")
+        ProductMedia = apps.get_model("catalog", "ProductMedia")
+
+        business = Business.objects.get(pk=self.business_id)
+        product = Product.objects.get(pk=self.product_id)
+        self.assertFalse(ProductMedia.objects.exists())
+
+        ProductMedia.objects.create(
+            business=business,
+            product=product,
+            image=(
+                f"products/{business.pk}/{product.pk}/"
+                f"{'c' * 32}.png"
+            ),
+        )
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                ProductMedia.objects.create(
+                    business=business,
+                    product=product,
+                    image=(
+                        f"products/{business.pk}/{product.pk}/"
+                        f"{'d' * 32}.png"
+                    ),
+                )

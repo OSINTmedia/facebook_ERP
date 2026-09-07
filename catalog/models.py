@@ -6,6 +6,11 @@ from django.db import models
 from django.db.models.functions import Lower, Trim
 
 from businesses.models import Business
+from catalog.product_media import (
+    product_media_upload_to,
+    product_media_storage_name_is_safe,
+    validate_product_media_file,
+)
 
 
 class BusinessProductType(models.Model):
@@ -545,6 +550,61 @@ class ProductTag(models.Model):
 
     def __str__(self):
         return f"{self.product}: {self.tag}"
+
+
+class ProductMedia(models.Model):
+    business = models.ForeignKey(
+        Business,
+        on_delete=models.PROTECT,
+        related_name="product_media",
+    )
+    product = models.OneToOneField(
+        Product,
+        on_delete=models.PROTECT,
+        related_name="primary_media",
+    )
+    image = models.ImageField(
+        upload_to=product_media_upload_to,
+        max_length=255,
+        validators=[validate_product_media_file],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["product_id", "id"]
+
+    def clean(self):
+        super().clean()
+        self._validate_business_scope()
+
+    def save(self, *args, **kwargs):
+        self._validate_business_scope()
+        validate_product_media_file(self.image)
+        image_was_uncommitted = not getattr(self.image, "_committed", True)
+        try:
+            super().save(*args, **kwargs)
+        except Exception:
+            if image_was_uncommitted and product_media_storage_name_is_safe(
+                self.image.name,
+                business_id=self.business_id,
+                product_id=self.product_id,
+            ):
+                self.image.storage.delete(self.image.name)
+            raise
+
+    def _validate_business_scope(self):
+        if (
+            self.business_id
+            and self.product_id
+            and self.product.business_id != self.business_id
+        ):
+            raise ValidationError(
+                {"product": "Product media must belong to the same Business."}
+            )
+
+    def __str__(self):
+        return f"{self.product}: primary image"
 
 
 class ProductChoice(models.Model):

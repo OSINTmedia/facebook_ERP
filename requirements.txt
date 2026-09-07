@@ -3,6 +3,7 @@ Django==5.2.16
 psycopg[binary]==3.3.4
 django-environ==0.14.0
 django-htmx==1.28.0
+Pillow==12.3.0
 
 # Test harness baseline used by local checks and CI.
 pytest==9.1.1

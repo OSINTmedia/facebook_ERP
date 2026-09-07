@@ -1,7 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
-from django.http import Http404
+from django.core.exceptions import (
+    NON_FIELD_ERRORS,
+    SuspiciousFileOperation,
+    ValidationError,
+)
+from django.http import FileResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -22,6 +26,11 @@ from catalog.models import (
     BusinessSize,
     BusinessTag,
     Product,
+    ProductMedia,
+)
+from catalog.product_media import (
+    product_media_content_type,
+    product_media_storage_name_is_safe,
 )
 from catalog.product_bundles import ProductBundle
 from catalog.recognition import recognize_product_preview_for_business
@@ -146,6 +155,49 @@ class ProductListView(LoginRequiredMixin, TemplateView):
             )
         )
         return context
+
+
+class ProductMediaView(LoginRequiredMixin, View):
+    """Serve one Product image only inside its owner's active Business."""
+
+    def get(self, request, *args, **kwargs):
+        try:
+            business = resolve_active_business(request.user)
+        except MultipleBusinessesUnsupported as exc:
+            raise Http404("Product image not found.") from exc
+        if business is None:
+            raise Http404("Product image not found.")
+
+        media = get_object_or_404(
+            ProductMedia.objects.select_related("product"),
+            pk=kwargs["pk"],
+            business=business,
+            product__business=business,
+        )
+        if not product_media_storage_name_is_safe(
+            media.image.name,
+            business_id=business.pk,
+            product_id=media.product_id,
+        ):
+            raise Http404("Product image not found.")
+
+        content_type = product_media_content_type(media.image.name)
+        if content_type is None:
+            raise Http404("Product image not found.")
+        try:
+            image_file = media.image.open("rb")
+        except (FileNotFoundError, OSError, SuspiciousFileOperation) as exc:
+            raise Http404("Product image not found.") from exc
+
+        extension = media.image.name.rsplit(".", 1)[-1]
+        response = FileResponse(
+            image_file,
+            content_type=content_type,
+            filename=f"product-{media.product_id}.{extension}",
+        )
+        response["Cache-Control"] = "private, no-store"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response
 
 
 class ChoiceVocabularyView(LoginRequiredMixin, View):
@@ -533,6 +585,12 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
         return self.base_context(
             request,
             form=bundle.product_form if bundle is not None else None,
+            media_form=bundle.media_form if bundle is not None else None,
+            current_media=bundle.current_media if bundle is not None else None,
+            media_reselection_required=(
+                bool(bundle and bundle.media_upload_was_submitted)
+                and (show_form_errors or not request.htmx)
+            ),
             choice_formset=bundle.choice_formset if bundle is not None else None,
             material_formset=bundle.material_formset if bundle is not None else None,
             preview_requested=preview_requested,
@@ -578,6 +636,7 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             bundle = ProductBundle(
                 business=self.active_business,
                 data=transfer.data,
+                files=request.FILES,
                 instance=bundle.product,
             )
             transfer_feedback = transfer.feedback
@@ -620,6 +679,7 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             bundle = ProductBundle(
                 business=self.active_business,
                 data=transfer.data,
+                files=request.FILES,
                 instance=bundle.product,
             )
             transfer_feedback = transfer.feedback
@@ -694,6 +754,7 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
                 bundle = ProductBundle(
                     business=self.active_business,
                     data=request.POST,
+                    files=request.FILES,
                     instance=bundle.product,
                 )
 
@@ -745,6 +806,7 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
         bundle = ProductBundle(
             business=self.active_business,
             data=request.POST,
+            files=request.FILES,
         )
         if self.is_recognition_preview_request(request):
             context = self.bundle_context(
@@ -852,6 +914,7 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
         bundle = ProductBundle(
             business=self.active_business,
             data=request.POST,
+            files=request.FILES,
             instance=product,
         )
         if self.is_recognition_preview_request(request):

@@ -598,3 +598,15 @@ Audit repairs hardened the database boundary against PostgreSQL `NaN`, exposed t
 Release: READY.
 
 Next on Git PASS: P7.2 Optional Product Media Baseline.
+
+### 2026-09-07 - P7.2 Optional Product Media Baseline
+
+Code status: PASS.
+
+Products now support one optional Business-owned primary image with validated JPEG, PNG, or WebP content, a 5 MiB limit, server-generated storage paths, atomic ProductBundle attachment or replacement, failure cleanup, authenticated Business-scoped delivery, and truthful Workspace thumbnails or placeholders. Audit repairs preserved upload reselection guidance on full-page validation failures and corrected media-field accessibility associations.
+
+Verification: 22 focused media tests and the full 451-test PostgreSQL suite passed; Django system and migration consistency checks and diff/whitespace checks passed. Required owner desktop and approximately 390px browser testing passed.
+
+Release: READY.
+
+Next on Git PASS: P7.3 Description-First Create/Edit Assistant Refinement.

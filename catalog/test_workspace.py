@@ -28,6 +28,7 @@ from catalog.models import (
     Product,
     ProductChoice,
     ProductMaterialFact,
+    ProductMedia,
     ProductTag,
 )
 from catalog.workspace import (
@@ -874,6 +875,7 @@ class ProductCardReadModelTests(TestCase):
         self.assertEqual(card.lifecycle_label, "Active")
         self.assertIsNone(card.price)
         self.assertEqual(card.currency, "GEL")
+        self.assertIsNone(card.primary_media_id)
         self.assertEqual(card.availability_label, "Available")
         self.assertEqual(card.availability_state, "available")
         self.assertEqual(card.product_type_name, "Trousers")
@@ -891,6 +893,44 @@ class ProductCardReadModelTests(TestCase):
 
         self.assertEqual(card.price, Decimal("49.90"))
         self.assertEqual(card.currency, "USD")
+
+    def test_card_exposes_only_business_scoped_primary_media_identity(self):
+        product = self.create_product()
+        media = ProductMedia.objects.bulk_create(
+            [
+                ProductMedia(
+                    business=self.business,
+                    product=product,
+                    image=(
+                        f"products/{self.business.pk}/{product.pk}/"
+                        f"{'a' * 32}.png"
+                    ),
+                )
+            ]
+        )[0]
+
+        card = self.cards()[0]
+
+        self.assertEqual(card.primary_media_id, media.pk)
+
+    def test_card_hides_cross_business_media_even_from_corrupt_related_state(self):
+        product = self.create_product()
+        ProductMedia.objects.bulk_create(
+            [
+                ProductMedia(
+                    business=self.other_business,
+                    product=product,
+                    image=(
+                        f"products/{self.other_business.pk}/{product.pk}/"
+                        f"{'b' * 32}.png"
+                    ),
+                )
+            ]
+        )
+
+        card = self.cards()[0]
+
+        self.assertIsNone(card.primary_media_id)
 
     def test_active_card_is_sold_out_when_only_active_choice_is_zero(self):
         product = self.create_product()

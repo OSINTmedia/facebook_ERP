@@ -15,6 +15,7 @@ from catalog.models import (
     ProductChoice,
     ProductMaterialFact,
 )
+from catalog.product_media import validate_declared_product_media_type
 from catalog.vocabulary import (
     COLOR_VOCABULARY,
     PRODUCT_TYPE_VOCABULARY,
@@ -178,6 +179,47 @@ class ProductForm(forms.ModelForm):
         self.fields["product_type"].empty_label = "No confirmed product type"
         self.fields["product_type"].label = "Confirmed product type"
         self.fields["tags"].queryset = tags
+
+
+class ProductMediaForm(forms.Form):
+    image = forms.ImageField(
+        required=False,
+        label="Product image",
+        help_text="Optional JPEG, PNG, or WebP image, up to 5 MiB.",
+        widget=forms.ClearableFileInput(
+            attrs={"accept": "image/jpeg,image/png,image/webp"}
+        ),
+    )
+
+    def __init__(self, *args, existing_media=None, **kwargs):
+        files = kwargs.get("files")
+        submitted_images = (
+            files.getlist("image")
+            if files is not None and hasattr(files, "getlist")
+            else []
+        )
+        self._multiple_uploads = len(submitted_images) > 1
+        submitted_image = files.get("image") if files is not None else None
+        self._declared_content_type = getattr(
+            submitted_image,
+            "content_type",
+            None,
+        )
+        self.existing_media = existing_media
+        super().__init__(*args, **kwargs)
+        if existing_media is not None:
+            self.fields["image"].label = "Replace Product image"
+
+    def clean_image(self):
+        image = self.cleaned_data.get("image")
+        if self._multiple_uploads:
+            raise ValidationError("Select only one Product image.")
+        if image is not None:
+            validate_declared_product_media_type(
+                image,
+                self._declared_content_type,
+            )
+        return image
 
 
 class ProductChoiceForm(forms.ModelForm):
