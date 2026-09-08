@@ -622,3 +622,15 @@ Verification: 454 PostgreSQL tests passed; Django system and migration consisten
 Release: READY.
 
 Next on Git PASS: P7.4 Buyer-Question Coverage Service.
+
+### 2026-09-08 - P7.4 Buyer-Question Coverage Service
+
+Code status: PASS.
+
+A deterministic coverage service now reports whether price, availability/stock, size/color, Product Type, and confirmed material questions are answerable, with structured missing reasons and correction targets. The Business-scoped adapter consumes centralized availability, excludes candidates and generic Tags, and preserves exact ProductChoice identity. Adversarial review required no repairs.
+
+Verification: 9 focused coverage tests, 7 neighboring availability tests, and the full 463-test PostgreSQL suite passed; Django system checks completed successfully, no model changes were detected, and diff/whitespace checks passed. Owner test: NOT_REQUIRED.
+
+Release: READY.
+
+Next on Git PASS: P7.5 Workspace Readiness, Partial-Stock Signal, and Correction Loop.
