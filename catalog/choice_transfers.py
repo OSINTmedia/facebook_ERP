@@ -23,9 +23,16 @@ class ChoiceCandidateTransfer:
     candidate: RecognitionCandidate
     row_index: int
     label: str
+    already_present: bool = False
 
     @property
     def feedback(self) -> str:
+        if self.already_present:
+            return (
+                f'{self.label} "{self.candidate.canonical_value}" is already '
+                f"in Choice {self.row_index + 1}. Use Add another choice if "
+                "you intend a separate choice with the same value."
+            )
         return (
             f'{self.label} "{self.candidate.canonical_value}" added to '
             f"Choice {self.row_index + 1}. Review the row before saving."
@@ -51,6 +58,22 @@ def transfer_choice_candidate(
     )
     transferred_data = data.copy()
     total_forms = _validated_total_forms(transferred_data, choice_prefix)
+    existing_row_index = _first_matching_row(
+        transferred_data,
+        prefix=choice_prefix,
+        total_forms=total_forms,
+        field_name=field_name,
+        canonical_id=canonical.pk,
+    )
+    if existing_row_index is not None:
+        return ChoiceCandidateTransfer(
+            data=transferred_data,
+            candidate=candidate,
+            row_index=existing_row_index,
+            label=label,
+            already_present=True,
+        )
+
     row_index = _first_available_row(
         transferred_data,
         prefix=choice_prefix,
@@ -77,6 +100,21 @@ def transfer_choice_candidate(
         row_index=row_index,
         label=label,
     )
+
+
+def append_choice_row(*, data, choice_prefix="choices") -> QueryDict:
+    """Return copied form data with one deliberate empty choice row appended."""
+    appended_data = data.copy()
+    total_forms = _validated_total_forms(appended_data, choice_prefix)
+    if total_forms >= ProductChoiceFormSet.max_num:
+        raise ValidationError("No additional choice row can be added.")
+
+    appended_data[f"{choice_prefix}-TOTAL_FORMS"] = str(total_forms + 1)
+    appended_data[f"{choice_prefix}-{total_forms}-size"] = ""
+    appended_data[f"{choice_prefix}-{total_forms}-color"] = ""
+    appended_data[f"{choice_prefix}-{total_forms}-quantity"] = "0"
+    appended_data[f"{choice_prefix}-{total_forms}-is_active"] = "on"
+    return appended_data
 
 
 def _current_choice_candidate(*, data, business, candidate_reference):
@@ -170,6 +208,26 @@ def _first_available_row(data, *, prefix, total_forms, field_name):
         if _is_checked(data.get(f"{prefix}-{row_index}-DELETE")):
             continue
         if not str(data.get(f"{prefix}-{row_index}-{field_name}", "")).strip():
+            return row_index
+    return None
+
+
+def _first_matching_row(
+    data,
+    *,
+    prefix,
+    total_forms,
+    field_name,
+    canonical_id,
+):
+    expected_value = str(canonical_id)
+    for row_index in range(total_forms):
+        if _is_checked(data.get(f"{prefix}-{row_index}-DELETE")):
+            continue
+        current_value = str(
+            data.get(f"{prefix}-{row_index}-{field_name}", "")
+        ).strip()
+        if current_value == expected_value:
             return row_index
     return None
 

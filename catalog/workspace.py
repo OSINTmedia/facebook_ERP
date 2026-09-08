@@ -431,10 +431,17 @@ def _build_product_card(*, business: Business, product: Product) -> ProductCard:
         availability_label = "Sold out"
         availability_state = "sold-out"
 
+    description_excerpt = _description_excerpt(product.description)
+    if _name_is_derived_from_description(
+        name=product.name,
+        description=product.description,
+    ):
+        description_excerpt = ""
+
     return ProductCard(
         product_id=product.pk,
         name=product.name,
-        description_excerpt=_description_excerpt(product.description),
+        description_excerpt=description_excerpt,
         primary_media_id=product.workspace_primary_media_id,
         price=product.price,
         currency=business.default_currency,
@@ -458,3 +465,9 @@ def _description_excerpt(description: str) -> str:
         description[: PRODUCT_DESCRIPTION_EXCERPT_LENGTH - 1].rstrip()
         + "…"
     )
+
+
+def _name_is_derived_from_description(*, name: str, description: str) -> bool:
+    normalized_description = " ".join(description.split())
+    name_max_length = Product._meta.get_field("name").max_length
+    return name == normalized_description[:name_max_length]

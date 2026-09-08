@@ -324,7 +324,7 @@ class ProductMediaBundleTests(TemporaryMediaMixin, TestCase):
     def test_invalid_bundle_writes_neither_product_media_nor_file(self):
         bundle = ProductBundle(
             business=self.business,
-            data=draft_bundle_data(name=""),
+            data=draft_bundle_data(description=""),
             files={"image": product_image_upload()},
         )
 
@@ -508,7 +508,10 @@ class ProductMediaViewTests(TemporaryMediaMixin, TestCase):
         self.assertRedirects(response, reverse("catalog:product_list"))
         created_media = ProductMedia.objects.exclude(pk=self.media.pk).get()
         self.assertEqual(created_media.business, self.business)
-        self.assertEqual(created_media.product.name, "Created with media")
+        self.assertEqual(
+            created_media.product.name,
+            "Product with optional media.",
+        )
 
     def test_validation_failure_explains_that_upload_must_be_reselected(self):
         self.client.force_login(self.owner)
@@ -516,7 +519,10 @@ class ProductMediaViewTests(TemporaryMediaMixin, TestCase):
 
         response = self.client.post(
             create_url,
-            {**draft_bundle_data(name=""), "image": product_image_upload()},
+            {
+                **draft_bundle_data(description=""),
+                "image": product_image_upload(),
+            },
         )
 
         self.assertEqual(response.status_code, 200)

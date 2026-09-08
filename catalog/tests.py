@@ -2796,7 +2796,6 @@ class ProductFormTests(TestCase):
         self.assertEqual(
             list(form.fields),
             [
-                "name",
                 "description",
                 "price",
                 "product_type",
@@ -2804,6 +2803,7 @@ class ProductFormTests(TestCase):
                 "lifecycle",
             ],
         )
+        self.assertTrue(form.fields["description"].widget.attrs["autofocus"])
         self.assertEqual(form.fields["price"].label, "Price (GEL)")
 
     def test_form_price_label_uses_the_active_business_currency(self):
@@ -2940,18 +2940,33 @@ class ProductFormTests(TestCase):
         self.assertEqual(form["product_type"].value(), self.product_type.pk)
         self.assertEqual(list(form["tags"].value()), [self.tag.pk])
 
-    def test_form_requires_name_and_description(self):
-        form = ProductForm(
+    def test_form_requires_description_and_derives_compatibility_name(self):
+        blank_form = ProductForm(
             data={
                 "name": "",
                 "description": "",
                 "lifecycle": Product.Lifecycle.DRAFT,
-            }
+            },
+            business=self.business,
+        )
+        described_form = ProductForm(
+            data={
+                "name": "Injected seller title",
+                "description": "  Classic   black\ntrousers.  ",
+                "lifecycle": Product.Lifecycle.DRAFT,
+            },
+            business=self.business,
         )
 
-        self.assertFalse(form.is_valid())
-        self.assertIn("name", form.errors)
-        self.assertIn("description", form.errors)
+        self.assertFalse(blank_form.is_valid())
+        self.assertNotIn("name", blank_form.fields)
+        self.assertNotIn("name", blank_form.errors)
+        self.assertIn("description", blank_form.errors)
+        self.assertTrue(described_form.is_valid(), described_form.errors)
+        self.assertEqual(
+            described_form.save(commit=False).name,
+            "Classic black trousers.",
+        )
 
     def test_form_rejects_unknown_lifecycle(self):
         form = ProductForm(
@@ -2983,7 +2998,7 @@ class ProductFormTests(TestCase):
         product.save()
 
         self.assertEqual(product.business, self.business)
-        self.assertEqual(product.name, "Black trousers")
+        self.assertEqual(product.name, "Classic black trousers.")
         self.assertEqual(product.description, "Classic black trousers.")
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
         self.assertEqual(Product.objects.count(), 1)
@@ -3853,7 +3868,7 @@ class ProductBundleTests(TestCase):
 
         product.refresh_from_db()
         choice.refresh_from_db()
-        self.assertEqual(product.name, "Updated trousers")
+        self.assertEqual(product.name, "Classic black trousers.")
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
         self.assertEqual(product.product_type, self.second_product_type)
         self.assertEqual(list(product.tags.all()), [self.second_tag])
@@ -4837,15 +4852,19 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/product_form.html")
         self.assertContains(response, "Add product")
-        self.assertContains(response, 'name="name"')
+        self.assertNotContains(response, 'name="name"')
         self.assertContains(response, 'name="description"')
+        self.assertContains(response, 'autofocus')
+        self.assertContains(response, "Start here")
+        self.assertContains(response, "Describe the Product")
+        self.assertContains(response, 'class="assistant-section')
         self.assertContains(response, 'name="price"')
         self.assertContains(response, 'min="0.01"')
         self.assertContains(response, 'step="0.01"')
         self.assertContains(response, 'name="product_type"')
         self.assertIn("tags", response.context["form"].fields)
-        self.assertContains(response, "Confirmed classification")
-        self.assertContains(response, "Confirmed materials")
+        self.assertContains(response, "Confirm type and tags")
+        self.assertContains(response, "Confirm materials")
         self.assertContains(response, 'name="materials-TOTAL_FORMS"')
         self.assertContains(response, 'name="materials-0-canonical_material"')
         self.assertContains(response, 'name="materials-0-percentage"')
@@ -4858,7 +4877,8 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
             'role="group" aria-labelledby="id_tags-label"',
         )
         self.assertContains(response, 'name="lifecycle"')
-        self.assertContains(response, "Choices")
+        self.assertContains(response, "Sizes, colors, and stock")
+        self.assertContains(response, "Add another choice")
         self.assertContains(response, 'name="choices-TOTAL_FORMS"')
         self.assertContains(response, 'name="choices-0-size"')
         self.assertContains(response, 'name="choices-0-color"')
@@ -4974,7 +4994,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         )
 
         self.assertRedirects(response, self.list_url)
-        product = Product.objects.get(name="Black trousers")
+        product = Product.objects.get(name="Classic black trousers.")
         self.assertEqual(product.product_type, product_type)
         self.assertEqual(set(product.tags.all()), {classic, pockets})
         self.assertEqual(
@@ -4994,7 +5014,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         )
 
         self.assertRedirects(response, self.list_url)
-        product = Product.objects.get(name="Black trousers")
+        product = Product.objects.get(name="Classic black trousers.")
         fact = product.material_facts.get()
         self.assertEqual(fact.business, self.business)
         self.assertEqual(fact.canonical_material, "Cotton")
@@ -5019,7 +5039,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         )
 
         self.assertRedirects(response, self.list_url)
-        product = Product.objects.get(name="Unclassified trousers")
+        product = Product.objects.get(name="pants Classic")
         self.assertIsNone(product.product_type)
         self.assertFalse(product.tags.exists())
         self.assertFalse(product.material_facts.exists())
@@ -5108,6 +5128,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
             ["S size", "S-ზომა"],
         )
         self.assertEqual(response.context["vocabulary_feedback"], 'Size "S" saved.')
+        self.assertTrue(response.context["choice_section_open"])
         self.assertContains(response, ">S</option>")
         self.assertContains(response, f'value="{self.size.pk}" selected')
         self.assertEqual(Product.objects.count(), 0)
@@ -5134,7 +5155,6 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertTemplateUsed(response, "catalog/product_form.html")
         color = BusinessColor.objects.get(business=self.business, name="Black")
         self.assertTrue(color.aliases.filter(alias="შავი").exists())
-        self.assertContains(response, 'value="Unsaved product"')
         self.assertContains(response, "Unsaved description")
         self.assertEqual(
             response.context["vocabulary_feedback"],
@@ -5302,6 +5322,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
             response,
             "Material percentage must be between 1 and 100.",
         )
+        self.assertTrue(response.context["material_section_open"])
         self.assertContains(response, 'value="Cotton"')
         self.assertFalse(Product.objects.exists())
         self.assertFalse(ProductChoice.objects.exists())
@@ -5345,7 +5366,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         data = self.bundle_post_data(
             [self.active_choice_row(color="")],
             name="Unsaved full-page product",
-            description="Black",
+            description="Black unsaved product",
         )
         data["next"] = f"{self.list_url}?q=transfer"
         data["intent"] = self.transfer_intent(
@@ -5363,7 +5384,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertTemplateUsed(response, "catalog/product_form.html")
         transferred_form = response.context["choice_formset"].forms[0]
         self.assertEqual(transferred_form["color"].value(), str(self.color.pk))
-        self.assertContains(response, 'value="Unsaved full-page product"')
+        self.assertContains(response, "Black unsaved product")
         self.assertContains(response, "Black")
         self.assertEqual(
             response.context["return_url"],
@@ -5430,7 +5451,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
 
-    def test_product_create_transfer_appends_row_without_merging_duplicates(self):
+    def test_product_create_repeated_transfer_surfaces_existing_choice(self):
         data = self.bundle_post_data(
             [self.active_choice_row(quantity="5")],
             name="Unsaved duplicate product",
@@ -5448,13 +5469,53 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
 
         formset = response.context["choice_formset"]
+        self.assertEqual(formset.total_form_count(), 1)
+        self.assertEqual(formset.forms[0]["size"].value(), str(self.size.pk))
+        self.assertEqual(formset.forms[0]["quantity"].value(), "5")
+        self.assertContains(response, 'Size &quot;M&quot; is already in Choice 1.')
+        self.assertContains(response, "Use Add another choice")
+        self.assertEqual(Product.objects.count(), 0)
+        self.assertEqual(ProductChoice.objects.count(), 0)
+
+    def test_product_create_explicit_add_row_allows_intentional_duplicate(self):
+        data = self.bundle_post_data(
+            [self.active_choice_row(quantity="5")],
+            description="M",
+        )
+        data["intent"] = "add_choice_row"
+        self.client.force_login(self.owner)
+
+        add_response = self.client.post(
+            self.url,
+            data,
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(add_response.status_code, 200)
+        self.assertTemplateUsed(add_response, "catalog/_choice_section.html")
+        formset = add_response.context["choice_formset"]
         self.assertEqual(formset.total_form_count(), 2)
         self.assertEqual(formset.forms[0]["size"].value(), str(self.size.pk))
         self.assertEqual(formset.forms[0]["quantity"].value(), "5")
-        self.assertEqual(formset.forms[1]["size"].value(), str(self.size.pk))
-        self.assertEqual(formset.forms[1]["color"].value(), "")
+        self.assertEqual(formset.forms[1]["size"].value(), "")
+        self.assertContains(add_response, "Another empty choice is ready.")
         self.assertEqual(Product.objects.count(), 0)
-        self.assertEqual(ProductChoice.objects.count(), 0)
+
+        save_data = formset.data.copy()
+        save_data.pop("intent", None)
+        save_data["choices-1-size"] = str(self.size.pk)
+        save_data["choices-1-color"] = str(self.color.pk)
+        save_data["choices-1-is_active"] = "on"
+
+        save_response = self.client.post(self.url, save_data)
+
+        self.assertRedirects(save_response, self.list_url)
+        choices = list(ProductChoice.objects.order_by("id"))
+        self.assertEqual(len(choices), 2)
+        self.assertEqual(choices[0].size, self.size)
+        self.assertEqual(choices[1].size, self.size)
+        self.assertEqual(choices[0].color, self.color)
+        self.assertEqual(choices[1].color, self.color)
 
     def test_product_create_rejects_non_choice_candidate_transfer(self):
         BusinessProductType.objects.create(
@@ -5599,11 +5660,12 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
                 [self.active_choice_row()],
                 name="",
                 description="pants Classic",
+                price="0",
             ),
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "This field is required.")
+        self.assertContains(response, "greater than or equal to 0.01")
         self.assertContains(response, "Recognized candidates")
         self.assertContains(response, "Trousers")
         self.assertContains(response, "Classic")
@@ -5709,7 +5771,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertRedirects(response, self.list_url)
         product = Product.objects.get()
         self.assertEqual(product.business, self.business)
-        self.assertEqual(product.name, "Black trousers")
+        self.assertEqual(product.name, "Classic black trousers.")
         self.assertEqual(product.description, "Classic black trousers.")
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
         choice = ProductChoice.objects.get()
@@ -5860,7 +5922,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
             response,
             "An active product requires at least one active choice.",
         )
-        self.assertContains(response, 'value="Preserved trousers"')
+        self.assertContains(response, "Classic black trousers.")
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
 
@@ -5875,6 +5937,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "This field is required.")
+        self.assertTrue(response.context["choice_section_open"])
         self.assertContains(response, f'value="{self.size.pk}" selected')
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
@@ -6225,7 +6288,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/product_form.html")
         self.assertContains(response, "Edit Black trousers")
-        self.assertContains(response, 'value="Black trousers"')
+        self.assertNotContains(response, 'name="name"')
         self.assertContains(response, "Classic black trousers.")
         self.assertEqual(
             response.context["form"]["product_type"].value(),
@@ -6630,7 +6693,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertRedirects(response, return_url)
         self.product.refresh_from_db()
         self.assertEqual(self.product.business, self.business)
-        self.assertEqual(self.product.name, "Updated trousers")
+        self.assertEqual(self.product.name, "Updated description.")
         self.assertEqual(self.product.description, "Updated description.")
         self.assertEqual(self.product.lifecycle, Product.Lifecycle.ACTIVE)
         choice = self.product.choices.get()

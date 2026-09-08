@@ -1004,6 +1004,22 @@ class ProductCardReadModelTests(TestCase):
         self.assertTrue(card.description_excerpt.endswith("…"))
         self.assertEqual(card.product_id, product.pk)
 
+    def test_description_derived_identity_has_no_repeated_excerpt(self):
+        descriptions = (
+            "Description-first   black\ntrousers",
+            "long " * 50,
+        )
+        for description in descriptions:
+            with self.subTest(description=description):
+                name = " ".join(description.split())[:160]
+                product = self.create_product(name=name, description=description)
+
+                card = next(
+                    card for card in self.cards() if card.product_id == product.pk
+                )
+
+                self.assertEqual(card.description_excerpt, "")
+
     def test_card_builder_requires_the_workspace_read_boundary(self):
         product = self.create_product()
 
@@ -1596,6 +1612,19 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, "Price")
         self.assertContains(response, "Missing")
         self.assertNotContains(response, "Free")
+
+    def test_workspace_does_not_repeat_description_derived_identity(self):
+        product, _choice = self.create_product_with_choice(
+            name="Description-first trousers",
+        )
+        product.description = "Description-first   trousers"
+        product.save(update_fields=["description", "updated_at"])
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, product.name, count=4)
+        self.assertNotContains(response, 'class="product-card__description"')
 
     def test_workspace_renders_native_stock_controls_only_for_active_choices(self):
         product, active_choice = self.create_product_with_choice(quantity=2)

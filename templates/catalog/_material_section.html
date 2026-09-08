@@ -1,10 +1,16 @@
-<section id="material-section" class="material-section" aria-labelledby="material-section-title">
-  <div class="material-section__heading">
-    <div>
-      <h2 id="material-section-title">Confirmed materials</h2>
+<details
+  id="material-section"
+  class="assistant-section material-section"
+  {% if material_section_open %}open{% endif %}
+>
+  <summary class="assistant-section__summary" id="material-section-title">
+    <span>Confirm materials</span>
+    <small>Optional buyer-answer truth</small>
+  </summary>
+  <div class="assistant-section__body">
+    <div class="material-section__heading">
       <p>Review canonical material facts before saving. Percentages are optional.</p>
     </div>
-  </div>
 
   {% if material_transfer_feedback %}
     <p class="form-feedback form-feedback--success" role="status">{{ material_transfer_feedback }}</p>
@@ -81,5 +87,6 @@
     {% endfor %}
   </div>
 
-  <p class="material-section__help">A candidate remains a suggestion until this Product bundle saves successfully. No aliases are learned automatically.</p>
-</section>
+    <p class="material-section__help">A candidate remains a suggestion until this Product bundle saves successfully. No aliases are learned automatically.</p>
+  </div>
+</details>

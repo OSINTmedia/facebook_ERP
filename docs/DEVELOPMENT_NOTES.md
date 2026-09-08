@@ -610,3 +610,15 @@ Verification: 22 focused media tests and the full 451-test PostgreSQL suite pass
 Release: READY.
 
 Next on Git PASS: P7.3 Description-First Create/Edit Assistant Refinement.
+
+### 2026-09-08 - P7.3 Description-First Create/Edit Assistant Refinement
+
+Code status: PASS.
+
+Product create/edit now makes Description the required primary seller input, derives the retained compatibility name, presents recognition and confirmed facts through a compact progressive hierarchy, and protects repeated candidate-to-choice transfers while preserving intentional duplicate choices. Audit repairs kept validation sections visible, added an explicit choice-row action, and removed repeated Description-derived identity from Workspace cards, including normalized and truncated cases.
+
+Verification: 454 PostgreSQL tests passed; Django system and migration consistency checks, JavaScript syntax, and diff/whitespace checks passed. Required owner testing at approximately 390px passed, including recognition confirmation, duplicate-safe transfer, intentional duplicate creation, and validation recovery without data loss.
+
+Release: READY.
+
+Next on Git PASS: P7.4 Buyer-Question Coverage Service.

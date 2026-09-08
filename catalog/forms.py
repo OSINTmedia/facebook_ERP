@@ -113,7 +113,6 @@ class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
         fields = [
-            "name",
             "description",
             "price",
             "product_type",
@@ -123,6 +122,8 @@ class ProductForm(forms.ModelForm):
         widgets = {
             "description": forms.Textarea(
                 attrs={
+                    "autofocus": True,
+                    "rows": 4,
                     "hx-post": ".",
                     "hx-trigger": "input changed delay:600ms",
                     "hx-target": "#recognition-preview-region",
@@ -139,6 +140,12 @@ class ProductForm(forms.ModelForm):
                     "step": "0.01",
                     "inputmode": "decimal",
                 }
+            ),
+        }
+        help_texts = {
+            "description": (
+                "Start with the words you already use for this Product. "
+                "Recognized meaning stays a suggestion until you confirm it."
             ),
         }
 
@@ -179,6 +186,13 @@ class ProductForm(forms.ModelForm):
         self.fields["product_type"].empty_label = "No confirmed product type"
         self.fields["product_type"].label = "Confirmed product type"
         self.fields["tags"].queryset = tags
+
+    def clean_description(self):
+        description = self.cleaned_data["description"]
+        derived_name = " ".join(description.split())
+        name_max_length = Product._meta.get_field("name").max_length
+        self.instance.name = derived_name[:name_max_length]
+        return description
 
 
 class ProductMediaForm(forms.Form):

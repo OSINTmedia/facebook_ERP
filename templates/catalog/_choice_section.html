@@ -1,11 +1,17 @@
-<section id="choice-section" class="choice-section" aria-labelledby="choice-section-title">
-  <div class="choice-section__heading">
-    <div>
-      <h2 id="choice-section-title">Choices</h2>
+<details
+  id="choice-section"
+  class="assistant-section choice-section"
+  {% if choice_section_open %}open{% endif %}
+>
+  <summary class="assistant-section__summary" id="choice-section-title">
+    <span>Sizes, colors, and stock</span>
+    <small>Add sellable choices when needed</small>
+  </summary>
+  <div class="assistant-section__body">
+    <div class="choice-section__heading">
       <p>Select approved size and color values for each sellable choice.</p>
+      <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">View and manage full vocabulary</a>
     </div>
-    <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">View and manage full vocabulary</a>
-  </div>
 
   {% if vocabulary_feedback %}
     <p class="vocabulary-feedback" role="status">{{ vocabulary_feedback }}</p>
@@ -17,6 +23,14 @@
 
   {% if choice_transfer_error %}
     <p class="choice-transfer-error" role="alert">{{ choice_transfer_error }}</p>
+  {% endif %}
+
+  {% if choice_row_feedback %}
+    <p class="choice-transfer-feedback" role="status">{{ choice_row_feedback }}</p>
+  {% endif %}
+
+  {% if choice_row_error %}
+    <p class="choice-transfer-error" role="alert">{{ choice_row_error }}</p>
   {% endif %}
 
   <div class="choice-vocabulary" aria-label="Approved choice vocabulary">
@@ -198,5 +212,22 @@
     {% endfor %}
   </div>
 
-  <p class="choice-help">Use the blank row to add another choice.</p>
-</section>
+    <div class="choice-section__actions">
+      <button
+        id="add-choice-row-button"
+        class="button button--secondary button--compact"
+        type="submit"
+        name="intent"
+        value="add_choice_row"
+        hx-post="."
+        hx-target="#choice-section"
+        hx-swap="outerHTML"
+        hx-include="closest form"
+        hx-indicator="#choice-row-loading"
+        hx-disabled-elt="this"
+      >Add another choice</button>
+      <span id="choice-row-loading" class="htmx-indicator vocabulary-loading" role="status">Adding…</span>
+    </div>
+    <p class="choice-help">Use Add another choice when two sellable choices intentionally share a size or color.</p>
+  </div>
+</details>

@@ -36,110 +36,122 @@
           {% endif %}
         {% endif %}
 
-        <div class="form-field">
-          <label for="{{ form.name.id_for_label }}">{{ form.name.label }}</label>
-          {{ form.name }}
-          {% if show_form_errors %}
-            {% for error in form.name.errors %}
-              <p class="field-error">{{ error }}</p>
-            {% endfor %}
-          {% endif %}
-        </div>
+        <section class="assistant-primary-step" aria-labelledby="description-step-title">
+          <div class="assistant-primary-step__heading">
+            <p class="assistant-step-number">Start here</p>
+            <h2 id="description-step-title">Describe the Product</h2>
+            <p>Use the wording you already have. You can confirm useful structure below.</p>
+          </div>
 
-        <div class="form-field">
-          <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
-          {{ form.description }}
-          {% if show_form_errors %}
-            {% for error in form.description.errors %}
-              <p class="field-error">{{ error }}</p>
-            {% endfor %}
-          {% endif %}
-        </div>
-
-        <div class="form-field">
-          <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
-          {{ form.price }}
-          <small>Leave blank when the price is not known yet.</small>
-          {% if show_form_errors %}
-            {% for error in form.price.errors %}
-              <p class="field-error">{{ error }}</p>
-            {% endfor %}
-          {% endif %}
-        </div>
-
-        <fieldset class="product-media-field">
-          <legend>Product image</legend>
-          {% if current_media %}
-            <img
-              class="product-media-field__preview"
-              src="{% url 'catalog:product_media' current_media.pk %}"
-              alt="Current image for {{ product.name|default:'this Product' }}"
-            >
-          {% else %}
-            <div class="product-media-placeholder product-media-placeholder--form" role="img" aria-label="No Product image selected">
-              <span aria-hidden="true">No image</span>
-            </div>
-          {% endif %}
-          <div class="form-field">
-            <label for="{{ media_form.image.id_for_label }}">{{ media_form.image.label }}</label>
-            {{ media_form.image }}
-            <small id="{{ media_form.image.id_for_label }}_helptext">{{ media_form.image.help_text }}</small>
-            {% if show_form_errors and media_form.image.errors %}
-              <div id="{{ media_form.image.id_for_label }}_error" class="field-error" role="alert">
-              {% for error in media_form.image.errors %}
-                <p>{{ error }}</p>
+          <div class="form-field form-field--description">
+            <label for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+            {{ form.description }}
+            <small id="{{ form.description.id_for_label }}_helptext">{{ form.description.help_text }}</small>
+            {% if show_form_errors %}
+              {% for error in form.description.errors %}
+                <p id="{{ form.description.id_for_label }}_error" class="field-error" role="alert">{{ error }}</p>
               {% endfor %}
-              </div>
             {% endif %}
           </div>
-          {% if media_reselection_required %}
-            <p class="field-error" role="alert">The Product was not saved and this response cannot keep the selected file. Select the image again before saving.</p>
-          {% endif %}
-        </fieldset>
 
-        {% include "catalog/_recognition_preview.html" %}
+          {% include "catalog/_recognition_preview.html" %}
+
+          <div class="form-field form-field--price">
+            <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+            {{ form.price }}
+            <small>Leave blank when the price is not known yet.</small>
+            {% if show_form_errors %}
+              {% for error in form.price.errors %}
+                <p class="field-error">{{ error }}</p>
+              {% endfor %}
+            {% endif %}
+          </div>
+        </section>
 
         {% include "catalog/_material_section.html" %}
 
-        <fieldset class="classification-section">
-          <legend>Confirmed classification</legend>
-          <p class="classification-section__help">Recognition candidates remain suggestions until you select canonical values here and save the Product.</p>
-          <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">Manage Product Type and Tag vocabulary</a>
+        <details class="assistant-section classification-section" {% if show_form_errors and form.product_type.errors or show_form_errors and form.tags.errors %}open{% endif %}>
+          <summary class="assistant-section__summary">
+            <span>Confirm type and tags</span>
+            <small>Optional structured meaning</small>
+          </summary>
+          <div class="assistant-section__body">
+            <p class="classification-section__help">Recognition candidates remain suggestions until you select canonical values here and save the Product.</p>
+            <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">Manage Product Type and Tag vocabulary</a>
 
-          <div class="form-field">
-            <label for="{{ form.product_type.id_for_label }}">{{ form.product_type.label }}</label>
-            {{ form.product_type }}
-            {% if show_form_errors %}
-              {% for error in form.product_type.errors %}
-                <p class="field-error">{{ error }}</p>
-              {% endfor %}
-            {% endif %}
-          </div>
-
-          <div class="form-field">
-            <span class="form-field__label" id="id_tags-label">{{ form.tags.label }}</span>
-            <div role="group" aria-labelledby="id_tags-label">
-              {{ form.tags }}
+            <div class="form-field">
+              <label for="{{ form.product_type.id_for_label }}">{{ form.product_type.label }}</label>
+              {{ form.product_type }}
+              {% if show_form_errors %}
+                {% for error in form.product_type.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
             </div>
-            {% if show_form_errors %}
-              {% for error in form.tags.errors %}
-                <p class="field-error">{{ error }}</p>
-              {% endfor %}
-            {% endif %}
-          </div>
-        </fieldset>
 
-        <div class="form-field">
-          <label for="{{ form.lifecycle.id_for_label }}">{{ form.lifecycle.label }}</label>
-          {{ form.lifecycle }}
-          {% if show_form_errors %}
-            {% for error in form.lifecycle.errors %}
-              <p class="field-error">{{ error }}</p>
-            {% endfor %}
-          {% endif %}
-        </div>
+            <div class="form-field">
+              <span class="form-field__label" id="id_tags-label">{{ form.tags.label }}</span>
+              <div role="group" aria-labelledby="id_tags-label">
+                {{ form.tags }}
+              </div>
+              {% if show_form_errors %}
+                {% for error in form.tags.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+        </details>
 
         {% include "catalog/_choice_section.html" %}
+
+        <details class="assistant-section product-settings" {% if media_reselection_required or show_form_errors and media_form.image.errors or show_form_errors and form.lifecycle.errors %}open{% endif %}>
+          <summary class="assistant-section__summary">
+            <span>Image and Product status</span>
+            <small>Optional image and lifecycle</small>
+          </summary>
+          <div class="assistant-section__body">
+            <fieldset class="product-media-field">
+              <legend>Product image</legend>
+              {% if current_media %}
+                <img
+                  class="product-media-field__preview"
+                  src="{% url 'catalog:product_media' current_media.pk %}"
+                  alt="Current image for {{ product.name|default:'this Product' }}"
+                >
+              {% else %}
+                <div class="product-media-placeholder product-media-placeholder--form" role="img" aria-label="No Product image selected">
+                  <span aria-hidden="true">No image</span>
+                </div>
+              {% endif %}
+              <div class="form-field">
+                <label for="{{ media_form.image.id_for_label }}">{{ media_form.image.label }}</label>
+                {{ media_form.image }}
+                <small id="{{ media_form.image.id_for_label }}_helptext">{{ media_form.image.help_text }}</small>
+                {% if show_form_errors and media_form.image.errors %}
+                  <div id="{{ media_form.image.id_for_label }}_error" class="field-error" role="alert">
+                  {% for error in media_form.image.errors %}
+                    <p>{{ error }}</p>
+                  {% endfor %}
+                  </div>
+                {% endif %}
+              </div>
+              {% if media_reselection_required %}
+                <p class="field-error" role="alert">The Product was not saved and this response cannot keep the selected file. Select the image again before saving.</p>
+              {% endif %}
+            </fieldset>
+
+            <div class="form-field">
+              <label for="{{ form.lifecycle.id_for_label }}">{{ form.lifecycle.label }}</label>
+              {{ form.lifecycle }}
+              {% if show_form_errors %}
+                {% for error in form.lifecycle.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+        </details>
 
         <div class="form-actions">
           <button class="button button--primary" type="submit">{{ submit_label }}</button>

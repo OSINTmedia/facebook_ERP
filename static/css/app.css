@@ -754,6 +754,49 @@ h1 {
   gap: 1rem;
 }
 
+.assistant-primary-step {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  border: 2px solid var(--color-accent);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
+.assistant-primary-step__heading {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.assistant-primary-step__heading h2,
+.assistant-primary-step__heading p,
+.assistant-step-number {
+  margin: 0;
+}
+
+.assistant-primary-step__heading h2 {
+  font-size: 1.35rem;
+}
+
+.assistant-primary-step__heading > p:last-child,
+.form-field small {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+}
+
+.assistant-step-number {
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.form-field--description textarea {
+  min-height: 9rem;
+  font-size: 1rem;
+}
+
 .form-field {
   display: grid;
   gap: 0.35rem;
@@ -1057,6 +1100,72 @@ h1 {
 .choice-help {
   color: var(--color-muted);
   font-size: 0.9rem;
+}
+
+.assistant-section,
+.assistant-section.classification-section,
+.assistant-section.material-section,
+.assistant-section.choice-section {
+  display: block;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+}
+
+.assistant-section__summary {
+  display: flex;
+  min-height: 3.25rem;
+  gap: 0.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.8rem 0.9rem;
+  cursor: pointer;
+  font-weight: 700;
+  list-style: none;
+}
+
+.assistant-section__summary::-webkit-details-marker {
+  display: none;
+}
+
+.assistant-section__summary::after {
+  content: "+";
+  flex: 0 0 auto;
+  color: var(--color-accent);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.assistant-section[open] > .assistant-section__summary::after {
+  content: "−";
+}
+
+.assistant-section__summary small {
+  margin-left: auto;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.assistant-section__summary:focus-visible {
+  border-radius: 6px;
+  outline: 3px solid var(--color-accent-soft);
+}
+
+.assistant-section__body {
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.9rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.choice-section__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
 }
 
 .vocabulary-manager,
@@ -1395,6 +1504,21 @@ h1 {
 }
 
 @media (max-width: 720px) {
+  .assistant-primary-step {
+    padding: 0.8rem;
+  }
+
+  .assistant-section__summary {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .assistant-section__summary small {
+    width: calc(100% - 2rem);
+    margin-left: 0;
+    order: 3;
+  }
+
   .product-workspace-heading {
     align-items: center;
   }

@@ -13,7 +13,7 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from businesses.selectors import MultipleBusinessesUnsupported, resolve_active_business
-from catalog.choice_transfers import transfer_choice_candidate
+from catalog.choice_transfers import append_choice_row, transfer_choice_candidate
 from catalog.forms import (
     ChoiceVocabularyEditForm,
     ChoiceVocabularyForm,
@@ -55,6 +55,7 @@ ADD_PRODUCT_TYPE_VOCABULARY_INTENT = "add_product_type_vocabulary"
 ADD_TAG_VOCABULARY_INTENT = "add_tag_vocabulary"
 TRANSFER_CHOICE_CANDIDATE_INTENT = "transfer_choice_candidate"
 TRANSFER_MATERIAL_CANDIDATE_INTENT = "transfer_material_candidate"
+ADD_CHOICE_ROW_INTENT = "add_choice_row"
 UPDATE_VOCABULARY_INTENT = "update_vocabulary"
 
 ADD_VOCABULARY_INTENTS = {
@@ -573,6 +574,31 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
                 self.active_business,
             )
 
+        choice_section_open = any(
+            context.get(key)
+            for key in (
+                "choice_transfer_feedback",
+                "choice_transfer_error",
+                "choice_row_feedback",
+                "choice_row_error",
+                "vocabulary_feedback",
+            )
+        )
+        material_section_open = any(
+            context.get(key)
+            for key in (
+                "material_transfer_feedback",
+                "material_transfer_error",
+            )
+        )
+        if bundle is not None and show_form_errors:
+            choice_section_open = choice_section_open or bool(
+                bundle.choice_formset.non_form_errors()
+            ) or any(bool(form.errors) for form in bundle.choice_formset.forms)
+            material_section_open = material_section_open or bool(
+                bundle.material_formset.non_form_errors()
+            ) or any(bool(form.errors) for form in bundle.material_formset.forms)
+
         context.setdefault(
             "size_vocabulary_form",
             ChoiceVocabularyForm(kind=SIZE_VOCABULARY, prefix="size-vocabulary"),
@@ -580,6 +606,10 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
         context.setdefault(
             "color_vocabulary_form",
             ChoiceVocabularyForm(kind=COLOR_VOCABULARY, prefix="color-vocabulary"),
+        )
+        choice_section_open = choice_section_open or bool(
+            context["size_vocabulary_form"].errors
+            or context["color_vocabulary_form"].errors
         )
 
         return self.base_context(
@@ -595,6 +625,8 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             material_formset=bundle.material_formset if bundle is not None else None,
             preview_requested=preview_requested,
             recognition_preview=recognition_preview,
+            choice_section_open=choice_section_open,
+            material_section_open=material_section_open,
             show_form_errors=show_form_errors,
             **context,
         )
@@ -615,6 +647,42 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
     def is_material_candidate_transfer_request(self, request):
         intent = request.POST.get("intent", "")
         return intent.startswith(f"{TRANSFER_MATERIAL_CANDIDATE_INTENT}:")
+
+    def is_add_choice_row_request(self, request):
+        return request.POST.get("intent") == ADD_CHOICE_ROW_INTENT
+
+    def handle_add_choice_row(self, request, bundle, **context):
+        choice_row_feedback = None
+        choice_row_error = None
+        try:
+            appended_data = append_choice_row(data=request.POST)
+        except ValidationError as error:
+            choice_row_error = " ".join(error.messages)
+        else:
+            bundle = ProductBundle(
+                business=self.active_business,
+                data=appended_data,
+                files=request.FILES,
+                instance=bundle.product,
+            )
+            choice_row_feedback = "Another empty choice is ready."
+
+        return render(
+            request,
+            (
+                "catalog/_choice_section.html"
+                if request.htmx
+                else self.template_name
+            ),
+            self.bundle_context(
+                request,
+                bundle,
+                show_form_errors=False,
+                choice_row_feedback=choice_row_feedback,
+                choice_row_error=choice_row_error,
+                **context,
+            ),
+        )
 
     def handle_choice_candidate_transfer(self, request, bundle, **context):
         intent = request.POST.get("intent", "")
@@ -843,6 +911,14 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
                 submit_label="Create product",
             )
 
+        if self.is_add_choice_row_request(request):
+            return self.handle_add_choice_row(
+                request,
+                bundle,
+                page_title="Add product",
+                submit_label="Create product",
+            )
+
         if self.is_material_candidate_transfer_request(request):
             return self.handle_material_candidate_transfer(
                 request,
@@ -948,6 +1024,15 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
 
         if self.is_choice_candidate_transfer_request(request):
             return self.handle_choice_candidate_transfer(
+                request,
+                bundle,
+                page_title=f"Edit {product.name}",
+                product=product,
+                submit_label="Save changes",
+            )
+
+        if self.is_add_choice_row_request(request):
+            return self.handle_add_choice_row(
                 request,
                 bundle,
                 page_title=f"Edit {product.name}",
