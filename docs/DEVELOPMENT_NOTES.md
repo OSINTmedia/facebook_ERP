@@ -646,3 +646,15 @@ Verification: 469 PostgreSQL tests passed; Django system and migration consisten
 Release: READY.
 
 Next on Git PASS: Phase 8.
+
+### 2026-09-09 - P8.1 Attention Query Service and Low-Stock Policy
+
+Code status: PASS.
+
+A Business-scoped Dashboard attention service now derives sold-out/restock Products, partially sold-out choices, low-stock choices, missing answer-critical facts, and empty-catalog state from shared availability and readiness truth. One configurable threshold owns low-stock policy; counts are exact, lists are bounded and deterministic, inactive choices and non-daily lifecycle states are excluded from stock alerts, and duplicate-looking choices retain exact row identity. Adversarial audit required no repairs.
+
+Verification: 7 focused attention-query tests, 16 neighboring readiness/availability regressions, and the full 476-test PostgreSQL suite passed; Django system and migration consistency checks and diff/whitespace checks passed. Owner test: NOT_REQUIRED.
+
+Release: READY.
+
+Next on Git PASS: P8.2 Action-First Dashboard and Workspace Drilldowns.

@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     "businesses",
     "catalog",
     "inventory",
+    "dashboard",
     "django_htmx",
     "django.contrib.admin",
     "django.contrib.auth",
@@ -95,5 +96,10 @@ LOGOUT_REDIRECT_URL = "accounts:login"
 DEMO_ACCESS_ENABLED = env.bool("DEMO_ACCESS_ENABLED", default=False)
 DEMO_USER_EMAIL = env("DEMO_USER_EMAIL", default="")
 DEMO_USER_PASSWORD = env("DEMO_USER_PASSWORD", default="")
+
+DASHBOARD_LOW_STOCK_THRESHOLD = env.int(
+    "DASHBOARD_LOW_STOCK_THRESHOLD",
+    default=3,
+)
 
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
