@@ -33,6 +33,7 @@ from catalog.product_media import (
     product_media_storage_name_is_safe,
 )
 from catalog.product_bundles import ProductBundle
+from catalog.readiness import CoverageCorrectionTarget
 from catalog.recognition import recognize_product_preview_for_business
 from catalog.vocabulary import (
     COLOR_VOCABULARY,
@@ -57,6 +58,9 @@ TRANSFER_CHOICE_CANDIDATE_INTENT = "transfer_choice_candidate"
 TRANSFER_MATERIAL_CANDIDATE_INTENT = "transfer_material_candidate"
 ADD_CHOICE_ROW_INTENT = "add_choice_row"
 UPDATE_VOCABULARY_INTENT = "update_vocabulary"
+READINESS_CORRECTION_TARGETS = frozenset(
+    target.value for target in CoverageCorrectionTarget
+)
 
 ADD_VOCABULARY_INTENTS = {
     ADD_SIZE_VOCABULARY_INTENT: SIZE_VOCABULARY,
@@ -547,6 +551,10 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             "return_url",
             get_canonical_product_workspace_return_url(request),
         )
+        correction_target = request.GET.get("focus", "")
+        if correction_target not in READINESS_CORRECTION_TARGETS:
+            correction_target = ""
+        context.setdefault("correction_target", correction_target)
         return context
 
     def render_business_blocked(self, request):
@@ -574,7 +582,9 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
                 self.active_business,
             )
 
-        choice_section_open = any(
+        correction_target = request.GET.get("focus", "")
+        choice_section_open = correction_target == CoverageCorrectionTarget.CHOICES
+        choice_section_open = choice_section_open or any(
             context.get(key)
             for key in (
                 "choice_transfer_feedback",
@@ -584,7 +594,10 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
                 "vocabulary_feedback",
             )
         )
-        material_section_open = any(
+        material_section_open = (
+            correction_target == CoverageCorrectionTarget.MATERIALS
+        )
+        material_section_open = material_section_open or any(
             context.get(key)
             for key in (
                 "material_transfer_feedback",

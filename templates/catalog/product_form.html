@@ -70,7 +70,7 @@
 
         {% include "catalog/_material_section.html" %}
 
-        <details class="assistant-section classification-section" {% if show_form_errors and form.product_type.errors or show_form_errors and form.tags.errors %}open{% endif %}>
+        <details id="classification-section" class="assistant-section classification-section" {% if correction_target == "classification" or show_form_errors and form.product_type.errors or show_form_errors and form.tags.errors %}open{% endif %}>
           <summary class="assistant-section__summary">
             <span>Confirm type and tags</span>
             <small>Optional structured meaning</small>

@@ -501,6 +501,11 @@ h1 {
   gap: 0.25rem;
 }
 
+.product-card__state dd {
+  display: grid;
+  gap: 0.35rem;
+}
+
 .product-card__state dt,
 .product-card__state dd {
   margin: 0;
@@ -532,6 +537,16 @@ h1 {
 .status-pill--sold-out {
   background: #fef3f2;
   color: var(--color-danger);
+}
+
+.status-pill--partial-stock {
+  background: #fffaeb;
+  color: #7a2e0e;
+}
+
+.status-pill--ready {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 .product-card__choice-heading {
@@ -642,6 +657,51 @@ h1 {
   padding: 0.75rem;
   border-left: 4px solid var(--color-border);
   color: var(--color-muted);
+}
+
+.product-card__readiness {
+  display: grid;
+  min-width: 0;
+  gap: 0.45rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-background);
+}
+
+.product-card__readiness-heading {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.product-card__readiness h3,
+.product-card__readiness p {
+  margin: 0;
+}
+
+.product-card__readiness h3 {
+  font-size: 0.95rem;
+}
+
+.product-card__readiness p {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.product-card__readiness p strong {
+  color: var(--color-text);
+}
+
+.product-card__readiness-action {
+  justify-self: start;
+  min-height: 2.75rem;
+  text-align: center;
+  white-space: normal;
 }
 
 .product-card__actions {

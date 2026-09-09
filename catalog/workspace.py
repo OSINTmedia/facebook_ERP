@@ -17,6 +17,11 @@ from catalog.models import (
     ProductMaterialFact,
     ProductMedia,
 )
+from catalog.readiness import (
+    BuyerQuestion,
+    CoverageCorrectionTarget,
+    evaluate_buyer_question_coverage,
+)
 from inventory.availability import compute_availability_from_stock_state
 
 
@@ -27,6 +32,26 @@ PRODUCT_WORKSPACE_AVAILABILITY_VALUES: frozenset[str] = frozenset(
     {"available", "sold_out"}
 )
 PRODUCT_DESCRIPTION_EXCERPT_LENGTH = 160
+
+BUYER_QUESTION_LABELS = {
+    BuyerQuestion.PRICE: "Price",
+    BuyerQuestion.AVAILABILITY_STOCK: "Stock",
+    BuyerQuestion.SIZE_COLOR: "Size and color",
+    BuyerQuestion.PRODUCT_TYPE: "Product type",
+    BuyerQuestion.MATERIAL: "Material",
+}
+READINESS_CORRECTIONS = {
+    CoverageCorrectionTarget.PRICE: ("Add price", "#id_price"),
+    CoverageCorrectionTarget.CHOICES: ("Add active choice", "#choice-section"),
+    CoverageCorrectionTarget.CLASSIFICATION: (
+        "Confirm product type",
+        "#classification-section",
+    ),
+    CoverageCorrectionTarget.MATERIALS: (
+        "Confirm material",
+        "#material-section",
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -173,10 +198,16 @@ class ProductCard:
     lifecycle_label: str
     availability_label: str
     availability_state: str
+    is_partially_sold_out: bool
     active_choices: tuple[ProductChoiceCard, ...]
     active_choice_count: int
     active_stock_total: int
     inactive_choice_count: int
+    answerable_question_labels: tuple[str, ...]
+    missing_question_labels: tuple[str, ...]
+    readiness_correction_label: str | None
+    readiness_correction_target: str | None
+    readiness_correction_fragment: str | None
 
 
 def build_product_workspace_context(
@@ -249,6 +280,12 @@ def product_workspace_products(
         product__business=business,
         product_id=OuterRef("pk"),
     ).values("pk")[:1]
+    confirmed_material_fact = ProductMaterialFact.objects.filter(
+        business=business,
+        product__business=business,
+        product_id=OuterRef("pk"),
+        confirmation_state=ProductMaterialFact.ConfirmationState.CONFIRMED,
+    )
     choices = (
         ProductChoice.objects.filter(
             business=business,
@@ -296,6 +333,7 @@ def product_workspace_products(
         .annotate(
             workspace_product_type_name=Subquery(product_type_name),
             workspace_primary_media_id=Subquery(primary_media_id),
+            workspace_has_confirmed_material=Exists(confirmed_material_fact),
         )
         .prefetch_related(
             Prefetch(
@@ -399,6 +437,7 @@ def _build_product_card(*, business: Business, product: Product) -> ProductCard:
         not hasattr(product, "workspace_choices")
         or not hasattr(product, "workspace_product_type_name")
         or not hasattr(product, "workspace_primary_media_id")
+        or not hasattr(product, "workspace_has_confirmed_material")
     ):
         raise ValueError("Product must come from the Product Workspace query.")
 
@@ -416,6 +455,9 @@ def _build_product_card(*, business: Business, product: Product) -> ProductCard:
     has_positive_active_choice = any(
         choice.quantity > 0 for choice in active_choice_rows
     )
+    has_zero_active_choice = any(
+        choice.quantity == 0 for choice in active_choice_rows
+    )
     is_available = compute_availability_from_stock_state(
         product_lifecycle=product.lifecycle,
         has_positive_active_choice=has_positive_active_choice,
@@ -430,6 +472,30 @@ def _build_product_card(*, business: Business, product: Product) -> ProductCard:
     else:
         availability_label = "Sold out"
         availability_state = "sold-out"
+
+    coverage = evaluate_buyer_question_coverage(
+        has_confirmed_price=product.price is not None and product.price > 0,
+        availability_stock_answerable=bool(active_choice_rows),
+        size_color_answerable=bool(active_choice_rows),
+        has_confirmed_product_type=bool(product.workspace_product_type_name),
+        has_confirmed_material=product.workspace_has_confirmed_material,
+    )
+    answerable_question_labels = tuple(
+        BUYER_QUESTION_LABELS[item.question]
+        for item in coverage.items
+        if item.is_answerable
+    )
+    missing_items = tuple(item for item in coverage.items if not item.is_answerable)
+    missing_question_labels = tuple(
+        BUYER_QUESTION_LABELS[item.question] for item in missing_items
+    )
+    next_correction = missing_items[0] if missing_items else None
+    correction_label = None
+    correction_fragment = None
+    if next_correction is not None:
+        correction_label, correction_fragment = READINESS_CORRECTIONS[
+            next_correction.correction_target
+        ]
 
     description_excerpt = _description_excerpt(product.description)
     if _name_is_derived_from_description(
@@ -449,10 +515,22 @@ def _build_product_card(*, business: Business, product: Product) -> ProductCard:
         lifecycle_label=product.get_lifecycle_display(),
         availability_label=availability_label,
         availability_state=availability_state,
+        is_partially_sold_out=(
+            product.lifecycle == Product.Lifecycle.ACTIVE
+            and has_positive_active_choice
+            and has_zero_active_choice
+        ),
         active_choices=active_choices,
         active_choice_count=len(active_choices),
         active_stock_total=sum(choice.quantity for choice in active_choice_rows),
         inactive_choice_count=len(choices) - len(active_choice_rows),
+        answerable_question_labels=answerable_question_labels,
+        missing_question_labels=missing_question_labels,
+        readiness_correction_label=correction_label,
+        readiness_correction_target=(
+            next_correction.correction_target if next_correction else None
+        ),
+        readiness_correction_fragment=correction_fragment,
     )
 
 

@@ -634,3 +634,15 @@ Verification: 9 focused coverage tests, 7 neighboring availability tests, and th
 Release: READY.
 
 Next on Git PASS: P7.5 Workspace Readiness, Partial-Stock Signal, and Correction Loop.
+
+### 2026-09-09 - P7.5 Workspace Readiness, Partial-Stock Signal, and Correction Loop
+
+Code status: PASS.
+
+Product Workspace cards now expose deterministic buyer-answer coverage, the smallest useful correction with canonical Workspace return context, and a computed partial-sold-out signal for mixed active-choice stock. Stock HTMX responses refresh the complete server-owned readiness and availability state. Audit added focused cross-Business material, inactive-choice, and fully-ready rendering regressions; no production repair was required.
+
+Verification: 469 PostgreSQL tests passed; Django system and migration consistency checks and diff/whitespace checks passed. Required owner desktop and approximately 390px testing passed, including strong, missing-price, missing-material, mixed-stock, correction-return, and `1 -> 0 -> 1` stock states.
+
+Release: READY.
+
+Next on Git PASS: Phase 8.

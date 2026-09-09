@@ -884,6 +884,74 @@ class ProductCardReadModelTests(TestCase):
         self.assertEqual(card.inactive_choice_count, 0)
         self.assertEqual(card.active_choices[0].choice_id, choice.pk)
 
+    def test_card_exposes_complete_buyer_answer_coverage(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        product = self.create_product(
+            product_type=product_type,
+            price=Decimal("49.90"),
+        )
+        self.create_choice(product=product, quantity=3)
+        ProductMaterialFact.objects.create(
+            business=self.business,
+            product=product,
+            canonical_material="Cotton",
+            original_text="cotton",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+
+        card = self.cards()[0]
+
+        self.assertEqual(
+            card.answerable_question_labels,
+            ("Price", "Stock", "Size and color", "Product type", "Material"),
+        )
+        self.assertEqual(card.missing_question_labels, ())
+        self.assertIsNone(card.readiness_correction_label)
+        self.assertIsNone(card.readiness_correction_target)
+        self.assertIsNone(card.readiness_correction_fragment)
+        self.assertFalse(card.is_partially_sold_out)
+
+    def test_card_exposes_smallest_missing_truth_correction(self):
+        product = self.create_product()
+        self.create_choice(product=product, quantity=1)
+
+        card = self.cards()[0]
+
+        self.assertEqual(
+            card.answerable_question_labels,
+            ("Stock", "Size and color"),
+        )
+        self.assertEqual(
+            card.missing_question_labels,
+            ("Price", "Product type", "Material"),
+        )
+        self.assertEqual(card.readiness_correction_label, "Add price")
+        self.assertEqual(card.readiness_correction_target, "price")
+        self.assertEqual(card.readiness_correction_fragment, "#id_price")
+
+    def test_partial_sold_out_uses_only_mixed_active_choice_stock(self):
+        product = self.create_product()
+        zero_choice = self.create_choice(product=product, quantity=0)
+        positive_choice = self.create_choice(product=product, quantity=2)
+        self.create_choice(product=product, quantity=0, is_active=False)
+
+        card = self.cards()[0]
+
+        self.assertTrue(card.is_partially_sold_out)
+        self.assertEqual(
+            [choice.choice_id for choice in card.active_choices],
+            [zero_choice.pk, positive_choice.pk],
+        )
+        zero_choice.quantity = 1
+        zero_choice.save(update_fields=["quantity", "updated_at"])
+
+        refreshed_card = self.cards()[0]
+
+        self.assertFalse(refreshed_card.is_partially_sold_out)
+
     def test_card_exposes_confirmed_price_with_business_currency(self):
         self.business.default_currency = "USD"
         self.business.save(update_fields=["default_currency", "updated_at"])
@@ -946,6 +1014,7 @@ class ProductCardReadModelTests(TestCase):
         self.assertEqual(card.active_stock_total, 0)
         self.assertEqual(card.inactive_choice_count, 1)
         self.assertEqual(card.active_choices[0].choice_id, zero_choice.pk)
+        self.assertFalse(card.is_partially_sold_out)
 
     def test_draft_with_active_stock_is_not_sellable(self):
         product = self.create_product(lifecycle=Product.Lifecycle.DRAFT)
@@ -978,7 +1047,17 @@ class ProductCardReadModelTests(TestCase):
             name="PRIVATE TYPE",
         )
         product = self.create_product()
+        material = ProductMaterialFact.objects.create(
+            business=self.business,
+            product=product,
+            canonical_material="PRIVATE MATERIAL",
+            original_text="private material",
+            source=ProductMaterialFact.Source.MANUAL,
+        )
         Product.objects.filter(pk=product.pk).update(product_type=other_type)
+        ProductMaterialFact.objects.filter(pk=material.pk).update(
+            business=self.other_business
+        )
         choice = self.create_choice(product=product, quantity=8)
         ProductChoice.objects.filter(pk=choice.pk).update(
             size=self.other_size,
@@ -991,6 +1070,8 @@ class ProductCardReadModelTests(TestCase):
         self.assertEqual(card.active_choices, ())
         self.assertEqual(card.active_stock_total, 0)
         self.assertEqual(card.availability_label, "Sold out")
+        self.assertNotIn("Material", card.answerable_question_labels)
+        self.assertIn("Material", card.missing_question_labels)
 
     def test_description_excerpt_is_bounded_without_inventing_content(self):
         product = self.create_product(description="x" * 200)
@@ -1566,6 +1647,13 @@ class ProductWorkspaceViewTests(TestCase):
             color=color,
             quantity=3,
         )
+        ProductMaterialFact.objects.create(
+            business=self.business,
+            product=product,
+            canonical_material="Cotton",
+            original_text="cotton",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
         self.client.force_login(self.owner)
 
         response = self.client.get(self.url)
@@ -1579,6 +1667,11 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, "Available")
         self.assertContains(response, "Product type")
         self.assertContains(response, "Trousers")
+        self.assertContains(response, "Supported answers ready")
+        self.assertContains(
+            response,
+            "Ready:</strong> Price, Stock, Size and color, Product type, Material",
+        )
         self.assertContains(response, f"Choice #{choice.pk}")
         self.assertContains(response, "Size")
         self.assertContains(response, "Color")
@@ -1612,6 +1705,65 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, "Price")
         self.assertContains(response, "Missing")
         self.assertNotContains(response, "Free")
+
+    def test_workspace_renders_readiness_with_exact_correction_return(self):
+        self.create_product_with_choice(name="Workspace readiness")
+        self.client.force_login(self.owner)
+        workspace_state = {
+            "q": "workspace",
+            "lifecycle": "active",
+            "availability": "available",
+        }
+
+        response = self.client.get(self.url, workspace_state)
+
+        self.assertContains(response, "Buyer answers")
+        self.assertContains(response, "Ready:</strong> Stock, Size and color")
+        self.assertContains(
+            response,
+            "Missing:</strong> Price, Product type, Material",
+        )
+        self.assertContains(response, "Add price")
+        self.assertContains(response, "?focus=price&amp;next=")
+        self.assertContains(
+            response,
+            "q%3Dworkspace%26lifecycle%3Dactive%26availability%3Davailable",
+        )
+        self.assertContains(response, "#id_price")
+        self.assertNotContains(response, "completion")
+        self.assertNotContains(response, "% ready")
+
+    def test_workspace_material_correction_opens_target_and_keeps_return(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        product, _choice = self.create_product_with_choice(
+            name="Material correction",
+            price=Decimal("49.90"),
+        )
+        product.product_type = product_type
+        product.save(update_fields=["product_type", "updated_at"])
+        return_url = f"{self.url}?q=material"
+        self.client.force_login(self.owner)
+
+        workspace_response = self.client.get(self.url, {"q": "material"})
+
+        self.assertContains(workspace_response, "Missing:</strong> Material")
+        self.assertContains(workspace_response, "Confirm material")
+        self.assertContains(workspace_response, "focus=materials")
+        self.assertContains(workspace_response, "#material-section")
+
+        edit_response = self.client.get(
+            reverse("catalog:product_edit", kwargs={"pk": product.pk}),
+            {"focus": "materials", "next": return_url},
+        )
+
+        self.assertEqual(edit_response.status_code, 200)
+        self.assertEqual(edit_response.context["return_url"], return_url)
+        self.assertEqual(edit_response.context["correction_target"], "materials")
+        self.assertTrue(edit_response.context["material_section_open"])
+        self.assertContains(edit_response, 'id="material-section"')
 
     def test_workspace_does_not_repeat_description_derived_identity(self):
         product, _choice = self.create_product_with_choice(
@@ -1745,6 +1897,58 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(available_response, "Stock updated to 1.")
         self.assertContains(available_response, "Available")
         self.assertContains(available_response, "1 active · 1 total stock")
+
+    def test_workspace_htmx_refreshes_partial_stock_readiness_signal(self):
+        product, targeted_choice = self.create_product_with_choice(quantity=1)
+        other_choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=targeted_choice.size,
+            color=targeted_choice.color,
+            quantity=1,
+        )
+        adjustment_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": targeted_choice.pk},
+        )
+        self.client.force_login(self.owner)
+
+        partial_response = self.client.post(
+            adjustment_url,
+            {
+                "delta": "-1",
+                "next": self.url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(partial_response.status_code, 200)
+        self.assertTemplateUsed(partial_response, "catalog/_product_results.html")
+        self.assertContains(partial_response, "Some choices sold out")
+        self.assertContains(partial_response, "Ready:</strong> Stock, Size and color")
+        targeted_choice.refresh_from_db()
+        other_choice.refresh_from_db()
+        self.assertEqual(targeted_choice.quantity, 0)
+        self.assertEqual(other_choice.quantity, 1)
+
+        restored_response = self.client.post(
+            adjustment_url,
+            {
+                "delta": "1",
+                "next": self.url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(restored_response.status_code, 200)
+        self.assertNotContains(restored_response, "Some choices sold out")
+        targeted_choice.refresh_from_db()
+        other_choice.refresh_from_db()
+        self.assertEqual(targeted_choice.quantity, 1)
+        self.assertEqual(other_choice.quantity, 1)
+        self.assertEqual(InventoryAdjustment.objects.count(), 2)
 
     def test_native_stock_control_targets_one_duplicate_looking_choice(self):
         product, targeted_choice = self.create_product_with_choice(quantity=1)

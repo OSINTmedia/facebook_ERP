@@ -38,7 +38,12 @@
       </div>
       <div class="product-card__state">
         <dt>Availability</dt>
-        <dd><span class="status-pill status-pill--{{ card.availability_state }}">{{ card.availability_label }}</span></dd>
+        <dd>
+          <span class="status-pill status-pill--{{ card.availability_state }}">{{ card.availability_label }}</span>
+          {% if card.is_partially_sold_out %}
+            <span class="status-pill status-pill--partial-stock">Some choices sold out</span>
+          {% endif %}
+        </dd>
       </div>
     </dl>
 
@@ -130,6 +135,27 @@
       </ul>
     {% else %}
       <p class="product-card__choice-empty">No active choices. Edit this Product to add or activate one.</p>
+    {% endif %}
+  </section>
+
+  <section class="product-card__readiness" aria-labelledby="product-card-readiness-{{ card.product_id }}">
+    <div class="product-card__readiness-heading">
+      <h3 id="product-card-readiness-{{ card.product_id }}">Buyer answers</h3>
+      {% if not card.missing_question_labels %}
+        <span class="status-pill status-pill--ready">Supported answers ready</span>
+      {% endif %}
+    </div>
+    {% if card.answerable_question_labels %}
+      <p><strong>Ready:</strong> {{ card.answerable_question_labels|join:", " }}</p>
+    {% else %}
+      <p>No supported answers are ready yet.</p>
+    {% endif %}
+    {% if card.missing_question_labels %}
+      <p><strong>Missing:</strong> {{ card.missing_question_labels|join:", " }}</p>
+      <a
+        class="button button--secondary button--compact product-card__readiness-action"
+        href="{% url 'catalog:product_edit' card.product_id %}?focus={{ card.readiness_correction_target }}&amp;next={{ workspace_return_url|urlencode }}{{ card.readiness_correction_fragment }}"
+      >{{ card.readiness_correction_label }}</a>
     {% endif %}
   </section>
 
