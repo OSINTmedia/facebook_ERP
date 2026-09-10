@@ -30,6 +30,8 @@ def compute_product_availability(*, business, product) -> bool:
     if product.lifecycle == Product.Lifecycle.ACTIVE:
         has_positive_active_choice = product.choices.filter(
             business=business,
+            size__business=business,
+            color__business=business,
             is_active=True,
             quantity__gt=0,
         ).exists()

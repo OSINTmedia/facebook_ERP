@@ -265,7 +265,12 @@ class ProductBuyerQuestionCoverageTests(TestCase):
             business=self.other_business,
             name="Other dress",
         )
+        other_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="XL",
+        )
         product = self.create_product()
+        choice = self.create_choice(product=product, quantity=7)
         material = ProductMaterialFact.objects.create(
             business=self.business,
             product=product,
@@ -274,6 +279,7 @@ class ProductBuyerQuestionCoverageTests(TestCase):
             source=ProductMaterialFact.Source.MANUAL,
         )
         Product.objects.filter(pk=product.pk).update(product_type=other_type)
+        ProductChoice.objects.filter(pk=choice.pk).update(size=other_size)
         ProductMaterialFact.objects.filter(pk=material.pk).update(
             business=self.other_business
         )
@@ -288,6 +294,12 @@ class ProductBuyerQuestionCoverageTests(TestCase):
             coverage.for_question(BuyerQuestion.PRODUCT_TYPE).is_answerable
         )
         self.assertFalse(coverage.for_question(BuyerQuestion.MATERIAL).is_answerable)
+        self.assertFalse(
+            coverage.for_question(BuyerQuestion.AVAILABILITY_STOCK).is_answerable
+        )
+        self.assertFalse(
+            coverage.for_question(BuyerQuestion.SIZE_COLOR).is_answerable
+        )
 
     def test_coverage_evaluation_does_not_write(self):
         product = self.create_product(price=Decimal("50.00"))

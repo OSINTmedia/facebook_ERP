@@ -670,3 +670,15 @@ Verification: 491 PostgreSQL tests passed; Django system and migration consisten
 Release: READY.
 
 Next on Git PASS: Phase 9.
+
+### 2026-09-10 - P9.1 Deterministic Reply Service
+
+Code status: PASS.
+
+A read-only, Business-scoped Ready Reply service now composes deterministic Georgian buyer text from Description, positive price and Business currency, centralized availability, active size/color choices, confirmed Product Type, and confirmed material. Seller-only missing-data notes remain structurally separate, and duplicate-looking choices preserve exact row identity without fabricated distinctions or quantity aggregation.
+
+Adversarial audit repaired centralized availability and readiness so cross-Business size/color relations cannot influence computed truth, added focused regressions, and corrected quantity punctuation. Verification: 11 focused reply tests, 9 neighboring readiness tests, and 28 combined repair targets passed; the full 503-test PostgreSQL suite, Django system and migration consistency checks, and diff/whitespace checks passed. Owner test: ADVISORY.
+
+Release: READY.
+
+Next on Git PASS: P9.2 On-Demand Workspace Ready Reply UI.

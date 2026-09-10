@@ -103,7 +103,12 @@ def build_product_buyer_question_coverage(*, business, product):
     if product.business_id != business.pk:
         raise ValidationError("Product must belong to the active Business.")
 
-    active_choices = product.choices.filter(business=business, is_active=True)
+    active_choices = product.choices.filter(
+        business=business,
+        size__business=business,
+        color__business=business,
+        is_active=True,
+    )
     has_active_choice = active_choices.exists()
     is_available = compute_product_availability(
         business=business,

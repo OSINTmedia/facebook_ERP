@@ -182,6 +182,26 @@ class ProductAvailabilityTests(TestCase):
             )
         )
 
+    def test_cross_business_choice_labels_do_not_affect_availability(self):
+        size_product = self.create_product()
+        size_choice = self.create_choice(product=size_product, quantity=3)
+        ProductChoice.objects.filter(pk=size_choice.pk).update(size=self.other_size)
+
+        color_product = self.create_product()
+        color_choice = self.create_choice(product=color_product, quantity=4)
+        ProductChoice.objects.filter(pk=color_choice.pk).update(
+            color=self.other_color
+        )
+
+        for product in (size_product, color_product):
+            with self.subTest(product=product.pk):
+                self.assertFalse(
+                    compute_product_availability(
+                        business=self.business,
+                        product=product,
+                    )
+                )
+
     def test_cross_business_product_is_rejected(self):
         other_product = self.create_product(business=self.other_business)
         self.create_choice(
