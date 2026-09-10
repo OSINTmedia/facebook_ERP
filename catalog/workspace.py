@@ -23,10 +23,15 @@ from catalog.readiness import (
     evaluate_buyer_question_coverage,
 )
 from inventory.availability import compute_availability_from_stock_state
+from dashboard.attention import (
+    ATTENTION_FILTER_CHOICES,
+    attention_group_for_filter,
+    build_seller_attention,
+)
 
 
 SUPPORTED_PRODUCT_WORKSPACE_QUERY_KEYS: frozenset[str] = frozenset(
-    {"q", "lifecycle", "availability"}
+    {"q", "lifecycle", "availability", "attention", "origin"}
 )
 PRODUCT_WORKSPACE_AVAILABILITY_VALUES: frozenset[str] = frozenset(
     {"available", "sold_out"}
@@ -64,6 +69,8 @@ class ProductWorkspaceState:
     search_is_valid: bool = True
     lifecycle_filter: str = ""
     availability_filter: str = ""
+    attention_filter: str = ""
+    origin: str = ""
     filters_requested: bool = False
     filters_are_valid: bool = True
 
@@ -101,12 +108,14 @@ class ProductWorkspaceState:
     def from_search_form(cls, search_form):
         search_requested = "q" in search_form.data
         filters_requested = any(
-            key in search_form.data for key in ("lifecycle", "availability")
+            key in search_form.data
+            for key in ("lifecycle", "availability", "attention", "origin")
         )
         search_form.is_valid()
         search_is_valid = "q" not in search_form.errors
         filters_are_valid = not any(
-            key in search_form.errors for key in ("lifecycle", "availability")
+            key in search_form.errors
+            for key in ("lifecycle", "availability", "attention", "origin")
         )
 
         search_query = (
@@ -118,9 +127,13 @@ class ProductWorkspaceState:
                 "availability",
                 "",
             )
+            attention_filter = search_form.cleaned_data.get("attention", "")
+            origin = search_form.cleaned_data.get("origin", "")
         else:
             lifecycle_filter = ""
             availability_filter = ""
+            attention_filter = ""
+            origin = ""
 
         query_items = tuple(
             (key, value)
@@ -128,6 +141,8 @@ class ProductWorkspaceState:
                 ("q", search_query),
                 ("lifecycle", lifecycle_filter),
                 ("availability", availability_filter),
+                ("attention", attention_filter),
+                ("origin", origin),
             )
             if value
         )
@@ -138,6 +153,8 @@ class ProductWorkspaceState:
             search_is_valid=search_is_valid,
             lifecycle_filter=lifecycle_filter,
             availability_filter=availability_filter,
+            attention_filter=attention_filter,
+            origin=origin,
             filters_requested=filters_requested,
             filters_are_valid=filters_are_valid,
         )
@@ -148,7 +165,30 @@ class ProductWorkspaceState:
 
     @property
     def has_active_filters(self):
-        return bool(self.lifecycle_filter or self.availability_filter)
+        return bool(
+            self.lifecycle_filter
+            or self.availability_filter
+            or self.attention_filter
+        )
+
+    @property
+    def active_filter_count(self):
+        return sum(
+            bool(value)
+            for value in (
+                self.lifecycle_filter,
+                self.availability_filter,
+                self.attention_filter,
+            )
+        )
+
+    @property
+    def attention_label(self):
+        return dict(ATTENTION_FILTER_CHOICES).get(self.attention_filter, "")
+
+    @property
+    def has_dashboard_origin(self):
+        return self.origin == "dashboard"
 
     @property
     def has_active_query(self):
@@ -167,7 +207,15 @@ class ProductWorkspaceState:
     @property
     def clear_filters_url(self):
         return self._url_for(
-            tuple(item for item in self.query_items if item[0] == "q")
+            tuple(
+                item for item in self.query_items if item[0] in {"q", "origin"}
+            )
+        )
+
+    @property
+    def clear_all_url(self):
+        return self._url_for(
+            tuple(item for item in self.query_items if item[0] == "origin")
         )
 
     @staticmethod
@@ -184,6 +232,7 @@ class ProductChoiceCard:
     size_name: str
     color_name: str
     quantity: int
+    is_attention_target: bool = False
 
 
 @dataclass(frozen=True)
@@ -220,17 +269,29 @@ def build_product_workspace_context(
     products = Product.objects.none()
     product_cards = ()
     catalog_has_products = False
+    attention_choice_ids = ()
 
     if business is not None and state.is_valid:
+        allowed_product_ids = None
+        if state.attention_filter:
+            attention = build_seller_attention(business=business)
+            attention_group = attention_group_for_filter(
+                attention,
+                state.attention_filter,
+            )
+            allowed_product_ids = attention_group.product_ids
+            attention_choice_ids = attention_group.choice_ids
         products = product_workspace_products(
             business=business,
             search_query=state.search_query,
             lifecycle_filter=state.lifecycle_filter,
             availability_filter=state.availability_filter,
+            allowed_product_ids=allowed_product_ids,
         )
         product_cards = build_product_workspace_cards(
             business=business,
             products=products,
+            attention_choice_ids=attention_choice_ids,
         )
         catalog_has_products = bool(product_cards)
         if state.has_active_query and not product_cards:
@@ -248,12 +309,20 @@ def build_product_workspace_context(
         "workspace_query_is_valid": state.is_valid,
         "workspace_lifecycle_filter": state.lifecycle_filter,
         "workspace_availability_filter": state.availability_filter,
+        "workspace_attention_filter": state.attention_filter,
+        "workspace_attention_label": state.attention_label,
+        "workspace_attention_choice_ids": attention_choice_ids,
         "workspace_has_active_filters": state.has_active_filters,
+        "workspace_active_filter_count": state.active_filter_count,
+        "workspace_back_to_dashboard_url": (
+            reverse("shell_home") if state.has_dashboard_origin else ""
+        ),
         "workspace_result_count": len(product_cards),
         "catalog_has_products": catalog_has_products,
         "workspace_return_url": state.return_url,
         "workspace_clear_search_url": state.clear_search_url,
         "workspace_clear_filters_url": state.clear_filters_url,
+        "workspace_clear_all_url": state.clear_all_url,
     }
 
 
@@ -263,6 +332,7 @@ def product_workspace_products(
     search_query: str = "",
     lifecycle_filter: str = "",
     availability_filter: str = "",
+    allowed_product_ids=None,
 ) -> QuerySet[Product]:
     """Return deterministic Product rows owned by one resolved Business."""
 
@@ -298,6 +368,8 @@ def product_workspace_products(
     )
 
     products = Product.objects.filter(business=business)
+    if allowed_product_ids is not None:
+        products = products.filter(pk__in=allowed_product_ids)
     if lifecycle_filter:
         products = products.filter(lifecycle=lifecycle_filter)
     for token in search_query.split():
@@ -418,19 +490,30 @@ def build_product_workspace_cards(
     *,
     business: Business,
     products,
+    attention_choice_ids=(),
 ) -> tuple[ProductCard, ...]:
     """Build immutable card state from the Business-scoped prefetched read model."""
 
     if business is None or business.pk is None:
         raise ValueError("An existing Business is required.")
 
+    attention_choice_ids = frozenset(attention_choice_ids)
     return tuple(
-        _build_product_card(business=business, product=product)
+        _build_product_card(
+            business=business,
+            product=product,
+            attention_choice_ids=attention_choice_ids,
+        )
         for product in products
     )
 
 
-def _build_product_card(*, business: Business, product: Product) -> ProductCard:
+def _build_product_card(
+    *,
+    business: Business,
+    product: Product,
+    attention_choice_ids=frozenset(),
+) -> ProductCard:
     if product.business_id != business.pk:
         raise ValueError("Product must belong to the active Business.")
     if (
@@ -449,6 +532,7 @@ def _build_product_card(*, business: Business, product: Product) -> ProductCard:
             size_name=choice.size.name,
             color_name=choice.color.name,
             quantity=choice.quantity,
+            is_attention_target=choice.pk in attention_choice_ids,
         )
         for choice in active_choice_rows
     )

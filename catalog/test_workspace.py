@@ -247,6 +247,204 @@ class ProductWorkspaceStateTests(SimpleTestCase):
         self.assertFalse(context["catalog_has_products"])
 
 
+class ProductWorkspaceAttentionDrilldownTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="attention-workspace@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="attention-workspace-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Attention Workspace",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Private Attention Workspace",
+        )
+        self.size = BusinessSize.objects.create(business=self.business, name="M")
+        self.color = BusinessColor.objects.create(
+            business=self.business,
+            name="Black",
+        )
+        self.other_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="M",
+        )
+        self.other_color = BusinessColor.objects.create(
+            business=self.other_business,
+            name="Black",
+        )
+        self.url = reverse("catalog:product_list")
+
+    def create_product(self, *, name, business=None, complete=True):
+        business = business or self.business
+        product = Product.objects.create(
+            business=business,
+            name=name,
+            description=f"{name} description",
+            lifecycle=Product.Lifecycle.ACTIVE,
+            price=Decimal("50.00") if complete else None,
+        )
+        if complete:
+            product.product_type = BusinessProductType.objects.create(
+                business=business,
+                name=f"Type {product.pk}",
+            )
+            product.save(update_fields=["product_type"])
+            ProductMaterialFact.objects.create(
+                business=business,
+                product=product,
+                canonical_material="Cotton",
+                original_text="cotton",
+                source=ProductMaterialFact.Source.DESCRIPTION,
+            )
+        return product
+
+    def create_choice(self, *, product, quantity):
+        is_private = product.business_id == self.other_business.pk
+        return ProductChoice.objects.create(
+            business=product.business,
+            product=product,
+            size=self.other_size if is_private else self.size,
+            color=self.other_color if is_private else self.color,
+            quantity=quantity,
+        )
+
+    def test_attention_state_is_canonical_visible_and_clearable(self):
+        state = ProductWorkspaceState.from_query_params(
+            QueryDict(
+                "origin=dashboard&attention=low_stock&q=shirt&lifecycle=active"
+            )
+        )
+
+        self.assertTrue(state.is_valid)
+        self.assertEqual(state.attention_filter, "low_stock")
+        self.assertTrue(state.has_dashboard_origin)
+        self.assertEqual(state.active_filter_count, 2)
+        self.assertEqual(
+            state.return_url,
+            f"{self.url}?q=shirt&lifecycle=active&attention=low_stock&origin=dashboard",
+        )
+        self.assertEqual(
+            state.clear_filters_url,
+            f"{self.url}?q=shirt&origin=dashboard",
+        )
+        self.assertEqual(
+            state.clear_all_url,
+            f"{self.url}?origin=dashboard",
+        )
+        self.assertEqual(
+            ProductWorkspaceState.from_return_url(state.return_url),
+            state,
+        )
+
+    def test_attention_drilldowns_use_exact_business_scoped_membership(self):
+        low = self.create_product(name="Low product")
+        low_choice = self.create_choice(product=low, quantity=1)
+        stocked_choice = self.create_choice(product=low, quantity=5)
+        other = self.create_product(name="Other product")
+        self.create_choice(product=other, quantity=5)
+        private = self.create_product(
+            name="Private product",
+            business=self.other_business,
+        )
+        self.create_choice(product=private, quantity=1)
+        self.client.force_login(self.owner)
+
+        response = self.client.get(
+            self.url,
+            {"attention": "low_stock", "origin": "dashboard"},
+        )
+
+        self.assertEqual([product.pk for product in response.context["products"]], [low.pk])
+        self.assertEqual(
+            tuple(response.context["workspace_attention_choice_ids"]),
+            (low_choice.pk,),
+        )
+        card = response.context["product_cards"][0]
+        self.assertEqual(
+            [choice.choice_id for choice in card.active_choices if choice.is_attention_target],
+            [low_choice.pk],
+        )
+        self.assertFalse(
+            next(
+                choice for choice in card.active_choices
+                if choice.choice_id == stocked_choice.pk
+            ).is_attention_target
+        )
+        self.assertContains(response, "Attention — Low stock")
+        self.assertContains(response, "Attention target", count=1)
+        self.assertNotContains(response, private.name)
+
+    def test_unknown_or_repeated_attention_context_fails_closed(self):
+        product = self.create_product(name="Do not widen")
+        self.create_choice(product=product, quantity=1)
+        self.client.force_login(self.owner)
+
+        unknown = self.client.get(self.url, {"attention": "unknown"})
+        repeated = self.client.get(
+            f"{self.url}?attention=low_stock&attention=sold_out"
+        )
+        repeated_origin = self.client.get(
+            f"{self.url}?origin=dashboard&origin=other"
+        )
+
+        for response in (unknown, repeated, repeated_origin):
+            with self.subTest(query=response.request["QUERY_STRING"]):
+                self.assertFalse(response.context["workspace_query_is_valid"])
+                self.assertNotContains(response, product.name)
+
+    def test_attention_drilldown_query_count_does_not_grow_with_catalog_size(self):
+        product = self.create_product(name="First low product")
+        self.create_choice(product=product, quantity=1)
+        self.client.force_login(self.owner)
+        drilldown = {"attention": "low_stock", "origin": "dashboard"}
+        with CaptureQueriesContext(connection) as initial_queries:
+            self.client.get(self.url, drilldown)
+
+        for index in range(8):
+            product = self.create_product(name=f"More low product {index}")
+            self.create_choice(product=product, quantity=1)
+
+        with CaptureQueriesContext(connection) as expanded_queries:
+            self.client.get(self.url, drilldown)
+
+        self.assertEqual(len(expanded_queries), len(initial_queries))
+
+    def test_htmx_stock_refresh_removes_resolved_low_stock_membership(self):
+        product = self.create_product(name="Threshold product")
+        choice = self.create_choice(product=product, quantity=3)
+        self.client.force_login(self.owner)
+        return_url = f"{self.url}?attention=low_stock&origin=dashboard"
+
+        response = self.client.post(
+            reverse(
+                "inventory:choice_stock_adjust",
+                kwargs={"choice_pk": choice.pk},
+            ),
+            {
+                "delta": "1",
+                "next": return_url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_product_results.html")
+        self.assertContains(response, "Stock updated to 4.")
+        self.assertContains(response, "<strong>0</strong> products")
+        self.assertNotContains(response, product.name)
+        choice.refresh_from_db()
+        self.assertEqual(choice.quantity, 4)
+        self.assertEqual(InventoryAdjustment.objects.filter(choice=choice).count(), 1)
+
+
 class ProductWorkspaceQueryTests(TestCase):
     def setUp(self):
         user_model = get_user_model()

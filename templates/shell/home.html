@@ -3,14 +3,113 @@
 {% block title %}Dashboard | Seller Workspace{% endblock %}
 
 {% block content %}
-  <section class="shell-page" aria-labelledby="dashboard-title">
-    <div class="shell-heading">
-      <p class="eyebrow">Seller workspace</p>
-      <h1 id="dashboard-title">Dashboard</h1>
-    </div>
+  <section class="shell-page seller-dashboard" aria-labelledby="dashboard-title">
+    <header class="seller-dashboard__heading">
+      <div class="shell-heading">
+        <p class="eyebrow">Seller workspace</p>
+        <h1 id="dashboard-title">What needs attention now?</h1>
+      </div>
+      {% if active_business and not attention.empty_catalog %}
+        <a class="button button--secondary" href="{% url 'catalog:product_list' %}">Open all products</a>
+      {% endif %}
+    </header>
 
-    <div class="empty-state" role="status">
-      <p>No workspace data yet.</p>
-    </div>
+    {% if business_policy_blocked %}
+      <div class="empty-state empty-state--warning" role="alert">
+        <p>Multiple business workspaces need an approved switcher before attention signals can be shown.</p>
+      </div>
+    {% elif not active_business %}
+      <div class="empty-state" role="status">
+        <p>No business workspace yet.</p>
+      </div>
+    {% elif attention.empty_catalog %}
+      <div class="empty-state seller-dashboard__empty" role="status">
+        <h2>Start with one Product</h2>
+        <p>Add a Description first. You can complete price, choices, and confirmed facts as you go.</p>
+        <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ dashboard_return_url|urlencode }}">Add product</a>
+      </div>
+    {% else %}
+      <p class="seller-dashboard__intro">Open a signal to continue the work in the Product Workspace.</p>
+      {% if not attention.missing_information_products.count and not attention.low_stock_choices.count and not attention.sold_out_products.count and not attention.partially_sold_out_choices.count %}
+        <div class="empty-state" role="status">
+          <h2>Nothing needs attention right now</h2>
+          <p>Your current Product truth and stock signals have no flagged work.</p>
+        </div>
+      {% else %}
+        <div class="seller-dashboard__grid">
+        {% if attention.missing_information_products.count %}
+          <article class="attention-card attention-card--priority" aria-labelledby="missing-information-title">
+          <header class="attention-card__heading">
+            <h2 id="missing-information-title">Missing information</h2>
+            <strong class="attention-card__count" aria-label="{{ attention.missing_information_products.count }} Product{{ attention.missing_information_products.count|pluralize }}">{{ attention.missing_information_products.count }}</strong>
+          </header>
+          <p>Complete the next buyer-answer gap.</p>
+          {% if attention.missing_information_products.items %}
+            <ul class="attention-card__items">
+              {% for product in attention.missing_information_products.items %}
+                <li>{{ product.name }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <a class="button button--primary" href="{{ missing_information_workspace_url }}">Review missing information</a>
+        </article>
+        {% endif %}
+
+        {% if attention.low_stock_choices.count %}
+        <article class="attention-card" aria-labelledby="low-stock-title">
+          <header class="attention-card__heading">
+            <h2 id="low-stock-title">Low stock</h2>
+            <strong class="attention-card__count" aria-label="{{ attention.low_stock_choices.count }} Choice{{ attention.low_stock_choices.count|pluralize }}">{{ attention.low_stock_choices.count }}</strong>
+          </header>
+          <p>Choices with 1–{{ attention.low_stock_threshold }} remaining.</p>
+          {% if attention.low_stock_choices.items %}
+            <ul class="attention-card__items">
+              {% for choice in attention.low_stock_choices.items %}
+                <li>{{ choice.product.name }} · Choice #{{ choice.pk }} · {{ choice.size.name }} / {{ choice.color.name }} · {{ choice.quantity }} left</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <a class="button button--secondary" href="{{ low_stock_workspace_url }}">Update low stock</a>
+        </article>
+        {% endif %}
+
+        {% if attention.sold_out_products.count %}
+        <article class="attention-card" aria-labelledby="sold-out-title">
+          <header class="attention-card__heading">
+            <h2 id="sold-out-title">Sold out / restock</h2>
+            <strong class="attention-card__count" aria-label="{{ attention.sold_out_products.count }} Product{{ attention.sold_out_products.count|pluralize }}">{{ attention.sold_out_products.count }}</strong>
+          </header>
+          <p>Active Products with no available choice.</p>
+          {% if attention.sold_out_products.items %}
+            <ul class="attention-card__items">
+              {% for product in attention.sold_out_products.items %}
+                <li>{{ product.name }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <a class="button button--secondary" href="{{ sold_out_workspace_url }}">Open restock candidates</a>
+        </article>
+        {% endif %}
+
+        {% if attention.partially_sold_out_choices.count %}
+        <article class="attention-card" aria-labelledby="partial-stock-title">
+          <header class="attention-card__heading">
+            <h2 id="partial-stock-title">Partially sold out</h2>
+            <strong class="attention-card__count" aria-label="{{ attention.partially_sold_out_choices.count }} Choice{{ attention.partially_sold_out_choices.count|pluralize }}">{{ attention.partially_sold_out_choices.count }}</strong>
+          </header>
+          <p>Sold-out choices on Products that remain available.</p>
+          {% if attention.partially_sold_out_choices.items %}
+            <ul class="attention-card__items">
+              {% for choice in attention.partially_sold_out_choices.items %}
+                <li>{{ choice.product.name }} · Choice #{{ choice.pk }} · {{ choice.size.name }} / {{ choice.color.name }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          <a class="button button--secondary" href="{{ partial_stock_workspace_url }}">Review sold-out choices</a>
+        </article>
+        {% endif %}
+        </div>
+      {% endif %}
+    {% endif %}
   </section>
 {% endblock %}

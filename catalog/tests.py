@@ -5992,6 +5992,17 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         self.assertRedirects(response, return_url)
 
+    def test_product_create_accepts_exact_dashboard_return(self):
+        self.client.force_login(self.owner)
+        return_url = reverse("shell_home")
+        data = self.bundle_post_data([self.active_choice_row()])
+        data["next"] = return_url
+
+        response = self.client.post(self.url, data)
+
+        self.assertRedirects(response, return_url)
+        self.assertEqual(Product.objects.filter(business=self.business).count(), 1)
+
     def test_product_create_rejects_unsupported_workspace_return_urls(self):
         self.client.force_login(self.owner)
         unsupported_urls = (
@@ -6186,6 +6197,19 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertRedirects(response, return_url)
         self.product.refresh_from_db()
         self.assertEqual(self.product.price, Decimal("79.50"))
+
+    def test_product_edit_accepts_exact_dashboard_return(self):
+        self.client.force_login(self.owner)
+        return_url = reverse("shell_home")
+        data = self.bundle_post_data(
+            [{}],
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+        data["next"] = return_url
+
+        response = self.client.post(self.url, data)
+
+        self.assertRedirects(response, return_url)
 
     def test_product_edit_can_clear_confirmed_price_to_missing(self):
         self.product.price = Decimal("25.00")

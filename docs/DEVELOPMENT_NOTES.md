@@ -658,3 +658,15 @@ Verification: 7 focused attention-query tests, 16 neighboring readiness/availabi
 Release: READY.
 
 Next on Git PASS: P8.2 Action-First Dashboard and Workspace Drilldowns.
+
+### 2026-09-10 - P8.2 Action-First Dashboard and Workspace Drilldowns
+
+Code status: PASS.
+
+The authenticated Dashboard now presents only actionable, Business-scoped attention signals from the shared attention service and routes each signal into a canonical, visible, clearable Product Workspace drilldown. Dashboard-originated Quick Add, correction, and stock work preserve explicit safe returns; exact low-stock and partially sold-out choices remain identifiable, and server-owned HTMX refreshes remove resolved membership without stale results. Audit repair hid zero-count cards behind one clear state and added size/color identity to choice alerts.
+
+Verification: 491 PostgreSQL tests passed; Django system and migration consistency checks and diff/whitespace checks passed. Required owner desktop and approximately 390px testing passed, including empty, low-stock, sold-out/partial-stock, missing-information, drilldown, correction/mutation, and explicit-return states.
+
+Release: READY.
+
+Next on Git PASS: Phase 9.

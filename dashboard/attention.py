@@ -20,12 +20,27 @@ DAILY_PRODUCT_LIFECYCLES = (
     Product.Lifecycle.DRAFT,
     Product.Lifecycle.ACTIVE,
 )
+ATTENTION_FILTER_CHOICES = (
+    ("", "All attention states"),
+    ("missing_information", "Missing information"),
+    ("low_stock", "Low stock"),
+    ("sold_out", "Sold out / restock"),
+    ("partial_stock", "Partially sold out"),
+)
+ATTENTION_FILTER_GROUPS = {
+    "missing_information": "missing_information_products",
+    "low_stock": "low_stock_choices",
+    "sold_out": "sold_out_products",
+    "partial_stock": "partially_sold_out_choices",
+}
 
 
 @dataclass(frozen=True)
 class AttentionGroup:
     count: int
     items: tuple
+    product_ids: tuple[int, ...]
+    choice_ids: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -150,7 +165,28 @@ def build_seller_attention(
 
 
 def _attention_group(items, list_limit) -> AttentionGroup:
+    product_ids = tuple(
+        dict.fromkeys(
+            item.product_id if isinstance(item, ProductChoice) else item.pk
+            for item in items
+        )
+    )
+    choice_ids = tuple(
+        item.pk for item in items if isinstance(item, ProductChoice)
+    )
     return AttentionGroup(
         count=len(items),
         items=tuple(items[:list_limit]),
+        product_ids=product_ids,
+        choice_ids=choice_ids,
     )
+
+
+def attention_group_for_filter(attention, attention_filter) -> AttentionGroup:
+    """Resolve one approved Workspace drilldown to shared attention truth."""
+
+    try:
+        group_name = ATTENTION_FILTER_GROUPS[attention_filter]
+    except KeyError as exc:
+        raise ValueError("Unsupported attention filter.") from exc
+    return getattr(attention, group_name)

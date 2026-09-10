@@ -135,15 +135,26 @@ class AttentionQueryServiceTests(TestCase):
             [sold_out.pk],
         )
         self.assertEqual(attention.sold_out_products.count, 1)
+        self.assertEqual(attention.sold_out_products.product_ids, (sold_out.pk,))
+        self.assertEqual(attention.sold_out_products.choice_ids, ())
         self.assertEqual(
             [choice.pk for choice in attention.partially_sold_out_choices.items],
             [sold_choice.pk],
         )
         self.assertNotEqual(sold_choice.pk, stocked_duplicate.pk)
         self.assertEqual(
+            attention.partially_sold_out_choices.product_ids,
+            (partial.pk,),
+        )
+        self.assertEqual(
+            attention.partially_sold_out_choices.choice_ids,
+            (sold_choice.pk,),
+        )
+        self.assertEqual(
             [choice.product_id for choice in attention.low_stock_choices.items],
             [low_stock.pk],
         )
+        self.assertEqual(attention.low_stock_choices.product_ids, (low_stock.pk,))
         self.assertNotIn(
             private.pk,
             [product.pk for product in attention.missing_information_products.items],

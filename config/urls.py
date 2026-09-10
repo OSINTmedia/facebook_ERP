@@ -2,10 +2,10 @@
 from django.contrib import admin
 from django.urls import include, path
 
-from config.views import ShellHomeView
+from dashboard.views import DashboardView
 
 urlpatterns = [
-    path("", ShellHomeView.as_view(), name="shell_home"),
+    path("", DashboardView.as_view(), name="shell_home"),
     path("accounts/", include("accounts.urls")),
     path("inventory/", include("inventory.urls")),
     path("", include("catalog.urls")),

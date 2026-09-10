@@ -31,7 +31,7 @@
   {% if workspace_query_is_valid %}
     {% if workspace_search_query or workspace_has_active_filters %}
       <div class="product-workspace-state-summary" aria-label="Current Product Workspace view">
-        <p role="status" aria-atomic="true"><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }}{% if workspace_search_query %} for “{{ workspace_search_query }}”{% endif %}{% if workspace_lifecycle_filter %} · Lifecycle — {% if workspace_lifecycle_filter == "active" %}Active{% else %}Draft{% endif %}{% endif %}{% if workspace_availability_filter %} · Availability — {% if workspace_availability_filter == "available" %}Available{% else %}Sold out{% endif %}{% endif %}</p>
+        <p role="status" aria-atomic="true"><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }}{% if workspace_search_query %} for “{{ workspace_search_query }}”{% endif %}{% if workspace_lifecycle_filter %} · Lifecycle — {% if workspace_lifecycle_filter == "active" %}Active{% else %}Draft{% endif %}{% endif %}{% if workspace_availability_filter %} · Availability — {% if workspace_availability_filter == "available" %}Available{% else %}Sold out{% endif %}{% endif %}{% if workspace_attention_filter %} · Attention — {{ workspace_attention_label }}{% endif %}</p>
         {% if product_cards %}
           <div class="product-workspace-state-summary__actions">
             {% if workspace_search_query %}
@@ -41,7 +41,7 @@
               <a class="button button--secondary button--compact" href="{{ workspace_clear_filters_url }}">Clear filters</a>
             {% endif %}
             {% if workspace_search_query and workspace_has_active_filters %}
-              <a class="button button--secondary button--compact" href="{% url 'catalog:product_list' %}">Clear all</a>
+              <a class="button button--secondary button--compact" href="{{ workspace_clear_all_url }}">Clear all</a>
             {% endif %}
           </div>
         {% endif %}
@@ -81,7 +81,7 @@
       <p>No products match this search and filter combination.</p>
     </div>
     <div class="page-actions">
-      <a class="button button--primary" href="{% url 'catalog:product_list' %}">Clear all</a>
+      <a class="button button--primary" href="{{ workspace_clear_all_url }}">Clear all</a>
     </div>
   {% elif workspace_has_active_filters and catalog_has_products %}
     <div class="empty-state" role="status">
@@ -104,7 +104,7 @@
     <div class="page-actions">
       <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">Add product</a>
       {% if workspace_search_query and workspace_has_active_filters %}
-        <a class="button button--secondary" href="{% url 'catalog:product_list' %}">Clear all</a>
+        <a class="button button--secondary" href="{{ workspace_clear_all_url }}">Clear all</a>
       {% elif workspace_has_active_filters %}
         <a class="button button--secondary" href="{{ workspace_clear_filters_url }}">Clear filters</a>
       {% elif workspace_search_query %}

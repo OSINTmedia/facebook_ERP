@@ -22,6 +22,7 @@ from catalog.vocabulary import (
     SIZE_VOCABULARY,
     TAG_VOCABULARY,
 )
+from dashboard.attention import ATTENTION_FILTER_CHOICES
 
 
 PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH = 120
@@ -35,6 +36,10 @@ PRODUCT_WORKSPACE_AVAILABILITY_CHOICES = (
     ("", "All availability states"),
     ("available", "Available"),
     ("sold_out", "Sold out"),
+)
+PRODUCT_WORKSPACE_ORIGIN_CHOICES = (
+    ("", ""),
+    ("dashboard", "Dashboard"),
 )
 
 
@@ -61,6 +66,16 @@ class ProductWorkspaceSearchForm(forms.Form):
         required=False,
         label="Availability",
         choices=PRODUCT_WORKSPACE_AVAILABILITY_CHOICES,
+    )
+    attention = forms.ChoiceField(
+        required=False,
+        label="Needs attention",
+        choices=ATTENTION_FILTER_CHOICES,
+    )
+    origin = forms.ChoiceField(
+        required=False,
+        choices=PRODUCT_WORKSPACE_ORIGIN_CHOICES,
+        widget=forms.HiddenInput,
     )
 
     def clean_q(self):
@@ -98,6 +113,22 @@ class ProductWorkspaceSearchForm(forms.Form):
         ):
             raise ValidationError("Select one availability filter.")
         return self.cleaned_data.get("availability", "")
+
+    def clean_attention(self):
+        if (
+            hasattr(self.data, "getlist")
+            and len(self.data.getlist("attention")) > 1
+        ):
+            raise ValidationError("Select one attention filter.")
+        return self.cleaned_data.get("attention", "")
+
+    def clean_origin(self):
+        if (
+            hasattr(self.data, "getlist")
+            and len(self.data.getlist("origin")) > 1
+        ):
+            raise ValidationError("Select one Workspace origin.")
+        return self.cleaned_data.get("origin", "")
 
 
 class ProductForm(forms.ModelForm):

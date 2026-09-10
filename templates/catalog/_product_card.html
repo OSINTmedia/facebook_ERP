@@ -66,11 +66,12 @@
     {% if card.active_choices %}
       <ul class="product-card__choice-list" aria-label="Active choices for {{ card.name }}">
         {% for choice in card.active_choices %}
-          <li class="product-card__choice-row">
+          <li class="product-card__choice-row{% if choice.is_attention_target %} product-card__choice-row--attention{% endif %}">
             <div class="product-card__choice-identity">
               <strong>Choice #{{ choice.choice_id }}</strong>
               <span><span class="product-card__choice-label">Size</span> {{ choice.size_name }}</span>
               <span><span class="product-card__choice-label">Color</span> {{ choice.color_name }}</span>
+              {% if choice.is_attention_target %}<span class="status-pill status-pill--attention">Attention target</span>{% endif %}
             </div>
             <form
               class="product-card__stock-form"

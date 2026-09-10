@@ -103,6 +103,9 @@ def get_canonical_product_workspace_return_url(request):
     if len(candidates) != 1:
         return fallback
 
+    if candidates[0] == reverse("shell_home"):
+        return candidates[0]
+
     try:
         return ProductWorkspaceState.from_return_url(candidates[0]).return_url
     except ValueError:
@@ -547,9 +550,13 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
         context.setdefault("business_policy_blocked", self.business_policy_blocked)
         context.setdefault("current_nav", "products")
         context.setdefault("page_title", "Product")
+        return_url = get_canonical_product_workspace_return_url(request)
+        context.setdefault("return_url", return_url)
         context.setdefault(
-            "return_url",
-            get_canonical_product_workspace_return_url(request),
+            "return_label",
+            "Back to Dashboard"
+            if return_url == reverse("shell_home")
+            else "Back to Products",
         )
         correction_target = request.GET.get("focus", "")
         if correction_target not in READINESS_CORRECTION_TARGETS:

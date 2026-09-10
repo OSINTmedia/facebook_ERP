@@ -33,6 +33,7 @@
         action="{% url 'catalog:product_list' %}"
         role="search"
       >
+        {{ search_form.origin }}
         <div class="form-field product-workspace-search__field">
           {{ search_form.q.label_tag }}
           <div class="product-workspace-search__input-row">
@@ -59,7 +60,7 @@
             Filters
             {% if workspace_has_active_filters %}
               <span class="product-workspace-filters__count">
-                {% if workspace_lifecycle_filter and workspace_availability_filter %}2 active{% else %}1 active{% endif %}
+                {{ workspace_active_filter_count }} active
               </span>
             {% endif %}
           </summary>
@@ -91,10 +92,30 @@
                 >{{ search_form.availability.errors }}</div>
               {% endif %}
             </div>
+            <div class="form-field">
+              {{ search_form.attention.label_tag }}
+              {{ search_form.attention }}
+              {% if search_form.attention.errors %}
+                <div
+                  id="{{ search_form.attention.id_for_label }}_errors"
+                  class="form-errors"
+                  role="alert"
+                  aria-atomic="true"
+                  data-workspace-error-for="{{ search_form.attention.id_for_label }}"
+                >{{ search_form.attention.errors }}</div>
+              {% endif %}
+              {% if search_form.origin.errors %}
+                <div class="form-errors" role="alert" aria-atomic="true">{{ search_form.origin.errors }}</div>
+              {% endif %}
+            </div>
             <button class="button button--secondary" type="submit">Apply filters</button>
           </fieldset>
         </details>
       </form>
+
+      {% if workspace_back_to_dashboard_url %}
+        <a class="return-link" href="{{ workspace_back_to_dashboard_url }}">Back to Dashboard</a>
+      {% endif %}
 
       {% include "catalog/_product_results.html" %}
     {% endif %}
