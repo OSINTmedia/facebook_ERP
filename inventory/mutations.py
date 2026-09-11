@@ -22,6 +22,13 @@ class ChoiceQuantityInitializationResult:
     is_available: bool
 
 
+@dataclass(frozen=True, slots=True)
+class ChoiceQuantitySetResult:
+    choice: ProductChoice
+    adjustment: InventoryAdjustment | None
+    is_available: bool
+
+
 def _validate_storable_choice_quantity(quantity):
     """Reject values outside the configured database field range."""
     quantity_field = ProductChoice._meta.get_field("quantity")
@@ -74,6 +81,7 @@ def apply_choice_quantity_delta(*, business, choice, actor, delta):
             quantity_before=quantity_before,
             quantity_after=quantity_after,
             delta=delta,
+            mutation_kind=InventoryAdjustment.MutationKind.CHANGE,
         )
         is_available = compute_product_availability(
             business=business,
@@ -134,6 +142,7 @@ def initialize_choice_quantity(*, business, choice, actor, quantity):
             quantity_before=0,
             quantity_after=quantity,
             delta=quantity,
+            mutation_kind=InventoryAdjustment.MutationKind.CHANGE,
         )
         is_available = compute_product_availability(
             business=business,
@@ -141,6 +150,61 @@ def initialize_choice_quantity(*, business, choice, actor, quantity):
         )
 
     return ChoiceQuantityInitializationResult(
+        choice=locked_choice,
+        adjustment=adjustment,
+        is_available=is_available,
+    )
+
+
+def set_choice_quantity(*, business, choice, actor, quantity):
+    """Atomically set one exact choice quantity and record a real transition."""
+    if business is None or business.pk is None:
+        raise ValueError("An existing Business is required.")
+    if choice is None or choice.pk is None:
+        raise ValueError("An existing ProductChoice is required.")
+    if actor is None or actor.pk is None:
+        raise ValueError("An authenticated actor is required.")
+    if type(quantity) is not int or quantity < 0:
+        raise ValidationError("Set quantity must be a nonnegative integer.")
+    if choice.business_id != business.pk:
+        raise ValidationError("Choice must belong to the active Business.")
+    if business.owner_id != actor.pk:
+        raise ValidationError("Actor must own the active Business.")
+    _validate_storable_choice_quantity(quantity)
+
+    with transaction.atomic():
+        try:
+            locked_choice = (
+                ProductChoice.objects.select_for_update()
+                .select_related("product")
+                .get(pk=choice.pk, business=business)
+            )
+        except ProductChoice.DoesNotExist as error:
+            raise ValidationError(
+                "Choice must belong to the active Business."
+            ) from error
+
+        quantity_before = locked_choice.quantity
+        adjustment = None
+        if quantity != quantity_before:
+            locked_choice.quantity = quantity
+            locked_choice.save(update_fields=["quantity", "updated_at"])
+            adjustment = InventoryAdjustment.objects.create(
+                business=business,
+                choice=locked_choice,
+                actor=actor,
+                quantity_before=quantity_before,
+                quantity_after=quantity,
+                delta=quantity - quantity_before,
+                mutation_kind=InventoryAdjustment.MutationKind.SET,
+            )
+
+        is_available = compute_product_availability(
+            business=business,
+            product=locked_choice.product,
+        )
+
+    return ChoiceQuantitySetResult(
         choice=locked_choice,
         adjustment=adjustment,
         is_available=is_available,

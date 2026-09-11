@@ -43,6 +43,10 @@ class InventoryAdjustmentQuerySet(models.QuerySet):
 
 
 class InventoryAdjustment(models.Model):
+    class MutationKind(models.TextChoices):
+        CHANGE = "change", "Stock change"
+        SET = "set", "Set"
+
     business = models.ForeignKey(
         Business,
         on_delete=models.PROTECT,
@@ -61,6 +65,11 @@ class InventoryAdjustment(models.Model):
     quantity_before = models.PositiveIntegerField()
     quantity_after = models.PositiveIntegerField()
     delta = models.IntegerField()
+    mutation_kind = models.CharField(
+        max_length=16,
+        choices=MutationKind.choices,
+        default=MutationKind.CHANGE,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = InventoryAdjustmentQuerySet.as_manager()
@@ -85,6 +94,12 @@ class InventoryAdjustment(models.Model):
                     quantity_after=models.F("quantity_before") + models.F("delta")
                 ),
                 name="inventory_adjustment_quantity_consistent",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    mutation_kind__in=("change", "set")
+                ),
+                name="inventory_adjustment_mutation_kind_valid",
             ),
         ]
 

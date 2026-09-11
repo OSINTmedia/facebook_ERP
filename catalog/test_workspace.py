@@ -2141,10 +2141,10 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(
             response,
             f'action="{active_url}"',
-            count=1,
+            count=2,
         )
         self.assertContains(response, 'method="post"')
-        self.assertContains(response, 'name="csrfmiddlewaretoken"', count=2)
+        self.assertContains(response, 'name="csrfmiddlewaretoken"', count=3)
         self.assertContains(response, f'name="next" value="{self.url}"')
         self.assertContains(response, 'name="delta"', count=2)
         self.assertContains(response, 'value="-1"')
@@ -2153,17 +2153,17 @@ class ProductWorkspaceViewTests(TestCase):
             response,
             'name="response_scope" value="workspace"',
         )
-        self.assertContains(response, f'hx-post="{active_url}"', count=2)
+        self.assertContains(response, f'hx-post="{active_url}"', count=3)
         self.assertContains(
             response,
             'hx-target="#product-workspace-results"',
-            count=2,
+            count=3,
         )
-        self.assertContains(response, 'hx-swap="outerHTML"', count=2)
+        self.assertContains(response, 'hx-swap="outerHTML"', count=3)
         self.assertContains(
             response,
             'hx-sync="#product-workspace-results:drop"',
-            count=2,
+            count=3,
         )
         self.assertContains(response, "js/product_workspace.js")
         self.assertContains(response, "Refresh results")
@@ -2175,6 +2175,11 @@ class ProductWorkspaceViewTests(TestCase):
             response,
             f"Increase stock for Choice #{active_choice.pk}, size M, color Black",
         )
+        self.assertContains(
+            response,
+            f"Set exact stock for Choice #{active_choice.pk}, size M, color Black",
+        )
+        self.assertContains(response, 'name="quantity"', count=1)
         self.assertNotContains(response, f'action="{inactive_url}"')
         self.assertContains(response, "1 inactive")
 
@@ -2413,3 +2418,119 @@ class ProductWorkspaceViewTests(TestCase):
             count=1,
         )
         self.assertNotContains(response, "Manage product vocabulary")
+
+
+class ProductWorkspaceDirectSetTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="workspace-direct-set@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="workspace-direct-set-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Workspace Direct Set Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Workspace Direct Set Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="Workspace direct set trousers",
+            description="Workspace direct set product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        size = BusinessSize.objects.create(business=self.business, name="M")
+        color = BusinessColor.objects.create(
+            business=self.business,
+            name="Black",
+        )
+        self.choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=size,
+            color=color,
+            quantity=3,
+        )
+        self.duplicate = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=size,
+            color=color,
+            quantity=6,
+        )
+        private_product = Product.objects.create(
+            business=self.other_business,
+            name="Private workspace direct set product",
+            description="Private workspace direct set product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        private_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="M",
+        )
+        private_color = BusinessColor.objects.create(
+            business=self.other_business,
+            name="Black",
+        )
+        self.private_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=private_product,
+            size=private_size,
+            color=private_color,
+            quantity=9,
+        )
+        self.url = reverse("catalog:product_list")
+
+    def test_direct_set_is_subordinate_and_targets_each_exact_choice(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        for choice in (self.choice, self.duplicate):
+            self.assertContains(
+                response,
+                f"Set exact stock for Choice #{choice.pk}, size M, color Black",
+            )
+            self.assertContains(
+                response,
+                f'id="workspace-stock-set-input-{choice.pk}"',
+            )
+            self.assertContains(
+                response,
+                f'id="workspace-stock-set-submit-{choice.pk}"',
+            )
+            self.assertLess(
+                content.index(f'id="workspace-stock-increase-{choice.pk}"'),
+                content.index(f'id="workspace-stock-set-submit-{choice.pk}"'),
+            )
+        self.assertContains(response, 'name="quantity"', count=2)
+        self.assertContains(response, 'min="0"', count=2)
+        self.assertContains(response, 'step="1"', count=2)
+        self.assertNotContains(
+            response,
+            f'id="workspace-stock-set-input-{self.private_choice.pk}"',
+        )
+
+    def test_inactive_choice_has_no_direct_set_control(self):
+        self.duplicate.is_active = False
+        self.duplicate.save(update_fields=["is_active", "updated_at"])
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertContains(
+            response,
+            f'id="workspace-stock-set-input-{self.choice.pk}"',
+        )
+        self.assertNotContains(
+            response,
+            f'id="workspace-stock-set-input-{self.duplicate.pk}"',
+        )

@@ -65,7 +65,7 @@
     <ul class="product-list" aria-label="Products">
       {% for card in product_cards %}
         <li class="product-list__item">
-          {% include "catalog/_product_card.html" with card=card workspace_return_url=workspace_return_url csrf_token=csrf_token workspace_stock_choice_id=workspace_stock_choice_id workspace_stock_feedback=workspace_stock_feedback workspace_stock_error=workspace_stock_error only %}
+          {% include "catalog/_product_card.html" with card=card workspace_return_url=workspace_return_url csrf_token=csrf_token workspace_stock_choice_id=workspace_stock_choice_id workspace_stock_feedback=workspace_stock_feedback workspace_stock_error=workspace_stock_error workspace_stock_action=workspace_stock_action only %}
         </li>
       {% endfor %}
     </ul>

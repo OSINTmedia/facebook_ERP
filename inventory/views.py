@@ -13,7 +13,7 @@ from catalog.workspace import (
     ProductWorkspaceState,
     build_product_workspace_context,
 )
-from inventory.mutations import apply_choice_quantity_delta
+from inventory.mutations import apply_choice_quantity_delta, set_choice_quantity
 
 
 WORKSPACE_STOCK_RESPONSE_SCOPE = "workspace"
@@ -88,6 +88,7 @@ def render_workspace_stock_results(
     is_available=None,
     stock_feedback=None,
     stock_error=None,
+    stock_action=None,
 ):
     context = build_product_workspace_context(
         state=workspace_state,
@@ -122,6 +123,7 @@ def render_workspace_stock_results(
             "workspace_stock_choice_is_visible": choice_is_visible,
             "workspace_stock_feedback": stock_feedback,
             "workspace_stock_error": stock_error,
+            "workspace_stock_action": stock_action,
             "workspace_stock_membership_changed": membership_changed,
         }
     )
@@ -167,34 +169,46 @@ class ChoiceStockMutationView(LoginRequiredMixin, View):
             pk=choice_pk,
             business=business,
         )
-        delta = {"1": 1, "-1": -1}.get(request.POST.get("delta"))
-        if delta is None:
-            error_message = "Stock adjustment must be +1 or -1."
-            if request.htmx:
-                if workspace_state is not None:
-                    return render_workspace_stock_results(
-                        request,
-                        business=business,
-                        workspace_state=workspace_state,
-                        choice=choice,
-                        stock_error=error_message,
-                    )
-                return render_choice_stock_controls(
-                    request,
-                    choice=choice,
-                    return_url=return_url,
-                    stock_error=error_message,
-                )
-            messages.error(request, error_message)
-            return redirect(return_url)
-
+        stock_action = None
         try:
-            result = apply_choice_quantity_delta(
-                business=business,
-                choice=choice,
-                actor=request.user,
-                delta=delta,
-            )
+            submitted_deltas = request.POST.getlist("delta")
+            submitted_quantities = request.POST.getlist("quantity")
+            if (
+                len(submitted_deltas) + len(submitted_quantities) != 1
+                or bool(submitted_deltas) == bool(submitted_quantities)
+            ):
+                raise ValidationError("Choose exactly one stock action.")
+
+            if submitted_deltas:
+                stock_action = "delta"
+                delta = {"1": 1, "-1": -1}.get(submitted_deltas[0])
+                if delta is None:
+                    raise ValidationError("Stock adjustment must be +1 or -1.")
+                result = apply_choice_quantity_delta(
+                    business=business,
+                    choice=choice,
+                    actor=request.user,
+                    delta=delta,
+                )
+            else:
+                stock_action = "set"
+                quantity_text = submitted_quantities[0]
+                if not quantity_text.isascii() or not quantity_text.isdecimal():
+                    raise ValidationError(
+                        "Set quantity must be a nonnegative integer."
+                    )
+                try:
+                    quantity = int(quantity_text)
+                except ValueError as error:
+                    raise ValidationError(
+                        "Set quantity must be a nonnegative integer."
+                    ) from error
+                result = set_choice_quantity(
+                    business=business,
+                    choice=choice,
+                    actor=request.user,
+                    quantity=quantity,
+                )
         except ValidationError as error:
             error_message = " ".join(error.messages)
             if request.htmx:
@@ -205,6 +219,7 @@ class ChoiceStockMutationView(LoginRequiredMixin, View):
                         workspace_state=workspace_state,
                         choice=choice,
                         stock_error=error_message,
+                        stock_action=stock_action,
                     )
                 return render_choice_stock_controls(
                     request,
@@ -215,7 +230,17 @@ class ChoiceStockMutationView(LoginRequiredMixin, View):
             messages.error(request, error_message)
             return redirect(return_url)
 
-        feedback = f"Stock updated to {result.choice.quantity}."
+        if stock_action == "set":
+            feedback = (
+                f"Stock set to {result.choice.quantity}."
+                if result.adjustment is not None
+                else (
+                    f"Stock is already {result.choice.quantity}; "
+                    "no adjustment was recorded."
+                )
+            )
+        else:
+            feedback = f"Stock updated to {result.choice.quantity}."
         if request.htmx:
             if workspace_state is not None:
                 return render_workspace_stock_results(
@@ -225,6 +250,7 @@ class ChoiceStockMutationView(LoginRequiredMixin, View):
                     choice=result.choice,
                     is_available=result.is_available,
                     stock_feedback=feedback,
+                    stock_action=stock_action,
                 )
             return render_choice_stock_controls(
                 request,

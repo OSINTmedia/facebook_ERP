@@ -694,3 +694,15 @@ Verification: 59 focused reply/Workspace tests, 9 neighboring readiness tests, a
 Release: READY.
 
 Next on Git PASS: P10.1 Secondary Direct Stock Set.
+
+### 2026-09-11 - P10.1 Secondary Direct Stock Set
+
+Code status: PASS.
+
+Product Workspace now provides a subordinate exact-quantity control for each active ProductChoice. Direct sets use the existing Business-scoped, concurrency-safe inventory transaction and immutable ledger, preserve exact duplicate-looking row identity, create no ledger entry for a no-op, and refresh server-owned availability, readiness, Workspace membership, and Ready Reply truth.
+
+Adversarial stabilization reduced mutation kinds to truthful `change`/`set` semantics so existing adjustments are not misclassified. Final-suite recovery updated one stale pre-P10.1 rendering expectation without changing behavior. Verification: 520 PostgreSQL tests passed; Django system and migration consistency checks passed. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: P10.2 Add Similar.

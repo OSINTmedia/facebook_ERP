@@ -28,6 +28,7 @@ from inventory.models import InventoryAdjustment
 from inventory.mutations import (
     apply_choice_quantity_delta,
     initialize_choice_quantity,
+    set_choice_quantity,
 )
 
 
@@ -1785,3 +1786,457 @@ class InventoryMutationConcurrencyTests(TransactionTestCase):
         self.assertEqual(adjustments[0].quantity_before, 1)
         self.assertEqual(adjustments[0].quantity_after, 0)
         self.assertEqual(adjustments[0].delta, -1)
+
+
+class InventoryDirectSetMutationTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="direct-set-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="direct-set-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Direct Set Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Direct Set Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="Direct set trousers",
+            description="Direct set test product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        other_product = Product.objects.create(
+            business=self.other_business,
+            name="Other direct set trousers",
+            description="Other direct set test product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        self.size = BusinessSize.objects.create(
+            business=self.business,
+            name="M",
+        )
+        self.color = BusinessColor.objects.create(
+            business=self.business,
+            name="Black",
+        )
+        other_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="M",
+        )
+        other_color = BusinessColor.objects.create(
+            business=self.other_business,
+            name="Black",
+        )
+        self.choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=3,
+        )
+        self.other_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=other_product,
+            size=other_size,
+            color=other_color,
+            quantity=5,
+        )
+
+    def set_quantity(self, quantity, **overrides):
+        values = {
+            "business": self.business,
+            "choice": self.choice,
+            "actor": self.owner,
+            "quantity": quantity,
+        }
+        values.update(overrides)
+        return set_choice_quantity(**values)
+
+    def test_real_sets_record_exact_transitions_and_availability(self):
+        higher = self.set_quantity(7)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 7)
+        self.assertTrue(higher.is_available)
+        self.assertEqual(higher.adjustment.quantity_before, 3)
+        self.assertEqual(higher.adjustment.quantity_after, 7)
+        self.assertEqual(higher.adjustment.delta, 4)
+        self.assertEqual(
+            higher.adjustment.mutation_kind,
+            InventoryAdjustment.MutationKind.SET,
+        )
+
+        zero = self.set_quantity(0)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertFalse(zero.is_available)
+        self.assertEqual(zero.adjustment.quantity_before, 7)
+        self.assertEqual(zero.adjustment.quantity_after, 0)
+        self.assertEqual(zero.adjustment.delta, -7)
+        self.assertEqual(
+            zero.adjustment.mutation_kind,
+            InventoryAdjustment.MutationKind.SET,
+        )
+        self.assertEqual(InventoryAdjustment.objects.count(), 2)
+
+    def test_set_to_current_is_noop_without_ledger_fact(self):
+        result = self.set_quantity(3)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(result.choice.quantity, 3)
+        self.assertIsNone(result.adjustment)
+        self.assertTrue(result.is_available)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_invalid_and_overflow_values_write_nothing(self):
+        for quantity in (-1, True, 1.0, "4", None):
+            with self.subTest(quantity=quantity):
+                with self.assertRaisesMessage(
+                    ValidationError,
+                    "Set quantity must be a nonnegative integer.",
+                ):
+                    self.set_quantity(quantity)
+
+        maximum = maximum_choice_quantity()
+        with self.assertRaisesMessage(
+            ValidationError,
+            f"Choice quantity cannot exceed {maximum}.",
+        ):
+            self.set_quantity(maximum + 1)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 3)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_business_actor_and_saved_choice_guards_write_nothing(self):
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Choice must belong to the active Business.",
+        ):
+            self.set_quantity(6, choice=self.other_choice)
+        with self.assertRaisesMessage(
+            ValidationError,
+            "Actor must own the active Business.",
+        ):
+            self.set_quantity(6, actor=self.other_owner)
+        with self.assertRaisesMessage(
+            ValueError,
+            "An existing ProductChoice is required.",
+        ):
+            self.set_quantity(
+                6,
+                choice=ProductChoice(
+                    business=self.business,
+                    product=self.product,
+                    size=self.size,
+                    color=self.color,
+                    quantity=3,
+                ),
+            )
+
+        self.choice.refresh_from_db()
+        self.other_choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 3)
+        self.assertEqual(self.other_choice.quantity, 5)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_duplicate_looking_choice_is_not_mutated(self):
+        duplicate = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=self.size,
+            color=self.color,
+            quantity=9,
+        )
+
+        result = self.set_quantity(6)
+
+        self.choice.refresh_from_db()
+        duplicate.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 6)
+        self.assertEqual(duplicate.quantity, 9)
+        self.assertEqual(result.adjustment.choice, self.choice)
+        self.assertFalse(duplicate.inventory_adjustments.exists())
+
+    def test_ledger_failure_rolls_back_set(self):
+        with patch(
+            "inventory.mutations.InventoryAdjustment.objects.create",
+            side_effect=IntegrityError("ledger write failed"),
+        ):
+            with self.assertRaises(IntegrityError):
+                self.set_quantity(8)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 3)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+
+class InventoryDirectSetRouteTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="direct-set-route@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="direct-set-route-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Direct Set Route Studio",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Direct Set Route Studio",
+        )
+        self.product = Product.objects.create(
+            business=self.business,
+            name="Route direct set trousers",
+            description="Route direct set product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        size = BusinessSize.objects.create(business=self.business, name="M")
+        color = BusinessColor.objects.create(
+            business=self.business,
+            name="Black",
+        )
+        self.choice = ProductChoice.objects.create(
+            business=self.business,
+            product=self.product,
+            size=size,
+            color=color,
+            quantity=3,
+        )
+        other_product = Product.objects.create(
+            business=self.other_business,
+            name="Private direct set product",
+            description="Private direct set product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        other_size = BusinessSize.objects.create(
+            business=self.other_business,
+            name="M",
+        )
+        other_color = BusinessColor.objects.create(
+            business=self.other_business,
+            name="Black",
+        )
+        self.other_choice = ProductChoice.objects.create(
+            business=self.other_business,
+            product=other_product,
+            size=other_size,
+            color=other_color,
+            quantity=4,
+        )
+        self.url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": self.choice.pk},
+        )
+        self.workspace_url = reverse("catalog:product_list")
+
+    def test_native_set_uses_safe_return_and_exact_set_ledger(self):
+        self.client.force_login(self.owner)
+        return_url = f"{self.workspace_url}?availability=available"
+
+        response = self.client.post(
+            self.url,
+            {"quantity": "8", "next": return_url},
+        )
+
+        self.assertRedirects(response, return_url, fetch_redirect_response=False)
+        self.choice.refresh_from_db()
+        adjustment = InventoryAdjustment.objects.get()
+        self.assertEqual(self.choice.quantity, 8)
+        self.assertEqual(adjustment.quantity_before, 3)
+        self.assertEqual(adjustment.quantity_after, 8)
+        self.assertEqual(adjustment.delta, 5)
+        self.assertEqual(
+            adjustment.mutation_kind,
+            InventoryAdjustment.MutationKind.SET,
+        )
+
+    def test_workspace_htmx_set_zero_refreshes_authoritative_truth(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                "quantity": "0",
+                "next": self.workspace_url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_product_results.html")
+        self.assertContains(response, "Stock set to 0.")
+        self.assertContains(response, "Sold out")
+        self.assertContains(response, "1 active · 0 total stock")
+        self.assertContains(
+            response,
+            f'data-workspace-focus-choice-id="{self.choice.pk}"',
+        )
+        self.assertContains(response, 'class="product-card__stock-set"')
+        self.assertContains(response, "open")
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 0)
+        self.assertEqual(InventoryAdjustment.objects.count(), 1)
+
+    def test_workspace_htmx_current_set_reports_noop_without_write(self):
+        self.client.force_login(self.owner)
+
+        response = self.client.post(
+            self.url,
+            {
+                "quantity": "3",
+                "next": self.workspace_url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            "Stock is already 3; no adjustment was recorded.",
+        )
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 3)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_invalid_ambiguous_and_overflow_sets_write_nothing(self):
+        self.client.force_login(self.owner)
+        invalid_payloads = [
+            {"quantity": ""},
+            {"quantity": "-1"},
+            {"quantity": "1.5"},
+            {"quantity": "invalid"},
+            {"quantity": str(maximum_choice_quantity() + 1)},
+            {"quantity": "4", "delta": "1"},
+        ]
+
+        for payload in invalid_payloads:
+            with self.subTest(payload=payload):
+                response = self.client.post(
+                    self.url,
+                    {
+                        **payload,
+                        "next": self.workspace_url,
+                        "response_scope": "workspace",
+                    },
+                    HTTP_HX_REQUEST="true",
+                )
+                self.assertEqual(response.status_code, 200)
+
+        self.choice.refresh_from_db()
+        self.assertEqual(self.choice.quantity, 3)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+    def test_cross_business_set_returns_not_found_without_write(self):
+        self.client.force_login(self.owner)
+        private_url = reverse(
+            "inventory:choice_stock_adjust",
+            kwargs={"choice_pk": self.other_choice.pk},
+        )
+
+        response = self.client.post(private_url, {"quantity": "0"})
+
+        self.assertEqual(response.status_code, 404)
+        self.other_choice.refresh_from_db()
+        self.assertEqual(self.other_choice.quantity, 4)
+        self.assertFalse(InventoryAdjustment.objects.exists())
+
+
+class InventoryDirectSetConcurrencyTests(TransactionTestCase):
+    reset_sequences = True
+
+    def setUp(self):
+        executor = MigrationExecutor(connection)
+        executor.migrate(executor.loader.graph.leaf_nodes())
+
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="direct-set-concurrency@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Direct Set Concurrency Studio",
+        )
+        product = Product.objects.create(
+            business=self.business,
+            name="Concurrent direct set trousers",
+            description="Concurrent direct set product.",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        size = BusinessSize.objects.create(business=self.business, name="M")
+        color = BusinessColor.objects.create(
+            business=self.business,
+            name="Black",
+        )
+        self.choice = ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=size,
+            color=color,
+            quantity=1,
+        )
+
+    def test_concurrent_set_and_increment_serialize_without_lost_update(self):
+        start = Barrier(2)
+
+        def mutate(kind):
+            close_old_connections()
+            try:
+                business = Business.objects.get(pk=self.business.pk)
+                choice = ProductChoice.objects.get(pk=self.choice.pk)
+                actor = get_user_model().objects.get(pk=self.owner.pk)
+                start.wait(timeout=5)
+                if kind == "set":
+                    return set_choice_quantity(
+                        business=business,
+                        choice=choice,
+                        actor=actor,
+                        quantity=7,
+                    ).adjustment.pk
+                return apply_choice_quantity_delta(
+                    business=business,
+                    choice=choice,
+                    actor=actor,
+                    delta=1,
+                ).adjustment.pk
+            finally:
+                close_old_connections()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            adjustment_ids = list(executor.map(mutate, ("set", "delta")))
+
+        self.choice.refresh_from_db()
+        adjustments = list(InventoryAdjustment.objects.order_by("pk"))
+        self.assertEqual(len(set(adjustment_ids)), 2)
+        self.assertEqual(len(adjustments), 2)
+        self.assertEqual(adjustments[0].quantity_before, 1)
+        self.assertEqual(
+            adjustments[1].quantity_before,
+            adjustments[0].quantity_after,
+        )
+        self.assertEqual(self.choice.quantity, adjustments[1].quantity_after)
+        self.assertIn(self.choice.quantity, (7, 8))
+        self.assertEqual(
+            {adjustment.mutation_kind for adjustment in adjustments},
+            {
+                InventoryAdjustment.MutationKind.CHANGE,
+                InventoryAdjustment.MutationKind.SET,
+            },
+        )

@@ -730,6 +730,35 @@ h1 {
   cursor: pointer;
 }
 
+.product-card__stock-set {
+  grid-column: 1 / -1;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.product-card__stock-set summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.product-card__stock-set-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: end;
+  margin-top: 0.5rem;
+}
+
+.product-card__stock-set-form label {
+  flex-basis: 100%;
+  font-weight: 700;
+}
+
+.product-card__stock-set-form input {
+  width: min(9rem, 45vw);
+}
+
 .product-card__stock-loading,
 .product-card__stock-feedback,
 .product-card__stock-error {
