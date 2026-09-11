@@ -26,6 +26,13 @@
       : null;
   };
 
+  const readyReplyControl = (event) => {
+    const element = event.detail?.elt;
+    return element?.matches?.("[data-ready-reply-trigger]")
+      ? element
+      : null;
+  };
+
   const currentResults = () =>
     document.getElementById("product-workspace-results");
 
@@ -104,19 +111,83 @@
     pendingControlId = null;
   };
 
-  document.body.addEventListener("htmx:beforeRequest", (event) => {
-    const control = workspaceControl(event);
+  const readyReplyError = (control) => {
+    const productId = control?.id?.replace("product-ready-reply-trigger-", "");
+    return productId
+      ? document.getElementById(`product-ready-reply-error-${productId}`)
+      : null;
+  };
+
+  const readyReplySlot = (control) => {
+    const targetSelector = control?.getAttribute("hx-target");
+    return targetSelector ? document.querySelector(targetSelector) : null;
+  };
+
+  const hideReadyReplyTransportRecovery = (control) => {
+    control.setAttribute("aria-expanded", "false");
+    readyReplySlot(control)?.replaceChildren();
+    const error = readyReplyError(control);
+    if (error) {
+      error.hidden = true;
+    }
+  };
+
+  const showReadyReplyTransportRecovery = (control) => {
     if (!control) {
       return;
     }
-    pendingControlId = control.id;
-    hideTransportRecovery();
-    setWorkspaceActionBusy(control, true);
-    currentResults()?.setAttribute("aria-busy", "true");
+    control.setAttribute("aria-expanded", "false");
+    readyReplySlot(control)?.replaceChildren();
+    const error = readyReplyError(control);
+    if (error) {
+      error.hidden = false;
+      error.focus();
+    }
+  };
+
+  const closeReadyReply = (panel) => {
+    const slot = panel?.closest("[data-ready-reply-slot]");
+    const trigger = slot
+      ? document.getElementById(slot.dataset.readyReplyTriggerId)
+      : null;
+    slot?.replaceChildren();
+    trigger?.setAttribute("aria-expanded", "false");
+    trigger?.focus();
+  };
+
+  document.body.addEventListener("htmx:beforeRequest", (event) => {
+    const control = workspaceControl(event);
+    if (control) {
+      pendingControlId = control.id;
+      hideTransportRecovery();
+      setWorkspaceActionBusy(control, true);
+      currentResults()?.setAttribute("aria-busy", "true");
+      return;
+    }
+
+    const replyControl = readyReplyControl(event);
+    if (replyControl) {
+      hideReadyReplyTransportRecovery(replyControl);
+    }
   });
 
   document.body.addEventListener("htmx:afterSwap", (event) => {
-    if (event.detail?.target?.id !== "product-workspace-results") {
+    const target = event.detail?.target;
+    if (target?.matches?.("[data-ready-reply-slot]")) {
+      const trigger = document.getElementById(
+        target.dataset.readyReplyTriggerId,
+      );
+      const panel = target.querySelector("[data-ready-reply-panel]");
+      if (!panel) {
+        showReadyReplyTransportRecovery(trigger);
+        return;
+      }
+      trigger?.setAttribute("aria-expanded", "true");
+      panel.focus();
+      return;
+    }
+
+    if (target?.id !== "product-workspace-results") {
       return;
     }
 
@@ -136,6 +207,10 @@
     if (workspaceControl(event) && event.detail?.successful === false) {
       showTransportRecovery();
     }
+    const replyControl = readyReplyControl(event);
+    if (replyControl && event.detail?.successful === false) {
+      showReadyReplyTransportRecovery(replyControl);
+    }
   });
 
   for (const eventName of ["htmx:sendError", "htmx:timeout", "htmx:swapError"]) {
@@ -143,8 +218,62 @@
       if (workspaceControl(event)) {
         showTransportRecovery();
       }
+      const replyControl = readyReplyControl(event);
+      if (replyControl) {
+        showReadyReplyTransportRecovery(replyControl);
+      }
     });
   }
+
+  document.body.addEventListener("click", async (event) => {
+    const closeButton = event.target.closest?.("[data-ready-reply-close]");
+    if (closeButton) {
+      closeReadyReply(closeButton.closest("[data-ready-reply-panel]"));
+      return;
+    }
+
+    const copyButton = event.target.closest?.("[data-ready-reply-copy]");
+    if (!copyButton) {
+      return;
+    }
+    const panel = copyButton.closest("[data-ready-reply-panel]");
+    const copyText = document.getElementById(
+      copyButton.dataset.readyReplyCopyTarget,
+    );
+    const status = panel?.querySelector("[data-ready-reply-copy-status]");
+    if (!copyText || !status) {
+      return;
+    }
+
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API unavailable");
+      }
+      await navigator.clipboard.writeText(copyText.value);
+      status.setAttribute("role", "status");
+      status.textContent = "Reply copied.";
+      status.hidden = false;
+    } catch (_error) {
+      status.setAttribute("role", "alert");
+      status.textContent = "Copy failed. Select the buyer-facing text and copy it manually.";
+      status.hidden = false;
+      copyText.focus();
+      copyText.select();
+    }
+  });
+
+  document.body.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") {
+      return;
+    }
+    const panel = document.activeElement?.closest?.(
+      "[data-ready-reply-panel]",
+    );
+    if (panel) {
+      event.preventDefault();
+      closeReadyReply(panel);
+    }
+  });
 
   syncWorkspaceFormAccessibility();
 })();

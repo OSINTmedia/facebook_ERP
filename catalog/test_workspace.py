@@ -1722,6 +1722,13 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertIn("button.disabled = true", workspace_script)
         self.assertIn("button.disabled = false", workspace_script)
         self.assertIn('button.setAttribute("aria-disabled", "true")', workspace_script)
+        self.assertIn("readyReplyControl", workspace_script)
+        self.assertIn('trigger?.setAttribute("aria-expanded", "true")', workspace_script)
+        self.assertIn("readyReplySlot(control)?.replaceChildren()", workspace_script)
+        self.assertIn("if (!panel)", workspace_script)
+        self.assertIn("navigator.clipboard?.writeText", workspace_script)
+        self.assertIn("copyText.select()", workspace_script)
+        self.assertIn("closeReadyReply(panel)", workspace_script)
         self.assertIn(".product-workspace :is(", workspace_styles)
         self.assertIn(".product-workspace .button[aria-disabled=\"true\"]", workspace_styles)
 
@@ -1882,7 +1889,9 @@ class ProductWorkspaceViewTests(TestCase):
             ),
         )
         self.assertContains(response, 'aria-label="Edit Black trousers"')
-        self.assertNotContains(response, "Ready reply")
+        self.assertContains(response, "Ready Reply")
+        self.assertContains(response, "data-ready-reply-trigger")
+        self.assertNotContains(response, "data-ready-reply-panel")
         rendered = response.content.decode()
         card_markup = rendered[rendered.index('<article class="product-card"') :]
         self.assertLess(
@@ -1892,6 +1901,137 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertLess(
             card_markup.index("Lifecycle"),
             card_markup.index(product.description),
+        )
+
+    def test_ready_reply_panel_requires_authentication_and_business_ownership(self):
+        owned_product, _choice = self.create_product_with_choice()
+        foreign_product = Product.objects.create(
+            business=self.other_business,
+            name="Private reply product",
+            description="Private reply truth.",
+        )
+        owned_url = reverse(
+            "catalog:product_ready_reply",
+            kwargs={"pk": owned_product.pk},
+        )
+        foreign_url = reverse(
+            "catalog:product_ready_reply",
+            kwargs={"pk": foreign_product.pk},
+        )
+
+        anonymous_response = self.client.get(owned_url)
+
+        self.assertRedirects(
+            anonymous_response,
+            f"{reverse('accounts:login')}?next={owned_url}",
+        )
+
+        self.client.force_login(self.owner)
+        foreign_response = self.client.get(foreign_url)
+
+        self.assertEqual(foreign_response.status_code, 404)
+        self.assertNotContains(
+            foreign_response,
+            "Private reply truth.",
+            status_code=404,
+        )
+
+    def test_ready_reply_panel_separates_copy_text_notes_and_safe_return(self):
+        product, _choice = self.create_product_with_choice(
+            name="Incomplete reply product",
+        )
+        panel_url = reverse(
+            "catalog:product_ready_reply",
+            kwargs={"pk": product.pk},
+        )
+        return_url = f"{self.url}?q=workspace&lifecycle=active"
+        self.client.force_login(self.owner)
+
+        response = self.client.get(panel_url, {"next": return_url})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "catalog/_ready_reply_panel.html")
+        self.assertEqual(response.headers["Cache-Control"], "private, no-store")
+        self.assertContains(response, "data-ready-reply-panel")
+        self.assertContains(response, "data-ready-reply-text")
+        self.assertContains(response, "data-ready-reply-copy")
+        self.assertContains(response, "Before sending")
+        self.assertContains(response, "ფასი აკლია")
+        self.assertContains(
+            response,
+            (
+                "focus=price&amp;next=%2Fproducts%2F%3Fq%3Dworkspace"
+                "%26lifecycle%3Dactive#id_price"
+            ),
+        )
+
+        rendered = response.content.decode()
+        copy_start = rendered.index("<textarea")
+        copy_end = rendered.index("</textarea>", copy_start)
+        copy_markup = rendered[copy_start:copy_end]
+        for note in response.context["ready_reply"].seller_notes:
+            self.assertNotIn(note.text, copy_markup)
+
+    def test_ready_reply_panel_renders_complete_partial_and_sold_out_truth(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Trousers",
+        )
+        product, stocked_choice = self.create_product_with_choice(
+            name="Reply states",
+            quantity=2,
+            price=Decimal("49.90"),
+        )
+        product.product_type = product_type
+        product.save(update_fields=["product_type", "updated_at"])
+        ProductMaterialFact.objects.create(
+            business=self.business,
+            product=product,
+            canonical_material="Cotton",
+            original_text="cotton",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+        panel_url = reverse(
+            "catalog:product_ready_reply",
+            kwargs={"pk": product.pk},
+        )
+        self.client.force_login(self.owner)
+
+        complete_response = self.client.get(panel_url, {"next": self.url})
+
+        self.assertContains(
+            complete_response,
+            "ხელმისაწვდომობა: მარაგშია.",
+        )
+        self.assertNotContains(complete_response, "Before sending")
+
+        size_l = BusinessSize.objects.create(
+            business=self.business,
+            name="L",
+        )
+        ProductChoice.objects.create(
+            business=self.business,
+            product=product,
+            size=size_l,
+            color=stocked_choice.color,
+            quantity=0,
+        )
+
+        partial_response = self.client.get(panel_url, {"next": self.url})
+
+        self.assertContains(
+            partial_response,
+            "ხელმისაწვდომობა: მარაგშია, თუმცა ზოგი არჩევანი ამოწურულია.",
+        )
+
+        stocked_choice.quantity = 0
+        stocked_choice.save(update_fields=["quantity", "updated_at"])
+
+        sold_out_response = self.client.get(panel_url, {"next": self.url})
+
+        self.assertContains(
+            sold_out_response,
+            "ხელმისაწვდომობა: ამოწურულია.",
         )
 
     def test_workspace_missing_price_is_explicit_and_never_free(self):

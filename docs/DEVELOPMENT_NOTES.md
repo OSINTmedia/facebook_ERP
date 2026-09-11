@@ -682,3 +682,15 @@ Adversarial audit repaired centralized availability and readiness so cross-Busin
 Release: READY.
 
 Next on Git PASS: P9.2 On-Demand Workspace Ready Reply UI.
+
+### 2026-09-11 - P9.2 On-Demand Workspace Ready Reply UI
+
+Code status: PASS.
+
+Product Workspace cards now open a Business-scoped, server-rendered Ready Reply panel on seller intent. Buyer-facing copy remains separate from seller-only correction notes, correction links preserve safe Workspace context, and copy failure, HTMX failure, close, Escape, and focus restoration have visible recovery behavior. Adversarial stabilization cleared stale reply content before reload/failure and rejects invalid panel responses without inconsistent expanded state.
+
+Verification: 59 focused reply/Workspace tests, 9 neighboring readiness tests, and 33 post-repair Workspace view tests passed. The full 506-test PostgreSQL suite, Django system and migration consistency checks, JavaScript syntax, and diff/whitespace checks passed. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: P10.1 Secondary Direct Stock Set.

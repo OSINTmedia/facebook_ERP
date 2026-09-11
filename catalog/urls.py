@@ -6,6 +6,7 @@ from catalog.views import (
     ProductListView,
     ProductMediaView,
     ProductUpdateView,
+    ReadyReplyView,
 )
 
 app_name = "catalog"
@@ -22,6 +23,11 @@ urlpatterns = [
         "products/vocabulary/",
         ChoiceVocabularyView.as_view(),
         name="choice_vocabulary",
+    ),
+    path(
+        "products/<int:pk>/ready-reply/",
+        ReadyReplyView.as_view(),
+        name="product_ready_reply",
     ),
     path("products/<int:pk>/edit/", ProductUpdateView.as_view(), name="product_edit"),
 ]

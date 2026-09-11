@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import (
@@ -34,6 +36,7 @@ from catalog.product_media import (
 )
 from catalog.product_bundles import ProductBundle
 from catalog.readiness import CoverageCorrectionTarget
+from catalog.ready_reply import build_product_ready_reply
 from catalog.recognition import recognize_product_preview_for_business
 from catalog.vocabulary import (
     COLOR_VOCABULARY,
@@ -44,6 +47,7 @@ from catalog.vocabulary import (
     update_choice_vocabulary_entry,
 )
 from catalog.workspace import (
+    READINESS_CORRECTIONS,
     ProductWorkspaceState,
     build_product_workspace_context,
 )
@@ -163,6 +167,65 @@ class ProductListView(LoginRequiredMixin, TemplateView):
             )
         )
         return context
+
+
+class ReadyReplyView(LoginRequiredMixin, View):
+    template_name = "catalog/_ready_reply_panel.html"
+
+    def get(self, request, *args, **kwargs):
+        try:
+            business = resolve_active_business(request.user)
+        except MultipleBusinessesUnsupported as exc:
+            raise Http404("Product not found.") from exc
+        if business is None:
+            raise Http404("Product not found.")
+
+        product = get_object_or_404(
+            Product,
+            pk=kwargs["pk"],
+            business=business,
+        )
+        ready_reply = build_product_ready_reply(
+            business=business,
+            product=product,
+        )
+        return_url = get_canonical_product_workspace_return_url(request)
+        seller_notes = []
+        for note in ready_reply.seller_notes:
+            correction_url = ""
+            if note.correction_target is not None:
+                _label, fragment = READINESS_CORRECTIONS[
+                    note.correction_target
+                ]
+                correction_url = (
+                    reverse("catalog:product_edit", kwargs={"pk": product.pk})
+                    + "?"
+                    + urlencode(
+                        {
+                            "focus": note.correction_target.value,
+                            "next": return_url,
+                        }
+                    )
+                    + fragment
+                )
+            seller_notes.append(
+                {
+                    "text": note.text,
+                    "correction_url": correction_url,
+                }
+            )
+
+        response = render(
+            request,
+            self.template_name,
+            {
+                "product": product,
+                "ready_reply": ready_reply,
+                "ready_reply_seller_notes": seller_notes,
+            },
+        )
+        response["Cache-Control"] = "private, no-store"
+        return response
 
 
 class ProductMediaView(LoginRequiredMixin, View):
