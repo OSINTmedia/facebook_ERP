@@ -231,6 +231,18 @@
       href="{% url 'catalog:product_edit' card.product_id %}?next={{ workspace_return_url|urlencode }}"
       aria-label="Edit {{ card.name }}"
     >Edit product</a>
+    <form
+      method="post"
+      action="{% url 'catalog:product_add_similar' card.product_id %}"
+    >
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ workspace_return_url }}">
+      <button
+        class="button button--secondary button--compact"
+        type="submit"
+        aria-label="Add a similar Product from {{ card.name }}"
+      >Add similar</button>
+    </form>
   </footer>
   <p
     id="product-ready-reply-error-{{ card.product_id }}"

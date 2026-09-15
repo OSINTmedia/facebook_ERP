@@ -2,6 +2,7 @@ from django.urls import path
 
 from catalog.views import (
     ChoiceVocabularyView,
+    ProductAddSimilarView,
     ProductCreateView,
     ProductListView,
     ProductMediaView,
@@ -28,6 +29,11 @@ urlpatterns = [
         "products/<int:pk>/ready-reply/",
         ReadyReplyView.as_view(),
         name="product_ready_reply",
+    ),
+    path(
+        "products/<int:pk>/add-similar/",
+        ProductAddSimilarView.as_view(),
+        name="product_add_similar",
     ),
     path("products/<int:pk>/edit/", ProductUpdateView.as_view(), name="product_edit"),
 ]

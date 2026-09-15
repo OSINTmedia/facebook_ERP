@@ -2113,7 +2113,7 @@ class ProductWorkspaceViewTests(TestCase):
 
         response = self.client.get(self.url)
 
-        self.assertContains(response, product.name, count=4)
+        self.assertContains(response, product.name, count=5)
         self.assertNotContains(response, 'class="product-card__description"')
 
     def test_workspace_renders_native_stock_controls_only_for_active_choices(self):
@@ -2144,7 +2144,7 @@ class ProductWorkspaceViewTests(TestCase):
             count=2,
         )
         self.assertContains(response, 'method="post"')
-        self.assertContains(response, 'name="csrfmiddlewaretoken"', count=3)
+        self.assertContains(response, 'name="csrfmiddlewaretoken"', count=4)
         self.assertContains(response, f'name="next" value="{self.url}"')
         self.assertContains(response, 'name="delta"', count=2)
         self.assertContains(response, 'value="-1"')

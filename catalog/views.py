@@ -15,6 +15,7 @@ from django.views import View
 from django.views.generic import TemplateView
 
 from businesses.selectors import MultipleBusinessesUnsupported, resolve_active_business
+from catalog.add_similar import add_similar_product
 from catalog.choice_transfers import append_choice_row, transfer_choice_candidate
 from catalog.forms import (
     ChoiceVocabularyEditForm,
@@ -1062,7 +1063,6 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
                 submit_label="Save changes",
             ),
         )
-
     def post(self, request, *args, **kwargs):
         self.kwargs = kwargs
         self.resolve_business(request)
@@ -1148,3 +1148,26 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
                 submit_label="Save changes",
             ),
         )
+
+
+class ProductAddSimilarView(ProductMutationBusinessMixin, View):
+    def post(self, request, *args, **kwargs):
+        self.resolve_business(request)
+        if self.business_policy_blocked or self.active_business is None:
+            return self.render_business_blocked(request)
+
+        try:
+            product = add_similar_product(
+                business=self.active_business,
+                source_product_id=kwargs["pk"],
+            )
+        except Product.DoesNotExist as error:
+            raise Http404("Product not found.") from error
+
+        return_url = get_canonical_product_workspace_return_url(request)
+        messages.success(
+            request,
+            "Similar Product created as a Draft. Review it before activation.",
+        )
+        edit_url = reverse("catalog:product_edit", args=[product.pk])
+        return redirect(f"{edit_url}?{urlencode({'next': return_url})}")

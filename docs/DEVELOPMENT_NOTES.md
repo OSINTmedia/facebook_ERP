@@ -706,3 +706,15 @@ Adversarial stabilization reduced mutation kinds to truthful `change`/`set` sema
 Release: READY.
 
 Next on Git PASS: P10.2 Add Similar.
+
+### 2026-09-15 - P10.2 Add Similar
+
+Code status: PASS.
+
+Product Workspace now provides an explicit Add Similar action that creates a new Business-scoped Draft with copied confirmed Product truth and active choice structure, new row identities, and zero stock. Source stock/history and media remain unchanged, no destination ledger or media is copied, the command is transaction-atomic, and the seller enters the normal edit flow with validated Workspace return context.
+
+Adversarial audit required no production repair. Final-suite recovery updated two stale Workspace rendering counts for the new accessible action label and CSRF-protected POST form without weakening their original assertions. Verification: 8 focused Add Similar tests, 30 neighboring Product/media bundle tests, the 2 repaired Workspace regressions, and the full 528-test PostgreSQL suite passed; Django system and migration consistency checks passed. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: P10.3 Archive and Restore-to-Draft.
