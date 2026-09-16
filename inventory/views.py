@@ -127,7 +127,10 @@ def render_workspace_stock_results(
             "workspace_stock_membership_changed": membership_changed,
         }
     )
-    return render(request, "catalog/_product_results.html", context)
+    response = render(request, "catalog/_product_results.html", context)
+    if context["workspace_page_recovered"]:
+        response["HX-Replace-Url"] = context["workspace_return_url"]
+    return response
 
 
 class ChoiceStockMutationView(LoginRequiredMixin, View):

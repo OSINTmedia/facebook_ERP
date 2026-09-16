@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from urllib.parse import urlencode, urlsplit
 
+from django.core.paginator import Paginator
 from django.db.models import Exists, OuterRef, Prefetch, Q, QuerySet, Subquery
 from django.http import QueryDict
 from django.urls import reverse
@@ -31,12 +32,13 @@ from dashboard.attention import (
 
 
 SUPPORTED_PRODUCT_WORKSPACE_QUERY_KEYS: frozenset[str] = frozenset(
-    {"q", "lifecycle", "availability", "attention", "origin"}
+    {"q", "lifecycle", "availability", "attention", "origin", "page"}
 )
 PRODUCT_WORKSPACE_AVAILABILITY_VALUES: frozenset[str] = frozenset(
     {"available", "sold_out"}
 )
 PRODUCT_DESCRIPTION_EXCERPT_LENGTH = 160
+PRODUCT_WORKSPACE_PAGE_SIZE = 12
 
 BUYER_QUESTION_LABELS = {
     BuyerQuestion.PRICE: "Price",
@@ -73,6 +75,8 @@ class ProductWorkspaceState:
     origin: str = ""
     filters_requested: bool = False
     filters_are_valid: bool = True
+    page_number: int = 1
+    page_needs_recovery: bool = False
 
     @classmethod
     def from_query_params(cls, query_params):
@@ -135,6 +139,29 @@ class ProductWorkspaceState:
             attention_filter = ""
             origin = ""
 
+        page_values = (
+            search_form.data.getlist("page")
+            if hasattr(search_form.data, "getlist")
+            else [search_form.data.get("page")]
+            if search_form.data.get("page") is not None
+            else []
+        )
+        page_requested = bool(page_values)
+        page_text = str(page_values[0]) if len(page_values) == 1 else ""
+        page_is_valid = (
+            len(page_values) <= 1
+            and page_text.isascii()
+            and page_text.isdecimal()
+            and len(page_text) <= 9
+            and int(page_text) >= 1
+        ) if page_requested else True
+        page_number = int(page_text) if page_is_valid and page_requested else 1
+        page_needs_recovery = page_requested and (
+            not page_is_valid
+            or page_number == 1
+            or page_text != str(page_number)
+        )
+
         query_items = tuple(
             (key, value)
             for key, value in (
@@ -143,6 +170,7 @@ class ProductWorkspaceState:
                 ("availability", availability_filter),
                 ("attention", attention_filter),
                 ("origin", origin),
+                ("page", str(page_number) if page_number > 1 else ""),
             )
             if value
         )
@@ -157,6 +185,8 @@ class ProductWorkspaceState:
             origin=origin,
             filters_requested=filters_requested,
             filters_are_valid=filters_are_valid,
+            page_number=page_number,
+            page_needs_recovery=page_needs_recovery,
         )
 
     @property
@@ -201,7 +231,11 @@ class ProductWorkspaceState:
     @property
     def clear_search_url(self):
         return self._url_for(
-            tuple(item for item in self.query_items if item[0] != "q")
+            tuple(
+                item
+                for item in self.query_items
+                if item[0] not in {"q", "page"}
+            )
         )
 
     @property
@@ -217,6 +251,14 @@ class ProductWorkspaceState:
         return self._url_for(
             tuple(item for item in self.query_items if item[0] == "origin")
         )
+
+    def url_for_page(self, page_number):
+        query_items = tuple(
+            item for item in self.query_items if item[0] != "page"
+        )
+        if page_number > 1:
+            query_items += (("page", str(page_number)),)
+        return self._url_for(query_items)
 
     @staticmethod
     def _url_for(query_items):
@@ -272,6 +314,15 @@ def build_product_workspace_context(
     catalog_has_products = False
     catalog_has_archived_products = False
     attention_choice_ids = ()
+    workspace_result_count = 0
+    workspace_page_number = 1
+    workspace_page_count = 1
+    workspace_page_start = 0
+    workspace_page_end = 0
+    workspace_previous_page_url = ""
+    workspace_next_page_url = ""
+    workspace_page_recovered = state.page_needs_recovery
+    workspace_return_url = state.url_for_page(1)
 
     if business is not None and state.is_valid:
         allowed_product_ids = None
@@ -283,13 +334,33 @@ def build_product_workspace_context(
             )
             allowed_product_ids = attention_group.product_ids
             attention_choice_ids = attention_group.choice_ids
-        products = product_workspace_products(
+        product_queryset = product_workspace_products(
             business=business,
             search_query=state.search_query,
             lifecycle_filter=state.lifecycle_filter,
             availability_filter=state.availability_filter,
             allowed_product_ids=allowed_product_ids,
         )
+        paginator = Paginator(product_queryset, PRODUCT_WORKSPACE_PAGE_SIZE)
+        workspace_result_count = paginator.count
+        page = paginator.get_page(state.page_number)
+        workspace_page_number = page.number
+        workspace_page_count = paginator.num_pages
+        workspace_page_start = page.start_index() if paginator.count else 0
+        workspace_page_end = page.end_index() if paginator.count else 0
+        workspace_page_recovered = workspace_page_recovered or (
+            page.number != state.page_number
+        )
+        workspace_return_url = state.url_for_page(page.number)
+        if page.has_previous():
+            workspace_previous_page_url = state.url_for_page(
+                page.previous_page_number()
+            )
+        if page.has_next():
+            workspace_next_page_url = state.url_for_page(
+                page.next_page_number()
+            )
+        products = page.object_list
         product_cards = build_product_workspace_cards(
             business=business,
             products=products,
@@ -324,14 +395,21 @@ def build_product_workspace_context(
         "workspace_back_to_dashboard_url": (
             reverse("shell_home") if state.has_dashboard_origin else ""
         ),
-        "workspace_result_count": len(product_cards),
+        "workspace_result_count": workspace_result_count,
+        "workspace_page_number": workspace_page_number,
+        "workspace_page_count": workspace_page_count,
+        "workspace_page_start": workspace_page_start,
+        "workspace_page_end": workspace_page_end,
+        "workspace_previous_page_url": workspace_previous_page_url,
+        "workspace_next_page_url": workspace_next_page_url,
+        "workspace_page_recovered": workspace_page_recovered,
         "catalog_has_products": catalog_has_products,
         "catalog_has_archived_products": catalog_has_archived_products,
         "workspace_archived_products_url": (
             f"{reverse('catalog:product_list')}?"
             f"{urlencode({'lifecycle': Product.Lifecycle.ARCHIVED})}"
         ),
-        "workspace_return_url": state.return_url,
+        "workspace_return_url": workspace_return_url,
         "workspace_clear_search_url": state.clear_search_url,
         "workspace_clear_filters_url": state.clear_filters_url,
         "workspace_clear_all_url": state.clear_all_url,

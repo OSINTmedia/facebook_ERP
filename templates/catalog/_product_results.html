@@ -69,6 +69,27 @@
         </li>
       {% endfor %}
     </ul>
+    {% if workspace_page_count > 1 %}
+      <nav class="product-workspace-pagination" aria-label="Product pages">
+        <p>
+          Page {{ workspace_page_number }} of {{ workspace_page_count }}
+          · showing {{ workspace_page_start }}–{{ workspace_page_end }}
+          of {{ workspace_result_count }}
+        </p>
+        <div class="product-workspace-pagination__actions">
+          {% if workspace_previous_page_url %}
+            <a class="button button--secondary button--compact" href="{{ workspace_previous_page_url }}" rel="prev">Previous</a>
+          {% else %}
+            <span class="button button--secondary button--compact" aria-disabled="true">Previous</span>
+          {% endif %}
+          {% if workspace_next_page_url %}
+            <a class="button button--secondary button--compact" href="{{ workspace_next_page_url }}" rel="next">Next</a>
+          {% else %}
+            <span class="button button--secondary button--compact" aria-disabled="true">Next</span>
+          {% endif %}
+        </div>
+      </nav>
+    {% endif %}
     <nav class="product-workspace-tools" aria-label="Product Workspace settings">
       <span>Catalog setup</span>
       <a

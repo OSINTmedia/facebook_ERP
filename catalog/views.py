@@ -150,7 +150,13 @@ class ProductListView(LoginRequiredMixin, TemplateView):
             context = self.get_context_data()
             return self.render_to_response(context, status=409)
 
-        return super().get(request, *args, **kwargs)
+        context = self.get_context_data()
+        if (
+            self.workspace_state.is_valid
+            and context["workspace_page_recovered"]
+        ):
+            return redirect(context["workspace_return_url"])
+        return self.render_to_response(context)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

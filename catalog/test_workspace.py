@@ -33,6 +33,7 @@ from catalog.models import (
 )
 from catalog.workspace import (
     PRODUCT_DESCRIPTION_EXCERPT_LENGTH,
+    PRODUCT_WORKSPACE_PAGE_SIZE,
     ProductWorkspaceState,
     build_product_workspace_context,
     build_product_workspace_cards,
@@ -1330,6 +1331,328 @@ class ProductCardReadModelTests(TestCase):
         self.assertEqual(len(many_cards), 6)
         self.assertEqual(len(one_product_queries), 2)
         self.assertEqual(len(many_product_queries), len(one_product_queries))
+
+
+class _ProductWorkspacePaginationFixture:
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email=f"{self.__class__.__name__}@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email=f"other-{self.__class__.__name__}@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Paginated Seller",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Paginated Seller",
+        )
+        self.size = BusinessSize.objects.create(
+            business=self.business,
+            name="M",
+        )
+        self.color = BusinessColor.objects.create(
+            business=self.business,
+            name="Black",
+        )
+        self.url = reverse("catalog:product_list")
+        self.client.force_login(self.owner)
+
+    def create_product(
+        self,
+        *,
+        name,
+        lifecycle=Product.Lifecycle.DRAFT,
+        quantity=None,
+    ):
+        product = Product.objects.create(
+            business=self.business,
+            name=name,
+            description=f"{name} description.",
+            lifecycle=lifecycle,
+        )
+        choice = None
+        if quantity is not None:
+            choice = ProductChoice.objects.create(
+                business=self.business,
+                product=product,
+                size=self.size,
+                color=self.color,
+                quantity=quantity,
+            )
+        return product, choice
+
+    def create_catalog(
+        self,
+        count,
+        *,
+        prefix="Product",
+        lifecycle=Product.Lifecycle.DRAFT,
+        quantity=None,
+    ):
+        return [
+            self.create_product(
+                name=f"{prefix} {index:02d}",
+                lifecycle=lifecycle,
+                quantity=quantity,
+            )
+            for index in range(count)
+        ]
+
+
+class ProductWorkspacePaginationTests(
+    _ProductWorkspacePaginationFixture,
+    TestCase,
+):
+    def test_first_and_next_pages_are_bounded_with_stable_ordering(self):
+        products = self.create_catalog(PRODUCT_WORKSPACE_PAGE_SIZE + 1)
+        Product.objects.create(
+            business=self.other_business,
+            name="Private Product",
+            description="Must remain private.",
+        )
+
+        first_response = self.client.get(self.url)
+        next_response = self.client.get(self.url, {"page": 2})
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(
+            list(first_response.context["products"]),
+            [product for product, _ in products[:PRODUCT_WORKSPACE_PAGE_SIZE]],
+        )
+        self.assertEqual(
+            list(next_response.context["products"]),
+            [products[-1][0]],
+        )
+        self.assertEqual(
+            first_response.context["workspace_result_count"],
+            PRODUCT_WORKSPACE_PAGE_SIZE + 1,
+        )
+        self.assertEqual(first_response.context["workspace_page_count"], 2)
+        self.assertContains(first_response, "Page 1 of 2")
+        self.assertContains(first_response, 'href="/products/?page=2"')
+        self.assertNotContains(first_response, "Private Product")
+
+    def test_duplicate_ordering_keys_use_product_identity_as_tie_breaker(self):
+        products = [
+            self.create_product(name="Same name")[0]
+            for _ in range(PRODUCT_WORKSPACE_PAGE_SIZE + 1)
+        ]
+
+        first_response = self.client.get(self.url)
+        next_response = self.client.get(self.url, {"page": 2})
+
+        rendered_ids = [
+            product.pk for product in first_response.context["products"]
+        ] + [product.pk for product in next_response.context["products"]]
+        self.assertEqual(rendered_ids, [product.pk for product in products])
+
+    def test_search_filter_and_page_links_use_one_canonical_state(self):
+        self.create_catalog(
+            PRODUCT_WORKSPACE_PAGE_SIZE + 1,
+            prefix="Match",
+        )
+
+        response = self.client.get(
+            self.url,
+            {"q": "  match ", "lifecycle": "draft", "page": 2},
+        )
+
+        canonical_url = f"{self.url}?q=match&lifecycle=draft&page=2"
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["workspace_return_url"], canonical_url)
+        self.assertEqual(
+            response.context["workspace_previous_page_url"],
+            f"{self.url}?q=match&lifecycle=draft",
+        )
+        self.assertContains(response, "Page 2 of 2")
+        self.assertContains(
+            response,
+            'name="next" value="/products/?q=match&amp;lifecycle=draft&amp;page=2"',
+        )
+        self.assertEqual(len(response.context["product_cards"]), 1)
+
+    def test_malformed_and_out_of_range_pages_redirect_to_canonical_state(self):
+        self.create_catalog(PRODUCT_WORKSPACE_PAGE_SIZE + 1)
+
+        malformed = self.client.get(self.url, {"page": "invalid"})
+        repeated = self.client.get(f"{self.url}?page=2&page=3")
+        first_page_alias = self.client.get(self.url, {"page": 1})
+        leading_zero = self.client.get(self.url, {"page": "0002"})
+        out_of_range = self.client.get(self.url, {"page": 999})
+
+        self.assertRedirects(malformed, self.url, fetch_redirect_response=False)
+        self.assertRedirects(repeated, self.url, fetch_redirect_response=False)
+        self.assertRedirects(first_page_alias, self.url, fetch_redirect_response=False)
+        self.assertRedirects(
+            leading_zero,
+            f"{self.url}?page=2",
+            fetch_redirect_response=False,
+        )
+        self.assertRedirects(
+            out_of_range,
+            f"{self.url}?page=2",
+            fetch_redirect_response=False,
+        )
+
+    def test_empty_catalog_page_request_recovers_to_empty_first_page(self):
+        response = self.client.get(self.url, {"page": 2}, follow=True)
+
+        self.assertEqual(response.redirect_chain, [(self.url, 302)])
+        self.assertEqual(response.context["workspace_result_count"], 0)
+        self.assertContains(response, "No products yet.")
+
+    def test_workspace_query_count_does_not_grow_with_page_contents(self):
+        self.create_product(name="Product 00")
+        with CaptureQueriesContext(connection) as one_product_queries:
+            one_product_response = self.client.get(self.url)
+
+        self.create_catalog(PRODUCT_WORKSPACE_PAGE_SIZE - 1, prefix="More")
+        with CaptureQueriesContext(connection) as full_page_queries:
+            full_page_response = self.client.get(self.url)
+
+        self.assertEqual(len(one_product_response.context["product_cards"]), 1)
+        self.assertEqual(
+            len(full_page_response.context["product_cards"]),
+            PRODUCT_WORKSPACE_PAGE_SIZE,
+        )
+        self.assertEqual(len(full_page_queries), len(one_product_queries))
+
+
+class ProductWorkspacePaginationJourneyTests(
+    _ProductWorkspacePaginationFixture,
+    TestCase,
+):
+    def test_page_context_reaches_edit_correction_and_add_similar(self):
+        products = self.create_catalog(PRODUCT_WORKSPACE_PAGE_SIZE + 1)
+        source = products[-1][0]
+        response = self.client.get(self.url, {"page": 2})
+
+        template_encoded_return = "/products/%3Fpage%3D2"
+        self.assertContains(response, f"next={template_encoded_return}")
+        self.assertContains(
+            response,
+            f'action="{reverse("catalog:product_add_similar", args=[source.pk])}"',
+        )
+
+        similar_response = self.client.post(
+            reverse("catalog:product_add_similar", args=[source.pk]),
+            {"next": f"{self.url}?page=2"},
+        )
+
+        self.assertEqual(similar_response.status_code, 302)
+        self.assertIn(
+            "next=%2Fproducts%2F%3Fpage%3D2",
+            similar_response["Location"],
+        )
+
+    def test_stock_membership_change_recovers_empty_last_page_for_htmx(self):
+        products = self.create_catalog(
+            PRODUCT_WORKSPACE_PAGE_SIZE + 1,
+            prefix="Available",
+            lifecycle=Product.Lifecycle.ACTIVE,
+            quantity=1,
+        )
+        target_product, target_choice = products[-1]
+        workspace_url = f"{self.url}?availability=available&page=2"
+
+        response = self.client.post(
+            reverse(
+                "inventory:choice_stock_adjust",
+                kwargs={"choice_pk": target_choice.pk},
+            ),
+            {
+                "delta": "-1",
+                "next": workspace_url,
+                "response_scope": "workspace",
+            },
+            HTTP_HX_REQUEST="true",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response["HX-Replace-Url"],
+            f"{self.url}?availability=available",
+        )
+        self.assertEqual(response.context["workspace_page_number"], 1)
+        self.assertEqual(response.context["workspace_result_count"], 12)
+        self.assertNotContains(response, target_product.name)
+        self.assertContains(response, "moved out of the current results")
+
+    def test_dashboard_drilldown_preserves_origin_across_pages(self):
+        self.create_catalog(
+            PRODUCT_WORKSPACE_PAGE_SIZE + 1,
+            prefix="Needs information",
+        )
+
+        response = self.client.get(
+            self.url,
+            {
+                "attention": "missing_information",
+                "origin": "dashboard",
+                "page": 2,
+            },
+        )
+
+        expected_previous = (
+            f"{self.url}?attention=missing_information&origin=dashboard"
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.context["workspace_previous_page_url"],
+            expected_previous,
+        )
+        self.assertEqual(
+            response.context["workspace_back_to_dashboard_url"],
+            reverse("shell_home"),
+        )
+
+    def test_archive_and_restore_recover_a_page_emptied_by_membership_change(self):
+        active_products = self.create_catalog(
+            PRODUCT_WORKSPACE_PAGE_SIZE + 1,
+            prefix="Active",
+            lifecycle=Product.Lifecycle.ACTIVE,
+            quantity=1,
+        )
+        archived_product = active_products[-1][0]
+
+        archive_response = self.client.post(
+            reverse("catalog:product_archive", args=[archived_product.pk]),
+            {"next": f"{self.url}?page=2"},
+            follow=True,
+        )
+
+        self.assertEqual(
+            archive_response.redirect_chain,
+            [(f"{self.url}?page=2", 302), (self.url, 302)],
+        )
+        archived_product.refresh_from_db()
+        self.assertEqual(archived_product.lifecycle, Product.Lifecycle.ARCHIVED)
+
+        self.create_catalog(
+            PRODUCT_WORKSPACE_PAGE_SIZE,
+            prefix="Archived",
+            lifecycle=Product.Lifecycle.ARCHIVED,
+        )
+        archived_url = f"{self.url}?lifecycle=archived&page=2"
+        restore_response = self.client.post(
+            reverse("catalog:product_restore", args=[archived_product.pk]),
+            {"next": archived_url},
+            follow=True,
+        )
+
+        canonical_archived_url = f"{self.url}?lifecycle=archived"
+        self.assertEqual(
+            restore_response.redirect_chain,
+            [(archived_url, 302), (canonical_archived_url, 302)],
+        )
+        archived_product.refresh_from_db()
+        self.assertEqual(archived_product.lifecycle, Product.Lifecycle.DRAFT)
 
 
 class ProductWorkspaceViewTests(TestCase):
