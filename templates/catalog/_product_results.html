@@ -31,7 +31,7 @@
   {% if workspace_query_is_valid %}
     {% if workspace_search_query or workspace_has_active_filters %}
       <div class="product-workspace-state-summary" aria-label="Current Product Workspace view">
-        <p role="status" aria-atomic="true"><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }}{% if workspace_search_query %} for “{{ workspace_search_query }}”{% endif %}{% if workspace_lifecycle_filter %} · Lifecycle — {% if workspace_lifecycle_filter == "active" %}Active{% else %}Draft{% endif %}{% endif %}{% if workspace_availability_filter %} · Availability — {% if workspace_availability_filter == "available" %}Available{% else %}Sold out{% endif %}{% endif %}{% if workspace_attention_filter %} · Attention — {{ workspace_attention_label }}{% endif %}</p>
+        <p role="status" aria-atomic="true"><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }}{% if workspace_search_query %} for “{{ workspace_search_query }}”{% endif %}{% if workspace_lifecycle_filter %} · Lifecycle — {% if workspace_lifecycle_filter == "active" %}Active{% elif workspace_lifecycle_filter == "archived" %}Archived{% else %}Draft{% endif %}{% endif %}{% if workspace_availability_filter %} · Availability — {% if workspace_availability_filter == "available" %}Available{% else %}Sold out{% endif %}{% endif %}{% if workspace_attention_filter %} · Attention — {{ workspace_attention_label }}{% endif %}</p>
         {% if product_cards %}
           <div class="product-workspace-state-summary__actions">
             {% if workspace_search_query %}
@@ -96,6 +96,14 @@
     </div>
     <div class="page-actions">
       <a class="button button--primary" href="{{ workspace_clear_search_url }}">Clear search</a>
+    </div>
+  {% elif catalog_has_archived_products %}
+    <div class="empty-state" role="status">
+      <p>No Products are in daily work. Archived Products remain preserved.</p>
+    </div>
+    <div class="page-actions">
+      <a class="button button--secondary" href="{{ workspace_archived_products_url }}">View archived Products</a>
+      <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">Add product</a>
     </div>
   {% else %}
     <div class="empty-state" role="status">

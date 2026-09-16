@@ -52,6 +52,26 @@
     {% endif %}
   </header>
 
+  {% if card.is_archived %}
+    <section class="product-card__readiness" aria-labelledby="product-card-archived-{{ card.product_id }}">
+      <h3 id="product-card-archived-{{ card.product_id }}">Archived Product</h3>
+      <p>This Product is outside daily work. Its choices, stock, and history are preserved.</p>
+    </section>
+    <footer class="product-card__actions">
+      <form
+        method="post"
+        action="{% url 'catalog:product_restore' card.product_id %}"
+      >
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ workspace_return_url }}">
+        <button
+          class="button button--secondary button--compact"
+          type="submit"
+          aria-label="Restore {{ card.name }} as a Draft"
+        >Restore to Draft</button>
+      </form>
+    </footer>
+  {% else %}
   <section class="product-card__choices" aria-labelledby="product-card-choices-{{ card.product_id }}">
     <div class="product-card__choice-heading">
       <div>
@@ -243,6 +263,22 @@
         aria-label="Add a similar Product from {{ card.name }}"
       >Add similar</button>
     </form>
+    <details>
+      <summary>Archive product</summary>
+      <p>Remove this Product from daily work while preserving its history and stock.</p>
+      <form
+        method="post"
+        action="{% url 'catalog:product_archive' card.product_id %}"
+      >
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ workspace_return_url }}">
+        <button
+          class="button button--secondary button--compact"
+          type="submit"
+          aria-label="Confirm archive for {{ card.name }}"
+        >Confirm archive</button>
+      </form>
+    </details>
   </footer>
   <p
     id="product-ready-reply-error-{{ card.product_id }}"
@@ -256,4 +292,5 @@
     data-ready-reply-slot
     data-ready-reply-trigger-id="product-ready-reply-trigger-{{ card.product_id }}"
   ></div>
+  {% endif %}
 </article>

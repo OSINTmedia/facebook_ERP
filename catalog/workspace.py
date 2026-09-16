@@ -245,6 +245,7 @@ class ProductCard:
     currency: str
     product_type_name: str | None
     lifecycle_label: str
+    is_archived: bool
     availability_label: str
     availability_state: str
     is_partially_sold_out: bool
@@ -269,6 +270,7 @@ def build_product_workspace_context(
     products = Product.objects.none()
     product_cards = ()
     catalog_has_products = False
+    catalog_has_archived_products = False
     attention_choice_ids = ()
 
     if business is not None and state.is_valid:
@@ -298,6 +300,11 @@ def build_product_workspace_context(
             catalog_has_products = Product.objects.filter(
                 business=business
             ).exists()
+        if not state.has_active_query and not product_cards:
+            catalog_has_archived_products = Product.objects.filter(
+                business=business,
+                lifecycle=Product.Lifecycle.ARCHIVED,
+            ).exists()
 
     return {
         "product_cards": product_cards,
@@ -319,6 +326,11 @@ def build_product_workspace_context(
         ),
         "workspace_result_count": len(product_cards),
         "catalog_has_products": catalog_has_products,
+        "catalog_has_archived_products": catalog_has_archived_products,
+        "workspace_archived_products_url": (
+            f"{reverse('catalog:product_list')}?"
+            f"{urlencode({'lifecycle': Product.Lifecycle.ARCHIVED})}"
+        ),
         "workspace_return_url": state.return_url,
         "workspace_clear_search_url": state.clear_search_url,
         "workspace_clear_filters_url": state.clear_filters_url,
@@ -372,6 +384,8 @@ def product_workspace_products(
         products = products.filter(pk__in=allowed_product_ids)
     if lifecycle_filter:
         products = products.filter(lifecycle=lifecycle_filter)
+    else:
+        products = products.exclude(lifecycle=Product.Lifecycle.ARCHIVED)
     for token in search_query.split():
         products = products.filter(
             _product_search_token_filter(business=business, token=token)
@@ -597,6 +611,7 @@ def _build_product_card(
         currency=business.default_currency,
         product_type_name=product.workspace_product_type_name,
         lifecycle_label=product.get_lifecycle_display(),
+        is_archived=product.lifecycle == Product.Lifecycle.ARCHIVED,
         availability_label=availability_label,
         availability_state=availability_state,
         is_partially_sold_out=(

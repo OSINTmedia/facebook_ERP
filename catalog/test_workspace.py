@@ -184,6 +184,7 @@ class ProductWorkspaceStateTests(SimpleTestCase):
                 ("", "All lifecycle states"),
                 (Product.Lifecycle.ACTIVE, "Active"),
                 (Product.Lifecycle.DRAFT, "Draft"),
+                (Product.Lifecycle.ARCHIVED, "Archived"),
             ),
         )
         self.assertEqual(
@@ -195,7 +196,7 @@ class ProductWorkspaceStateTests(SimpleTestCase):
             ),
         )
         search_form = ProductWorkspaceSearchForm(
-            {"lifecycle": "archived", "availability": "low_stock"}
+            {"lifecycle": "hidden", "availability": "low_stock"}
         )
 
         self.assertFalse(search_form.is_valid())
@@ -954,7 +955,7 @@ class ProductWorkspaceQueryTests(TestCase):
         ):
             product_workspace_products(
                 business=self.business,
-                lifecycle_filter="archived",
+                lifecycle_filter="hidden",
             )
         with self.assertRaisesMessage(
             ValueError,
@@ -2113,7 +2114,12 @@ class ProductWorkspaceViewTests(TestCase):
 
         response = self.client.get(self.url)
 
-        self.assertContains(response, product.name, count=5)
+        self.assertContains(
+            response,
+            f'<h2 id="product-card-title-{product.pk}">{product.name}</h2>',
+            count=1,
+            html=True,
+        )
         self.assertNotContains(response, 'class="product-card__description"')
 
     def test_workspace_renders_native_stock_controls_only_for_active_choices(self):
@@ -2144,7 +2150,7 @@ class ProductWorkspaceViewTests(TestCase):
             count=2,
         )
         self.assertContains(response, 'method="post"')
-        self.assertContains(response, 'name="csrfmiddlewaretoken"', count=4)
+        self.assertContains(response, 'name="csrfmiddlewaretoken"', count=5)
         self.assertContains(response, f'name="next" value="{self.url}"')
         self.assertContains(response, 'name="delta"', count=2)
         self.assertContains(response, 'value="-1"')

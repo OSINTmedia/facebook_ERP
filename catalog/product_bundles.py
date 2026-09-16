@@ -20,6 +20,10 @@ from catalog.models import (
 from inventory.mutations import initialize_choice_quantity
 
 
+class ArchivedProductMutationError(ValidationError):
+    pass
+
+
 class ProductBundle:
     """Coordinate Product and related truth forms at one atomic boundary."""
 
@@ -106,6 +110,18 @@ class ProductBundle:
         media_write = None
         try:
             with transaction.atomic():
+                if self.product.pk:
+                    persisted_product = (
+                        Product.objects.select_for_update(of=("self",)).get(
+                            business=self.business,
+                            pk=self.product.pk,
+                        )
+                    )
+                    if persisted_product.lifecycle == Product.Lifecycle.ARCHIVED:
+                        raise ArchivedProductMutationError(
+                            "Restore the archived Product to Draft before editing it."
+                        )
+
                 product = self.product_form.save(commit=False)
                 product.business = self.business
                 product.full_clean()

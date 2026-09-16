@@ -20,6 +20,7 @@ def add_similar_product(*, business, source_product_id):
         source = (
             Product.objects.select_for_update(of=("self",))
             .select_related("product_type")
+            .exclude(lifecycle=Product.Lifecycle.ARCHIVED)
             .get(business=business, pk=source_product_id)
         )
         _validate_product_type_scope(source, business)

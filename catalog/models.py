@@ -427,6 +427,7 @@ class Product(models.Model):
     class Lifecycle(models.TextChoices):
         DRAFT = "draft", "Draft"
         ACTIVE = "active", "Active"
+        ARCHIVED = "archived", "Archived"
 
     business = models.ForeignKey(
         Business,

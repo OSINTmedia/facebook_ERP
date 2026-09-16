@@ -22,6 +22,7 @@ from catalog.forms import (
     ChoiceVocabularyForm,
     ProductWorkspaceSearchForm,
 )
+from catalog.lifecycle import archive_product, restore_product_to_draft
 from catalog.material_transfers import transfer_material_candidate
 from catalog.models import (
     BusinessColor,
@@ -35,7 +36,7 @@ from catalog.product_media import (
     product_media_content_type,
     product_media_storage_name_is_safe,
 )
-from catalog.product_bundles import ProductBundle
+from catalog.product_bundles import ArchivedProductMutationError, ProductBundle
 from catalog.readiness import CoverageCorrectionTarget
 from catalog.ready_reply import build_product_ready_reply
 from catalog.recognition import recognize_product_preview_for_business
@@ -185,6 +186,7 @@ class ReadyReplyView(LoginRequiredMixin, View):
             Product,
             pk=kwargs["pk"],
             business=business,
+            lifecycle__in=(Product.Lifecycle.DRAFT, Product.Lifecycle.ACTIVE),
         )
         ready_reply = build_product_ready_reply(
             business=business,
@@ -1037,6 +1039,7 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
             return Product.objects.get(
                 business=self.active_business,
                 pk=self.kwargs["pk"],
+                lifecycle__in=(Product.Lifecycle.DRAFT, Product.Lifecycle.ACTIVE),
             )
         except Product.DoesNotExist as exc:
             raise Http404("Product not found.") from exc
@@ -1133,7 +1136,11 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
             )
 
         if bundle.is_valid():
-            bundle.save(actor=request.user)
+            try:
+                bundle.save(actor=request.user)
+            except ArchivedProductMutationError as error:
+                messages.error(request, error.messages[0])
+                return redirect(get_canonical_product_workspace_return_url(request))
             messages.success(request, "Product updated.")
             return redirect(get_canonical_product_workspace_return_url(request))
 
@@ -1171,3 +1178,41 @@ class ProductAddSimilarView(ProductMutationBusinessMixin, View):
         )
         edit_url = reverse("catalog:product_edit", args=[product.pk])
         return redirect(f"{edit_url}?{urlencode({'next': return_url})}")
+
+
+class ProductLifecycleMutationView(LoginRequiredMixin, View):
+    command = None
+    success_message = ""
+
+    def post(self, request, *args, **kwargs):
+        try:
+            business = resolve_active_business(request.user)
+        except MultipleBusinessesUnsupported as error:
+            raise Http404("Product not found.") from error
+        if business is None:
+            raise Http404("Product not found.")
+
+        return_url = get_canonical_product_workspace_return_url(request)
+        try:
+            self.command(
+                business=business,
+                product_id=kwargs["pk"],
+            )
+        except Product.DoesNotExist as error:
+            raise Http404("Product not found.") from error
+        except ValidationError as error:
+            messages.error(request, error.messages[0])
+            return redirect(return_url)
+
+        messages.success(request, self.success_message)
+        return redirect(return_url)
+
+
+class ProductArchiveView(ProductLifecycleMutationView):
+    command = staticmethod(archive_product)
+    success_message = "Product archived. Its history and stock were preserved."
+
+
+class ProductRestoreView(ProductLifecycleMutationView):
+    command = staticmethod(restore_product_to_draft)
+    success_message = "Product restored as a Draft for review."

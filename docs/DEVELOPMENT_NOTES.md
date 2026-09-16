@@ -718,3 +718,15 @@ Adversarial audit required no production repair. Final-suite recovery updated tw
 Release: READY.
 
 Next on Git PASS: P10.3 Archive and Restore-to-Draft.
+
+### 2026-09-16 - P10.3 Archive and Restore-to-Draft
+
+Code status: PASS.
+
+Products can now be explicitly archived out of daily Workspace, availability, readiness, Ready Reply, Add Similar, edit, and stock operations, then retrieved through the archived lifecycle filter and restored only to Draft with choices, quantities, media, and inventory history preserved. Adversarial stabilization blocked archived stock mutations at the locked inventory boundary, prevented stale validated edits from overwriting a concurrent archive, and replaced a brittle rendered-name count with a visible-heading assertion that ignores legitimate accessibility labels.
+
+Verification: 543 PostgreSQL tests passed; Django system and migration consistency checks, JavaScript syntax, and diff/whitespace checks passed. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: Phase 11.

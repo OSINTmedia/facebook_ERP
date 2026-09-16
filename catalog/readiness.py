@@ -5,7 +5,7 @@ from enum import StrEnum
 
 from django.core.exceptions import ValidationError
 
-from catalog.models import BusinessProductType, ProductMaterialFact
+from catalog.models import BusinessProductType, Product, ProductMaterialFact
 from inventory.availability import compute_product_availability
 
 
@@ -102,6 +102,10 @@ def build_product_buyer_question_coverage(*, business, product):
         raise ValueError("An existing Product is required.")
     if product.business_id != business.pk:
         raise ValidationError("Product must belong to the active Business.")
+    if product.lifecycle == Product.Lifecycle.ARCHIVED:
+        raise ValidationError(
+            "Archived Products do not have sellable buyer-question coverage."
+        )
 
     active_choices = product.choices.filter(
         business=business,

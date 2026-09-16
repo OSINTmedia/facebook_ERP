@@ -2378,7 +2378,7 @@ class ProductModelTests(TestCase):
             business=self.business,
             name="Black trousers",
             description="Classic black trousers.",
-            lifecycle="archived",
+            lifecycle="hidden",
         )
 
         with self.assertRaises(ValidationError):

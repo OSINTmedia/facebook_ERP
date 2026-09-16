@@ -31,6 +31,7 @@ PRODUCT_WORKSPACE_LIFECYCLE_CHOICES = (
     ("", "All lifecycle states"),
     (Product.Lifecycle.ACTIVE, "Active"),
     (Product.Lifecycle.DRAFT, "Draft"),
+    (Product.Lifecycle.ARCHIVED, "Archived"),
 )
 PRODUCT_WORKSPACE_AVAILABILITY_CHOICES = (
     ("", "All availability states"),
@@ -182,6 +183,10 @@ class ProductForm(forms.ModelForm):
 
     def __init__(self, *args, business=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["lifecycle"].choices = (
+            (Product.Lifecycle.DRAFT, Product.Lifecycle.DRAFT.label),
+            (Product.Lifecycle.ACTIVE, Product.Lifecycle.ACTIVE.label),
+        )
         product_types = BusinessProductType.objects.none()
         tags = BusinessTag.objects.none()
 

@@ -3,9 +3,11 @@ from django.urls import path
 from catalog.views import (
     ChoiceVocabularyView,
     ProductAddSimilarView,
+    ProductArchiveView,
     ProductCreateView,
     ProductListView,
     ProductMediaView,
+    ProductRestoreView,
     ProductUpdateView,
     ReadyReplyView,
 )
@@ -34,6 +36,16 @@ urlpatterns = [
         "products/<int:pk>/add-similar/",
         ProductAddSimilarView.as_view(),
         name="product_add_similar",
+    ),
+    path(
+        "products/<int:pk>/archive/",
+        ProductArchiveView.as_view(),
+        name="product_archive",
+    ),
+    path(
+        "products/<int:pk>/restore/",
+        ProductRestoreView.as_view(),
+        name="product_restore",
     ),
     path("products/<int:pk>/edit/", ProductUpdateView.as_view(), name="product_edit"),
 ]

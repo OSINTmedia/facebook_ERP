@@ -93,6 +93,8 @@ def build_product_ready_reply(*, business, product) -> ReadyReply:
         raise ValueError("An existing Product is required.")
     if product.business_id != business.pk:
         raise ValidationError("Product must belong to the active Business.")
+    if product.lifecycle == Product.Lifecycle.ARCHIVED:
+        raise ValidationError("Archived Products cannot produce a Ready Reply.")
 
     choices = tuple(
         ReadyReplyChoice(
