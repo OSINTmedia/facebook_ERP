@@ -1,50 +1,49 @@
 {% load static %}
 <!doctype html>
-<html lang="en">
+<html lang="ka">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Seller Workspace{% endblock %}</title>
+  <title>{% block title %}გამყიდველის სამუშაო სივრცე{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <script src="{% static 'django_htmx/htmx-2.min.js' %}" defer></script>
 </head>
 <body>
-  <a class="skip-link" href="#main-content">Skip to content</a>
+  <a class="skip-link" href="#main-content">მთავარ შინაარსზე გადასვლა</a>
 
   <header class="app-header">
     <div class="app-header__inner">
       {% if request.user.is_authenticated %}
-        <a class="brand" href="{% url 'shell_home' %}">Seller Workspace</a>
+        <a class="brand" href="{% url 'shell_home' %}">გამყიდველის სივრცე</a>
 
-        <nav class="primary-nav" aria-label="Primary">
+        <nav class="primary-nav" aria-label="მთავარი ნავიგაცია">
           <a
             class="nav-link{% if current_nav == 'dashboard' %} nav-link--active{% endif %}"
             href="{% url 'shell_home' %}"
             {% if current_nav == 'dashboard' %}aria-current="page"{% endif %}
           >
-            Dashboard
+            მიმოხილვა
           </a>
           <a
             class="nav-link{% if current_nav == 'products' %} nav-link--active{% endif %}"
             href="{% url 'catalog:product_list' %}"
             {% if current_nav == 'products' %}aria-current="page"{% endif %}
           >
-            Products
+            პროდუქტები
           </a>
-          <a class="nav-link" href="{% url 'catalog:product_create' %}">Add product</a>
-          <span class="nav-link nav-link--disabled" aria-disabled="true">Account</span>
+          <a class="nav-link" href="{% url 'catalog:product_create' %}">პროდუქტის დამატება</a>
           <form class="nav-form" method="post" action="{% url 'accounts:logout' %}">
             {% csrf_token %}
-            <button class="nav-link nav-link--button" type="submit">Sign out</button>
+            <button class="nav-link nav-link--button" type="submit">გასვლა</button>
           </form>
         </nav>
       {% else %}
-        <span class="brand">Seller Workspace</span>
+        <span class="brand">გამყიდველის სივრცე</span>
       {% endif %}
     </div>
   </header>
 
-  <section id="messages" class="messages" aria-label="Messages" aria-live="polite">
+  <section id="messages" class="messages" aria-label="შეტყობინებები" aria-live="polite">
     {% for message in messages %}
       <div
         class="message message--{% if message.tags %}{{ message.tags }}{% else %}info{% endif %}"

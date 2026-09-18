@@ -76,7 +76,7 @@ class ProductWorkspaceStateTests(SimpleTestCase):
         self.assertFalse(state.search_is_valid)
         self.assertEqual(state.search_query, "")
         self.assertEqual(state.return_url, reverse("catalog:product_list"))
-        self.assertEqual(search_form.errors["q"], ["Enter one search query."])
+        self.assertEqual(search_form.errors["q"], ["შეიყვანეთ ერთი საძიებო მოთხოვნა."])
 
     def test_search_length_and_token_limits_are_controlled(self):
         overlong_form = ProductWorkspaceSearchForm(
@@ -94,12 +94,12 @@ class ProductWorkspaceStateTests(SimpleTestCase):
         self.assertFalse(overlong_form.is_valid())
         self.assertEqual(
             overlong_form.errors["q"],
-            ["Search must be 120 characters or fewer."],
+            ["ძიება მაქსიმუმ 120 სიმბოლოს უნდა შეიცავდეს."],
         )
         self.assertFalse(too_many_tokens_form.is_valid())
         self.assertEqual(
             too_many_tokens_form.errors["q"],
-            ["Search must use 8 words or fewer."],
+            ["ძიებაში მაქსიმუმ 8 სიტყვა გამოიყენეთ."],
         )
 
     def test_search_rejects_database_unsafe_control_characters(self):
@@ -108,7 +108,7 @@ class ProductWorkspaceStateTests(SimpleTestCase):
         self.assertFalse(search_form.is_valid())
         self.assertEqual(
             search_form.errors["q"],
-            ["Search contains unsupported characters."],
+            ["ძიება შეუთავსებელ სიმბოლოებს შეიცავს."],
         )
 
     def test_filter_state_uses_canonical_order_and_clear_urls(self):
@@ -167,11 +167,11 @@ class ProductWorkspaceStateTests(SimpleTestCase):
         self.assertEqual(state.availability_filter, "")
         self.assertEqual(
             search_form.errors["lifecycle"],
-            ["Select one lifecycle filter."],
+            ["აირჩიეთ ერთი სტატუსის ფილტრი."],
         )
         self.assertEqual(
             search_form.errors["availability"],
-            ["Select one availability filter."],
+            ["აირჩიეთ ერთი ხელმისაწვდომობის ფილტრი."],
         )
         self.assertEqual(
             state.return_url,
@@ -182,18 +182,18 @@ class ProductWorkspaceStateTests(SimpleTestCase):
         self.assertEqual(
             PRODUCT_WORKSPACE_LIFECYCLE_CHOICES,
             (
-                ("", "All lifecycle states"),
-                (Product.Lifecycle.ACTIVE, "Active"),
-                (Product.Lifecycle.DRAFT, "Draft"),
-                (Product.Lifecycle.ARCHIVED, "Archived"),
+                ("", "ყველა სტატუსი"),
+                (Product.Lifecycle.ACTIVE, "აქტიური"),
+                (Product.Lifecycle.DRAFT, "მონახაზი"),
+                (Product.Lifecycle.ARCHIVED, "დაარქივებული"),
             ),
         )
         self.assertEqual(
             PRODUCT_WORKSPACE_AVAILABILITY_CHOICES,
             (
-                ("", "All availability states"),
-                ("available", "Available"),
-                ("sold_out", "Sold out"),
+                ("", "ყველა ხელმისაწვდომობა"),
+                ("available", "მარაგშია"),
+                ("sold_out", "ამოიწურა"),
             ),
         )
         search_form = ProductWorkspaceSearchForm(
@@ -201,9 +201,9 @@ class ProductWorkspaceStateTests(SimpleTestCase):
         )
 
         self.assertFalse(search_form.is_valid())
-        self.assertIn("Select a valid choice", search_form.errors["lifecycle"][0])
+        self.assertIn("აირჩიეთ დასაშვები მნიშვნელობა", search_form.errors["lifecycle"][0])
         self.assertIn(
-            "Select a valid choice",
+            "აირჩიეთ დასაშვები მნიშვნელობა",
             search_form.errors["availability"][0],
         )
 
@@ -379,8 +379,8 @@ class ProductWorkspaceAttentionDrilldownTests(TestCase):
                 if choice.choice_id == stocked_choice.pk
             ).is_attention_target
         )
-        self.assertContains(response, "Attention — Low stock")
-        self.assertContains(response, "Attention target", count=1)
+        self.assertContains(response, "საყურადღებო — მცირე მარაგი")
+        self.assertContains(response, "საყურადღებო არჩევანი", count=1)
         self.assertNotContains(response, private.name)
 
     def test_unknown_or_repeated_attention_context_fails_closed(self):
@@ -439,8 +439,8 @@ class ProductWorkspaceAttentionDrilldownTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/_product_results.html")
-        self.assertContains(response, "Stock updated to 4.")
-        self.assertContains(response, "<strong>0</strong> products")
+        self.assertContains(response, "მარაგი განახლდა: 4.")
+        self.assertContains(response, "<strong>0</strong> პროდუქტი")
         self.assertNotContains(response, product.name)
         choice.refresh_from_db()
         self.assertEqual(choice.quantity, 4)
@@ -1072,11 +1072,11 @@ class ProductCardReadModelTests(TestCase):
 
         card = self.cards()[0]
 
-        self.assertEqual(card.lifecycle_label, "Active")
+        self.assertEqual(card.lifecycle_label, "აქტიური")
         self.assertIsNone(card.price)
         self.assertEqual(card.currency, "GEL")
         self.assertIsNone(card.primary_media_id)
-        self.assertEqual(card.availability_label, "Available")
+        self.assertEqual(card.availability_label, "მარაგშია")
         self.assertEqual(card.availability_state, "available")
         self.assertEqual(card.product_type_name, "Trousers")
         self.assertEqual(card.active_choice_count, 1)
@@ -1106,7 +1106,7 @@ class ProductCardReadModelTests(TestCase):
 
         self.assertEqual(
             card.answerable_question_labels,
-            ("Price", "Stock", "Size and color", "Product type", "Material"),
+            ("ფასი", "მარაგი", "ზომა და ფერი", "პროდუქტის ტიპი", "მასალა"),
         )
         self.assertEqual(card.missing_question_labels, ())
         self.assertIsNone(card.readiness_correction_label)
@@ -1122,13 +1122,13 @@ class ProductCardReadModelTests(TestCase):
 
         self.assertEqual(
             card.answerable_question_labels,
-            ("Stock", "Size and color"),
+            ("მარაგი", "ზომა და ფერი"),
         )
         self.assertEqual(
             card.missing_question_labels,
-            ("Price", "Product type", "Material"),
+            ("ფასი", "პროდუქტის ტიპი", "მასალა"),
         )
-        self.assertEqual(card.readiness_correction_label, "Add price")
+        self.assertEqual(card.readiness_correction_label, "ფასის დამატება")
         self.assertEqual(card.readiness_correction_target, "price")
         self.assertEqual(card.readiness_correction_fragment, "#id_price")
 
@@ -1207,8 +1207,8 @@ class ProductCardReadModelTests(TestCase):
 
         card = self.cards()[0]
 
-        self.assertEqual(card.lifecycle_label, "Active")
-        self.assertEqual(card.availability_label, "Sold out")
+        self.assertEqual(card.lifecycle_label, "აქტიური")
+        self.assertEqual(card.availability_label, "ამოიწურა")
         self.assertEqual(card.availability_state, "sold-out")
         self.assertEqual(card.active_choice_count, 1)
         self.assertEqual(card.active_stock_total, 0)
@@ -1222,8 +1222,8 @@ class ProductCardReadModelTests(TestCase):
 
         card = self.cards()[0]
 
-        self.assertEqual(card.lifecycle_label, "Draft")
-        self.assertEqual(card.availability_label, "Not sellable")
+        self.assertEqual(card.lifecycle_label, "მონახაზი")
+        self.assertEqual(card.availability_label, "ამჟამად არ იყიდება")
         self.assertEqual(card.availability_state, "not-sellable")
         self.assertEqual(card.active_stock_total, 4)
 
@@ -1269,9 +1269,9 @@ class ProductCardReadModelTests(TestCase):
         self.assertIsNone(card.product_type_name)
         self.assertEqual(card.active_choices, ())
         self.assertEqual(card.active_stock_total, 0)
-        self.assertEqual(card.availability_label, "Sold out")
-        self.assertNotIn("Material", card.answerable_question_labels)
-        self.assertIn("Material", card.missing_question_labels)
+        self.assertEqual(card.availability_label, "ამოიწურა")
+        self.assertNotIn("მასალა", card.answerable_question_labels)
+        self.assertIn("მასალა", card.missing_question_labels)
 
     def test_description_excerpt_is_bounded_without_inventing_content(self):
         product = self.create_product(description="x" * 200)
@@ -1434,7 +1434,7 @@ class ProductWorkspacePaginationTests(
             PRODUCT_WORKSPACE_PAGE_SIZE + 1,
         )
         self.assertEqual(first_response.context["workspace_page_count"], 2)
-        self.assertContains(first_response, "Page 1 of 2")
+        self.assertContains(first_response, "გვერდი 1 / 2")
         self.assertContains(first_response, 'href="/products/?page=2"')
         self.assertNotContains(first_response, "Private Product")
 
@@ -1470,7 +1470,7 @@ class ProductWorkspacePaginationTests(
             response.context["workspace_previous_page_url"],
             f"{self.url}?q=match&lifecycle=draft",
         )
-        self.assertContains(response, "Page 2 of 2")
+        self.assertContains(response, "გვერდი 2 / 2")
         self.assertContains(
             response,
             'name="next" value="/products/?q=match&amp;lifecycle=draft&amp;page=2"',
@@ -1505,7 +1505,7 @@ class ProductWorkspacePaginationTests(
 
         self.assertEqual(response.redirect_chain, [(self.url, 302)])
         self.assertEqual(response.context["workspace_result_count"], 0)
-        self.assertContains(response, "No products yet.")
+        self.assertContains(response, "პროდუქტები ჯერ არ არის.")
 
     def test_workspace_query_count_does_not_grow_with_page_contents(self):
         self.create_product(name="Product 00")
@@ -1554,7 +1554,7 @@ class ProductWorkspacePaginationJourneyTests(
     def test_stock_membership_change_recovers_empty_last_page_for_htmx(self):
         products = self.create_catalog(
             PRODUCT_WORKSPACE_PAGE_SIZE + 1,
-            prefix="Available",
+            prefix="მარაგშია",
             lifecycle=Product.Lifecycle.ACTIVE,
             quantity=1,
         )
@@ -1582,7 +1582,7 @@ class ProductWorkspacePaginationJourneyTests(
         self.assertEqual(response.context["workspace_page_number"], 1)
         self.assertEqual(response.context["workspace_result_count"], 12)
         self.assertNotContains(response, target_product.name)
-        self.assertContains(response, "moved out of the current results")
+        self.assertContains(response, "მიმდინარე შედეგებიდან გადავიდა")
 
     def test_dashboard_drilldown_preserves_origin_across_pages(self):
         self.create_catalog(
@@ -1615,7 +1615,7 @@ class ProductWorkspacePaginationJourneyTests(
     def test_archive_and_restore_recover_a_page_emptied_by_membership_change(self):
         active_products = self.create_catalog(
             PRODUCT_WORKSPACE_PAGE_SIZE + 1,
-            prefix="Active",
+            prefix="აქტიური",
             lifecycle=Product.Lifecycle.ACTIVE,
             quantity=1,
         )
@@ -1636,7 +1636,7 @@ class ProductWorkspacePaginationJourneyTests(
 
         self.create_catalog(
             PRODUCT_WORKSPACE_PAGE_SIZE,
-            prefix="Archived",
+            prefix="დაარქივებული",
             lifecycle=Product.Lifecycle.ARCHIVED,
         )
         archived_url = f"{self.url}?lifecycle=archived&page=2"
@@ -1718,6 +1718,28 @@ class ProductWorkspaceViewTests(TestCase):
             f"{reverse('accounts:login')}?next={self.url}",
         )
 
+    def test_final_seller_experience_uses_georgian_and_recovery_hooks(self):
+        product, _choice = self.create_product_with_choice(
+            name="ძალიან გრძელი ქართული პროდუქტის სახელი",
+        )
+        self.client.force_login(self.owner)
+
+        workspace_response = self.client.get(self.url)
+        create_response = self.client.get(reverse("catalog:product_create"))
+
+        self.assertContains(workspace_response, '<html lang="ka">')
+        self.assertContains(workspace_response, "პროდუქტები")
+        self.assertContains(workspace_response, "მზა პასუხი")
+        self.assertContains(workspace_response, "სურათი არ არის")
+        self.assertContains(
+            workspace_response,
+            f'aria-label="{product.name} — სურათი არ არის"',
+        )
+        self.assertNotContains(workspace_response, ">Account</span>")
+        self.assertContains(create_response, 'id="product-form-transport-error"')
+        self.assertContains(create_response, "გვერდის განახლება")
+        self.assertContains(create_response, "js/product_workspace.js")
+
     def test_workspace_renders_only_owned_products_in_deterministic_order(self):
         later = Product.objects.create(
             business=self.business,
@@ -1763,7 +1785,7 @@ class ProductWorkspaceViewTests(TestCase):
         )
         self.assertContains(response, add_product, count=1)
         self.assertContains(response, vocabulary, count=1)
-        self.assertContains(response, "<strong>1</strong> product")
+        self.assertContains(response, "<strong>1</strong> პროდუქტი")
         self.assertLess(content.index(add_product), content.index(search))
         self.assertLess(content.index(search), content.index(product_card))
         self.assertLess(content.index(product_card), content.index(vocabulary))
@@ -1816,7 +1838,7 @@ class ProductWorkspaceViewTests(TestCase):
             expected_return_url,
         )
         self.assertEqual(response.context["workspace_result_count"], 1)
-        self.assertContains(response, "product for “black trousers”")
+        self.assertContains(response, "პროდუქტი „black trousers“ ძიებისთვის")
         self.assertContains(response, "Black trousers")
         self.assertNotContains(response, "Blue shirt")
         self.assertContains(response, "q%3Dblack%2Btrousers")
@@ -1824,7 +1846,7 @@ class ProductWorkspaceViewTests(TestCase):
             response,
             f'name="next" value="{expected_return_url}"',
         )
-        self.assertContains(response, "Clear search", count=1)
+        self.assertContains(response, "ძიების გასუფთავება", count=1)
 
     def test_workspace_search_no_result_has_one_clear_recovery(self):
         Product.objects.create(
@@ -1838,11 +1860,11 @@ class ProductWorkspaceViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["workspace_result_count"], 0)
-        self.assertContains(response, "products for “missing”")
-        self.assertContains(response, "No products match “missing”.")
-        self.assertContains(response, "Try a simpler search.")
-        self.assertContains(response, "Clear search", count=1)
-        self.assertNotContains(response, "No products yet.")
+        self.assertContains(response, "პროდუქტი „missing“ ძიებისთვის")
+        self.assertContains(response, "ძიებას „missing“ არცერთი პროდუქტი არ ემთხვევა.")
+        self.assertContains(response, "სცადეთ უფრო მარტივი ძიება.")
+        self.assertContains(response, "ძიების გასუფთავება", count=1)
+        self.assertNotContains(response, "პროდუქტები ჯერ არ არის.")
         self.assertNotContains(
             response,
             f'href="{reverse("catalog:product_create")}?next=',
@@ -1855,15 +1877,15 @@ class ProductWorkspaceViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context["workspace_result_count"], 0)
-        self.assertContains(response, "products for “missing”")
-        self.assertContains(response, "No products yet.")
+        self.assertContains(response, "პროდუქტი „missing“ ძიებისთვის")
+        self.assertContains(response, "პროდუქტები ჯერ არ არის.")
         self.assertNotContains(response, "No products match")
         self.assertContains(
             response,
             f'href="{reverse("catalog:product_create")}?next=',
             count=1,
         )
-        self.assertContains(response, "Clear search", count=1)
+        self.assertContains(response, "ძიების გასუფთავება", count=1)
 
     def test_invalid_repeated_search_is_controlled_and_does_not_list_products(self):
         Product.objects.create(
@@ -1877,8 +1899,8 @@ class ProductWorkspaceViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context["workspace_search_is_valid"])
-        self.assertContains(response, "Enter one search query.")
-        self.assertContains(response, "Search was not applied.")
+        self.assertContains(response, "შეიყვანეთ ერთი საძიებო მოთხოვნა.")
+        self.assertContains(response, "ძიება არ გამოყენებულა.")
         self.assertNotContains(response, "Private if unfiltered")
 
     def test_workspace_filters_render_canonical_state_and_clear_actions(self):
@@ -1925,17 +1947,17 @@ class ProductWorkspaceViewTests(TestCase):
             response.context["workspace_clear_filters_url"],
             f"{self.url}?q=black+trousers",
         )
-        self.assertContains(response, "2 active")
-        self.assertContains(response, "Lifecycle — Active")
-        self.assertContains(response, "Availability — Available")
+        self.assertContains(response, "აქტიური: 2")
+        self.assertContains(response, "სტატუსი — აქტიური")
+        self.assertContains(response, "ხელმისაწვდომობა — მარაგშია")
         self.assertContains(response, 'class="product-workspace-state-summary"')
         self.assertNotContains(
             response,
             'class="product-workspace-filters" open',
         )
-        self.assertContains(response, "Clear search", count=1)
-        self.assertContains(response, "Clear filters", count=1)
-        self.assertContains(response, "Clear all", count=1)
+        self.assertContains(response, "ძიების გასუფთავება", count=1)
+        self.assertContains(response, "ფილტრების გასუფთავება", count=1)
+        self.assertContains(response, "ყველას გასუფთავება", count=1)
         self.assertContains(
             response,
             f'name="next" value="{expected_return_url.replace("&", "&amp;")}"',
@@ -1960,19 +1982,19 @@ class ProductWorkspaceViewTests(TestCase):
 
         self.assertContains(
             filter_response,
-            "No products match the active filters.",
+            "აქტიურ ფილტრებს არცერთი პროდუქტი არ ემთხვევა.",
         )
-        self.assertContains(filter_response, "<strong>0</strong> products ·")
-        self.assertContains(filter_response, "Clear filters", count=1)
-        self.assertNotContains(filter_response, "Clear all")
-        self.assertNotContains(filter_response, "No products yet.")
+        self.assertContains(filter_response, "<strong>0</strong> პროდუქტი ·")
+        self.assertContains(filter_response, "ფილტრების გასუფთავება", count=1)
+        self.assertNotContains(filter_response, "ყველას გასუფთავება")
+        self.assertNotContains(filter_response, "პროდუქტები ჯერ არ არის.")
         self.assertContains(
             combined_response,
-            "No products match this search and filter combination.",
+            "ამ ძიებასა და ფილტრებს არცერთი პროდუქტი არ ემთხვევა.",
         )
-        self.assertContains(combined_response, "Clear all", count=1)
-        self.assertNotContains(combined_response, "Clear filters")
-        self.assertNotContains(combined_response, "Clear search")
+        self.assertContains(combined_response, "ყველას გასუფთავება", count=1)
+        self.assertNotContains(combined_response, "ფილტრების გასუფთავება")
+        self.assertNotContains(combined_response, "ძიების გასუფთავება")
 
     def test_invalid_filter_is_controlled_and_does_not_list_products(self):
         Product.objects.create(
@@ -1991,8 +2013,8 @@ class ProductWorkspaceViewTests(TestCase):
         )
 
         self.assertFalse(unknown_response.context["workspace_query_is_valid"])
-        self.assertContains(unknown_response, "Select a valid choice")
-        self.assertContains(unknown_response, "Filters were not applied.")
+        self.assertContains(unknown_response, "აირჩიეთ დასაშვები მნიშვნელობა")
+        self.assertContains(unknown_response, "ფილტრები არ გამოყენებულა.")
         self.assertContains(
             unknown_response,
             'class="product-workspace-filters" open',
@@ -2001,7 +2023,7 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertFalse(repeated_response.context["workspace_query_is_valid"])
         self.assertContains(
             repeated_response,
-            "Select one lifecycle filter.",
+            "აირჩიეთ ერთი სტატუსის ფილტრი.",
         )
         self.assertNotContains(repeated_response, "Must not render unfiltered")
 
@@ -2039,6 +2061,8 @@ class ProductWorkspaceViewTests(TestCase):
         ).read_text()
 
         self.assertIn("syncWorkspaceFormAccessibility", workspace_script)
+        self.assertIn("syncFieldErrors", workspace_script)
+        self.assertIn("showProductFormTransportRecovery", workspace_script)
         self.assertIn('field.setAttribute("aria-describedby", describedBy)', workspace_script)
         self.assertIn('field.setAttribute("aria-errormessage", errorId)', workspace_script)
         self.assertIn("setWorkspaceActionBusy", workspace_script)
@@ -2055,6 +2079,7 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertIn("closeReadyReply(panel)", workspace_script)
         self.assertIn(".product-workspace :is(", workspace_styles)
         self.assertIn(".product-workspace .button[aria-disabled=\"true\"]", workspace_styles)
+        self.assertIn("min-height: 2.75rem", workspace_styles)
 
     def test_true_empty_catalog_remains_distinct_with_active_filters(self):
         self.client.force_login(self.owner)
@@ -2064,14 +2089,14 @@ class ProductWorkspaceViewTests(TestCase):
             {"q": "missing", "availability": "sold_out"},
         )
 
-        self.assertContains(response, "No products yet.")
+        self.assertContains(response, "პროდუქტები ჯერ არ არის.")
         self.assertNotContains(response, "No products match")
-        self.assertContains(response, "Add product", count=2)
-        self.assertContains(response, "Clear all", count=1)
+        self.assertContains(response, "პროდუქტის დამატება", count=2)
+        self.assertContains(response, "ყველას გასუფთავება", count=1)
 
     def test_native_stock_fallback_updates_availability_filter_membership(self):
         product, choice = self.create_product_with_choice(
-            name="Availability transition",
+            name="ხელმისაწვდომობა transition",
             quantity=1,
         )
         adjustment_url = reverse(
@@ -2096,7 +2121,7 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertEqual(list(sold_out_response.context["products"]), [])
         self.assertContains(
             sold_out_response,
-            "No products match the active filters.",
+            "აქტიურ ფილტრებს არცერთი პროდუქტი არ ემთხვევა.",
         )
         choice.refresh_from_db()
         self.assertEqual(choice.quantity, 0)
@@ -2115,7 +2140,7 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertEqual(list(available_response.context["products"]), [])
         self.assertContains(
             available_response,
-            "No products match the active filters.",
+            "აქტიურ ფილტრებს არცერთი პროდუქტი არ ემთხვევა.",
         )
         choice.refresh_from_db()
         self.assertEqual(choice.quantity, 1)
@@ -2152,7 +2177,7 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertEqual(list(response.context["products"]), [product])
         choice.refresh_from_db()
         self.assertEqual(choice.quantity, 2)
-        self.assertContains(response, "1 active · 2 total stock")
+        self.assertContains(response, "აქტიური: 1 · სულ მარაგი: 2")
 
     def test_workspace_renders_compact_card_semantics(self):
         product_type = BusinessProductType.objects.create(
@@ -2189,41 +2214,41 @@ class ProductWorkspaceViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/_product_card.html")
-        self.assertContains(response, "Lifecycle")
-        self.assertContains(response, "Price")
+        self.assertContains(response, "სტატუსი")
+        self.assertContains(response, "ფასი")
         self.assertContains(response, "49.90 GEL")
-        self.assertContains(response, "Availability")
-        self.assertContains(response, "Available")
-        self.assertContains(response, "Product type")
+        self.assertContains(response, "ხელმისაწვდომობა")
+        self.assertContains(response, "მარაგშია")
+        self.assertContains(response, "პროდუქტის ტიპი")
         self.assertContains(response, "Trousers")
-        self.assertContains(response, "Supported answers ready")
+        self.assertContains(response, "საჭირო პასუხები მზადაა")
         self.assertContains(
             response,
-            "Ready:</strong> Price, Stock, Size and color, Product type, Material",
+            "მზადაა:</strong> ფასი, მარაგი, ზომა და ფერი, პროდუქტის ტიპი, მასალა",
         )
-        self.assertContains(response, f"Choice #{choice.pk}")
-        self.assertContains(response, "Size")
-        self.assertContains(response, "Color")
-        self.assertContains(response, "Quantity")
+        self.assertContains(response, f"არჩევანი #{choice.pk}")
+        self.assertContains(response, "ზომა")
+        self.assertContains(response, "ფერი")
+        self.assertContains(response, "რაოდენობა")
         self.assertContains(
             response,
             (
-                f'aria-label="Current quantity for Choice #{choice.pk}, '
-                'size M, color Black"'
+                f'aria-label="მიმდინარე რაოდენობა: არჩევანი #{choice.pk}, '
+                'ზომა M, ფერი Black"'
             ),
         )
-        self.assertContains(response, 'aria-label="Edit Black trousers"')
-        self.assertContains(response, "Ready Reply")
+        self.assertContains(response, 'aria-label="Black trousers — რედაქტირება"')
+        self.assertContains(response, "მზა პასუხი")
         self.assertContains(response, "data-ready-reply-trigger")
         self.assertNotContains(response, "data-ready-reply-panel")
         rendered = response.content.decode()
         card_markup = rendered[rendered.index('<article class="product-card"') :]
         self.assertLess(
-            card_markup.index("Price"),
-            card_markup.index("Lifecycle"),
+            card_markup.index("ფასი"),
+            card_markup.index("სტატუსი"),
         )
         self.assertLess(
-            card_markup.index("Lifecycle"),
+            card_markup.index("სტატუსი"),
             card_markup.index(product.description),
         )
 
@@ -2279,7 +2304,7 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, "data-ready-reply-panel")
         self.assertContains(response, "data-ready-reply-text")
         self.assertContains(response, "data-ready-reply-copy")
-        self.assertContains(response, "Before sending")
+        self.assertContains(response, "გაგზავნამდე")
         self.assertContains(response, "ფასი აკლია")
         self.assertContains(
             response,
@@ -2327,7 +2352,7 @@ class ProductWorkspaceViewTests(TestCase):
             complete_response,
             "ხელმისაწვდომობა: მარაგშია.",
         )
-        self.assertNotContains(complete_response, "Before sending")
+        self.assertNotContains(complete_response, "გაგზავნამდე")
 
         size_l = BusinessSize.objects.create(
             business=self.business,
@@ -2364,8 +2389,8 @@ class ProductWorkspaceViewTests(TestCase):
 
         response = self.client.get(self.url)
 
-        self.assertContains(response, "Price")
-        self.assertContains(response, "Missing")
+        self.assertContains(response, "ფასი")
+        self.assertContains(response, "აკლია")
         self.assertNotContains(response, "Free")
 
     def test_workspace_renders_readiness_with_exact_correction_return(self):
@@ -2379,13 +2404,13 @@ class ProductWorkspaceViewTests(TestCase):
 
         response = self.client.get(self.url, workspace_state)
 
-        self.assertContains(response, "Buyer answers")
-        self.assertContains(response, "Ready:</strong> Stock, Size and color")
+        self.assertContains(response, "პასუხები მომხმარებლისთვის")
+        self.assertContains(response, "მზადაა:</strong> მარაგი, ზომა და ფერი")
         self.assertContains(
             response,
-            "Missing:</strong> Price, Product type, Material",
+            "აკლია:</strong> ფასი, პროდუქტის ტიპი, მასალა",
         )
-        self.assertContains(response, "Add price")
+        self.assertContains(response, "ფასის დამატება")
         self.assertContains(response, "?focus=price&amp;next=")
         self.assertContains(
             response,
@@ -2411,8 +2436,8 @@ class ProductWorkspaceViewTests(TestCase):
 
         workspace_response = self.client.get(self.url, {"q": "material"})
 
-        self.assertContains(workspace_response, "Missing:</strong> Material")
-        self.assertContains(workspace_response, "Confirm material")
+        self.assertContains(workspace_response, "აკლია:</strong> მასალა")
+        self.assertContains(workspace_response, "მასალის დადასტურება")
         self.assertContains(workspace_response, "focus=materials")
         self.assertContains(workspace_response, "#material-section")
 
@@ -2495,22 +2520,22 @@ class ProductWorkspaceViewTests(TestCase):
             count=3,
         )
         self.assertContains(response, "js/product_workspace.js")
-        self.assertContains(response, "Refresh results")
+        self.assertContains(response, "შედეგების განახლება")
         self.assertContains(
             response,
-            f"Decrease stock for Choice #{active_choice.pk}, size M, color Black",
+            f"მარაგის შემცირება: არჩევანი #{active_choice.pk}, ზომა M, ფერი Black",
         )
         self.assertContains(
             response,
-            f"Increase stock for Choice #{active_choice.pk}, size M, color Black",
+            f"მარაგის გაზრდა: არჩევანი #{active_choice.pk}, ზომა M, ფერი Black",
         )
         self.assertContains(
             response,
-            f"Set exact stock for Choice #{active_choice.pk}, size M, color Black",
+            f"ზუსტი მარაგის მითითება: არჩევანი #{active_choice.pk}, ზომა M, ფერი Black",
         )
         self.assertContains(response, 'name="quantity"', count=1)
         self.assertNotContains(response, f'action="{inactive_url}"')
-        self.assertContains(response, "1 inactive")
+        self.assertContains(response, "არააქტიური: 1")
 
     def test_native_stock_controls_recompute_full_workspace_truth(self):
         product, choice = self.create_product_with_choice(quantity=1)
@@ -2541,9 +2566,9 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertEqual(first_adjustment.quantity_before, 1)
         self.assertEqual(first_adjustment.quantity_after, 0)
         self.assertEqual(first_adjustment.delta, -1)
-        self.assertContains(sold_out_response, "Stock updated to 0.")
-        self.assertContains(sold_out_response, "Sold out")
-        self.assertContains(sold_out_response, "1 active · 0 total stock")
+        self.assertContains(sold_out_response, "მარაგი განახლდა: 0.")
+        self.assertContains(sold_out_response, "ამოიწურა")
+        self.assertContains(sold_out_response, "აქტიური: 1 · სულ მარაგი: 0")
 
         available_response = self.client.post(
             adjustment_url,
@@ -2566,9 +2591,9 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertEqual(latest_adjustment.quantity_before, 0)
         self.assertEqual(latest_adjustment.quantity_after, 1)
         self.assertEqual(latest_adjustment.delta, 1)
-        self.assertContains(available_response, "Stock updated to 1.")
-        self.assertContains(available_response, "Available")
-        self.assertContains(available_response, "1 active · 1 total stock")
+        self.assertContains(available_response, "მარაგი განახლდა: 1.")
+        self.assertContains(available_response, "მარაგშია")
+        self.assertContains(available_response, "აქტიური: 1 · სულ მარაგი: 1")
 
     def test_workspace_htmx_refreshes_partial_stock_readiness_signal(self):
         product, targeted_choice = self.create_product_with_choice(quantity=1)
@@ -2597,8 +2622,8 @@ class ProductWorkspaceViewTests(TestCase):
 
         self.assertEqual(partial_response.status_code, 200)
         self.assertTemplateUsed(partial_response, "catalog/_product_results.html")
-        self.assertContains(partial_response, "Some choices sold out")
-        self.assertContains(partial_response, "Ready:</strong> Stock, Size and color")
+        self.assertContains(partial_response, "ზოგი არჩევანი ამოიწურა")
+        self.assertContains(partial_response, "მზადაა:</strong> მარაგი, ზომა და ფერი")
         targeted_choice.refresh_from_db()
         other_choice.refresh_from_db()
         self.assertEqual(targeted_choice.quantity, 0)
@@ -2615,7 +2640,7 @@ class ProductWorkspaceViewTests(TestCase):
         )
 
         self.assertEqual(restored_response.status_code, 200)
-        self.assertNotContains(restored_response, "Some choices sold out")
+        self.assertNotContains(restored_response, "ზოგი არჩევანი ამოიწურა")
         targeted_choice.refresh_from_db()
         other_choice.refresh_from_db()
         self.assertEqual(targeted_choice.quantity, 1)
@@ -2653,9 +2678,9 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertEqual(duplicate_choice.quantity, 4)
         adjustment = InventoryAdjustment.objects.get()
         self.assertEqual(adjustment.choice, targeted_choice)
-        self.assertContains(response, f"Choice #{targeted_choice.pk}")
-        self.assertContains(response, f"Choice #{duplicate_choice.pk}")
-        self.assertContains(response, "2 active · 6 total stock")
+        self.assertContains(response, f"არჩევანი #{targeted_choice.pk}")
+        self.assertContains(response, f"არჩევანი #{duplicate_choice.pk}")
+        self.assertContains(response, "აქტიური: 2 · სულ მარაგი: 6")
 
     def test_native_stock_underflow_returns_authoritative_workspace_error(self):
         product, choice = self.create_product_with_choice(quantity=0)
@@ -2681,9 +2706,9 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertTrue(choice.is_active)
         self.assertEqual(product.lifecycle, Product.Lifecycle.ACTIVE)
         self.assertFalse(InventoryAdjustment.objects.exists())
-        self.assertContains(response, "Choice quantity cannot be negative.")
-        self.assertContains(response, "Sold out")
-        self.assertContains(response, "1 active · 0 total stock")
+        self.assertContains(response, "მარაგი ნულზე ნაკლები ვერ იქნება.")
+        self.assertContains(response, "ამოიწურა")
+        self.assertContains(response, "აქტიური: 1 · სულ მარაგი: 0")
 
     def test_workspace_card_without_active_choices_has_edit_recovery(self):
         product = Product.objects.create(
@@ -2696,8 +2721,8 @@ class ProductWorkspaceViewTests(TestCase):
 
         response = self.client.get(self.url)
 
-        self.assertContains(response, "No active choices.")
-        self.assertContains(response, "Not sellable")
+        self.assertContains(response, "აქტიური არჩევანი არ არის.")
+        self.assertContains(response, "ამჟამად არ იყიდება")
         self.assertContains(
             response,
             f'{reverse("catalog:product_edit", kwargs={"pk": product.pk})}'
@@ -2715,7 +2740,7 @@ class ProductWorkspaceViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No business workspace yet.")
+        self.assertContains(response, "ბიზნესის სივრცე ჯერ არ არის.")
         self.assertFalse(
             Business.objects.filter(owner=seller_without_business).exists()
         )
@@ -2729,7 +2754,7 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertContains(
             response,
-            "Multiple business workspaces need an approved switcher",
+            "პროდუქტების სანახავად უნდა არჩეული იყოს ერთი ბიზნესის სივრცე",
             status_code=409,
         )
 
@@ -2740,13 +2765,13 @@ class ProductWorkspaceViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/_product_results.html")
-        self.assertContains(response, "No products yet.")
+        self.assertContains(response, "პროდუქტები ჯერ არ არის.")
         self.assertContains(
             response,
             f'{reverse("catalog:product_create")}?next={self.url}',
             count=1,
         )
-        self.assertNotContains(response, "Manage product vocabulary")
+        self.assertNotContains(response, "პროდუქტის სიტყვარის მართვა")
 
 
 class ProductWorkspaceDirectSetTests(TestCase):
@@ -2826,7 +2851,7 @@ class ProductWorkspaceDirectSetTests(TestCase):
         for choice in (self.choice, self.duplicate):
             self.assertContains(
                 response,
-                f"Set exact stock for Choice #{choice.pk}, size M, color Black",
+                f"ზუსტი მარაგის მითითება: არჩევანი #{choice.pk}, ზომა M, ფერი Black",
             )
             self.assertContains(
                 response,

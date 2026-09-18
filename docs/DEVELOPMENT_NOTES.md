@@ -742,3 +742,15 @@ Verification: 553 PostgreSQL tests passed; Django system and migration consisten
 Release: READY.
 
 Next on Git PASS: P11.2 Final Cross-Surface UX, Georgian Terminology, Accessibility, and Failure Hardening.
+
+### 2026-09-18 - P11.2 Final Cross-Surface UX, Georgian Terminology, Accessibility, and Failure Hardening
+
+Code status: PASS.
+
+Seller-facing Workspace, Dashboard, create/edit, vocabulary, readiness, Ready Reply, stock, Add Similar, and archive/restore surfaces now use consistent Georgian terminology and accessible image, status, error, keyboard, focus, HTMX, clipboard-failure, and safe-return behavior while preserving server-authoritative state and lifecycle mutation restrictions. Audit stabilization corrected direct terminology and recovery messages; final-suite recovery updated four stale English test expectations without changing production behavior.
+
+Verification: 555 PostgreSQL tests passed; Django system and migration consistency checks, JavaScript syntax, and diff/whitespace checks passed. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: Phase 12.

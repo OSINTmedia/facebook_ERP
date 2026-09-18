@@ -1,11 +1,12 @@
 {% extends "base.html" %}
+{% load static %}
 
-{% block title %}{{ page_title }} | Seller Workspace{% endblock %}
+{% block title %}{{ page_title }} | გამყიდველის სივრცე{% endblock %}
 
 {% block content %}
   <section class="shell-page" aria-labelledby="product-form-title">
     <div class="shell-heading">
-      <p class="eyebrow">Seller workspace</p>
+      <p class="eyebrow">გამყიდველის სივრცე</p>
       <h1 id="product-form-title">{{ page_title }}</h1>
     </div>
 
@@ -15,16 +16,28 @@
 
     {% if business_policy_blocked %}
       <div class="empty-state empty-state--warning" role="alert">
-        <p>Multiple business workspaces need an approved switcher before products can be changed.</p>
+        <p>პროდუქტის შესაცვლელად უნდა არჩეული იყოს ერთი ბიზნესის სივრცე.</p>
       </div>
     {% elif not active_business %}
       <div class="empty-state" role="status">
-        <p>No business workspace yet.</p>
+        <p>ბიზნესის სივრცე ჯერ არ არის.</p>
       </div>
     {% else %}
       <form class="product-form" method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ return_url }}">
+
+        <div
+          id="product-form-transport-error"
+          class="product-workspace-transport-error"
+          role="alert"
+          aria-atomic="true"
+          tabindex="-1"
+          hidden
+        >
+          <p>პასუხი ვერ დადასტურდა. განაახლეთ გვერდი და სცადეთ ხელახლა.</p>
+          <a class="button button--secondary" href="{{ request.get_full_path }}">გვერდის განახლება</a>
+        </div>
 
         {% if show_form_errors %}
           {% if form.non_field_errors %}
@@ -38,9 +51,9 @@
 
         <section class="assistant-primary-step" aria-labelledby="description-step-title">
           <div class="assistant-primary-step__heading">
-            <p class="assistant-step-number">Start here</p>
-            <h2 id="description-step-title">Describe the Product</h2>
-            <p>Use the wording you already have. You can confirm useful structure below.</p>
+            <p class="assistant-step-number">დაიწყეთ აქ</p>
+            <h2 id="description-step-title">აღწერეთ პროდუქტი</h2>
+            <p>გამოიყენეთ ის სიტყვები, რომლებსაც უკვე იყენებთ. სასარგებლო სტრუქტურის დადასტურება ქვემოთ შეგიძლიათ.</p>
           </div>
 
           <div class="form-field form-field--description">
@@ -59,7 +72,7 @@
           <div class="form-field form-field--price">
             <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
             {{ form.price }}
-            <small>Leave blank when the price is not known yet.</small>
+            <small>თუ ფასი ჯერ არ იცით, ველი ცარიელი დატოვეთ.</small>
             {% if show_form_errors %}
               {% for error in form.price.errors %}
                 <p class="field-error">{{ error }}</p>
@@ -72,12 +85,12 @@
 
         <details id="classification-section" class="assistant-section classification-section" {% if correction_target == "classification" or show_form_errors and form.product_type.errors or show_form_errors and form.tags.errors %}open{% endif %}>
           <summary class="assistant-section__summary">
-            <span>Confirm type and tags</span>
-            <small>Optional structured meaning</small>
+            <span>ტიპისა და ჭდეების დადასტურება</span>
+            <small>არასავალდებულო სტრუქტურირება</small>
           </summary>
           <div class="assistant-section__body">
-            <p class="classification-section__help">Recognition candidates remain suggestions until you select canonical values here and save the Product.</p>
-            <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">Manage Product Type and Tag vocabulary</a>
+            <p class="classification-section__help">ამოცნობილი ვარიანტები შეთავაზებად რჩება, სანამ აქ მთავარ მნიშვნელობას არ აირჩევთ და პროდუქტს არ შეინახავთ.</p>
+            <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">პროდუქტის ტიპებისა და ჭდეების სიტყვარის მართვა</a>
 
             <div class="form-field">
               <label for="{{ form.product_type.id_for_label }}">{{ form.product_type.label }}</label>
@@ -107,21 +120,21 @@
 
         <details class="assistant-section product-settings" {% if media_reselection_required or show_form_errors and media_form.image.errors or show_form_errors and form.lifecycle.errors %}open{% endif %}>
           <summary class="assistant-section__summary">
-            <span>Image and Product status</span>
-            <small>Optional image and lifecycle</small>
+            <span>სურათი და პროდუქტის სტატუსი</span>
+            <small>არასავალდებულო სურათი და სტატუსი</small>
           </summary>
           <div class="assistant-section__body">
             <fieldset class="product-media-field">
-              <legend>Product image</legend>
+              <legend>პროდუქტის სურათი</legend>
               {% if current_media %}
                 <img
                   class="product-media-field__preview"
                   src="{% url 'catalog:product_media' current_media.pk %}"
-                  alt="Current image for {{ product.name|default:'this Product' }}"
+                  alt="{{ product.name|default:'პროდუქტი' }} — მიმდინარე სურათი"
                 >
               {% else %}
-                <div class="product-media-placeholder product-media-placeholder--form" role="img" aria-label="No Product image selected">
-                  <span aria-hidden="true">No image</span>
+                <div class="product-media-placeholder product-media-placeholder--form" role="img" aria-label="პროდუქტის სურათი არ არის არჩეული">
+                  <span aria-hidden="true">სურათი არ არის</span>
                 </div>
               {% endif %}
               <div class="form-field">
@@ -137,7 +150,7 @@
                 {% endif %}
               </div>
               {% if media_reselection_required %}
-                <p class="field-error" role="alert">The Product was not saved and this response cannot keep the selected file. Select the image again before saving.</p>
+                <p class="field-error" role="alert">პროდუქტი არ შეინახა და არჩეული ფაილი ამ პასუხში ვერ შეინახება. შენახვამდე სურათი თავიდან აირჩიეთ.</p>
               {% endif %}
             </fieldset>
 
@@ -155,9 +168,13 @@
 
         <div class="form-actions">
           <button class="button button--primary" type="submit">{{ submit_label }}</button>
-          <a class="button button--secondary" href="{{ return_url }}">Cancel</a>
+          <a class="button button--secondary" href="{{ return_url }}">გაუქმება</a>
         </div>
       </form>
     {% endif %}
   </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/product_workspace.js' %}" defer></script>
 {% endblock %}

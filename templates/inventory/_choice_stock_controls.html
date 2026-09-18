@@ -1,10 +1,10 @@
 <div
   id="choice-stock-controls-{{ choice.pk }}"
   class="choice-stock-controls"
-  aria-label="Stock controls for {{ choice.size.name }} / {{ choice.color.name }}"
+  aria-label="მარაგის მართვა: {{ choice.size.name }} / {{ choice.color.name }}"
 >
   <div class="choice-stock-controls__summary">
-    <span>Current stock</span>
+    <span>მიმდინარე მარაგი</span>
     <output class="choice-stock-controls__quantity" aria-live="polite">{{ choice.quantity }}</output>
   </div>
 
@@ -24,7 +24,7 @@
       hx-include="closest form"
       hx-indicator="#choice-stock-loading-{{ choice.pk }}"
       hx-disabled-elt="#choice-stock-decrease-{{ choice.pk }}, #choice-stock-increase-{{ choice.pk }}"
-      aria-label="Decrease stock for {{ choice.size.name }} / {{ choice.color.name }}"
+      aria-label="მარაგის შემცირება: {{ choice.size.name }} / {{ choice.color.name }}"
     >−1</button>
     <button
       id="choice-stock-increase-{{ choice.pk }}"
@@ -41,13 +41,13 @@
       hx-include="closest form"
       hx-indicator="#choice-stock-loading-{{ choice.pk }}"
       hx-disabled-elt="#choice-stock-decrease-{{ choice.pk }}, #choice-stock-increase-{{ choice.pk }}"
-      aria-label="Increase stock for {{ choice.size.name }} / {{ choice.color.name }}"
+      aria-label="მარაგის გაზრდა: {{ choice.size.name }} / {{ choice.color.name }}"
     >+1</button>
     <span
       id="choice-stock-loading-{{ choice.pk }}"
       class="htmx-indicator choice-stock-controls__loading"
       role="status"
-    >Updating…</span>
+    >ახლდება…</span>
   </div>
 
   {% if stock_feedback %}

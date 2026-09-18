@@ -1024,7 +1024,7 @@ class InventoryMutationRouteTests(TestCase):
         self.assertEqual(adjustment.delta, 1)
         self.assertEqual(adjustment.quantity_before, 1)
         self.assertEqual(adjustment.quantity_after, 2)
-        self.assertIn("Stock updated to 2.", self.response_messages(response))
+        self.assertIn("მარაგი განახლდა: 2.", self.response_messages(response))
 
     def test_owner_decrement_records_exact_transition(self):
         self.client.force_login(self.owner)
@@ -1073,7 +1073,7 @@ class InventoryMutationRouteTests(TestCase):
             f'id="choice-stock-controls-{duplicate_choice.pk}"',
         )
         self.assertContains(response, ">2</output>")
-        self.assertContains(response, "Stock updated to 2.")
+        self.assertContains(response, "მარაგი განახლდა: 2.")
         self.assertContains(response, 'role="status"')
         self.assertContains(response, 'hx-swap="outerHTML"')
         self.choice.refresh_from_db()
@@ -1099,7 +1099,7 @@ class InventoryMutationRouteTests(TestCase):
             "inventory/_choice_stock_controls.html",
         )
         self.assertContains(response, ">0</output>")
-        self.assertContains(response, "Choice quantity cannot be negative.")
+        self.assertContains(response, "მარაგი ნულზე ნაკლები ვერ იქნება.")
         self.assertContains(response, 'role="alert"')
         self.assertContains(response, 'name="delta"', count=2)
         self.assertContains(response, 'value="-1"')
@@ -1128,7 +1128,7 @@ class InventoryMutationRouteTests(TestCase):
         self.assertContains(response, f">{maximum}</output>")
         self.assertContains(
             response,
-            f"Choice quantity cannot exceed {maximum}.",
+            f"მარაგი {maximum}-ზე მეტი ვერ იქნება.",
         )
         self.assertContains(response, 'role="alert"')
         self.choice.refresh_from_db()
@@ -1150,7 +1150,7 @@ class InventoryMutationRouteTests(TestCase):
             "inventory/_choice_stock_controls.html",
         )
         self.assertContains(response, ">1</output>")
-        self.assertContains(response, "Stock adjustment must be +1 or -1.")
+        self.assertContains(response, "მარაგის ცვლილება უნდა იყოს +1 ან -1.")
         self.assertContains(response, 'role="alert"')
         self.choice.refresh_from_db()
         self.assertEqual(self.choice.quantity, 1)
@@ -1178,8 +1178,8 @@ class InventoryMutationRouteTests(TestCase):
             "inventory/_choice_stock_controls.html",
         )
         self.assertContains(response, 'id="product-workspace-results"', count=1)
-        self.assertContains(response, "Stock updated to 2.")
-        self.assertContains(response, "1 active · 2 total stock")
+        self.assertContains(response, "მარაგი განახლდა: 2.")
+        self.assertContains(response, "აქტიური: 1 · სულ მარაგი: 2")
         self.assertContains(response, ">2</output>")
         self.assertContains(
             response,
@@ -1187,7 +1187,7 @@ class InventoryMutationRouteTests(TestCase):
         )
         self.assertContains(response, 'aria-busy="false"')
         self.assertContains(response, 'aria-atomic="true"')
-        self.assertContains(response, "Refresh results")
+        self.assertContains(response, "შედეგების განახლება")
         self.choice.refresh_from_db()
         self.assertEqual(self.choice.quantity, 2)
         self.assertEqual(InventoryAdjustment.objects.count(), 1)
@@ -1209,11 +1209,11 @@ class InventoryMutationRouteTests(TestCase):
         )
 
         self.assertEqual(sold_out_response.status_code, 200)
-        self.assertContains(sold_out_response, "<strong>0</strong> products ·")
+        self.assertContains(sold_out_response, "<strong>0</strong> პროდუქტი ·")
         self.assertContains(
             sold_out_response,
-            "The Product moved out of the current results because its "
-            "availability changed.",
+            "ხელმისაწვდომობის შეცვლის გამო პროდუქტი მიმდინარე "
+            "შედეგებიდან გადავიდა.",
         )
         self.assertContains(
             sold_out_response,
@@ -1221,7 +1221,7 @@ class InventoryMutationRouteTests(TestCase):
         )
         self.assertContains(
             sold_out_response,
-            "No products match the active filters.",
+            "აქტიურ ფილტრებს არცერთი პროდუქტი არ ემთხვევა.",
         )
         self.assertNotContains(sold_out_response, self.product.name)
         self.choice.refresh_from_db()
@@ -1238,15 +1238,15 @@ class InventoryMutationRouteTests(TestCase):
         )
 
         self.assertEqual(available_response.status_code, 200)
-        self.assertContains(available_response, "<strong>0</strong> products ·")
+        self.assertContains(available_response, "<strong>0</strong> პროდუქტი ·")
         self.assertContains(
             available_response,
-            "The Product moved out of the current results because its "
-            "availability changed.",
+            "ხელმისაწვდომობის შეცვლის გამო პროდუქტი მიმდინარე "
+            "შედეგებიდან გადავიდა.",
         )
         self.assertContains(
             available_response,
-            "No products match the active filters.",
+            "აქტიურ ფილტრებს არცერთი პროდუქტი არ ემთხვევა.",
         )
         self.choice.refresh_from_db()
         self.assertEqual(self.choice.quantity, 1)
@@ -1302,7 +1302,7 @@ class InventoryMutationRouteTests(TestCase):
         )
         self.assertContains(
             sold_out_response,
-            "No products match this search and filter combination.",
+            "ამ ძიებასა და ფილტრებს არცერთი პროდუქტი არ ემთხვევა.",
         )
         self.assertContains(
             sold_out_response,
@@ -1343,7 +1343,7 @@ class InventoryMutationRouteTests(TestCase):
         )
         self.assertContains(
             available_response,
-            "No products match this search and filter combination.",
+            "ამ ძიებასა და ფილტრებს არცერთი პროდუქტი არ ემთხვევა.",
         )
         self.assertContains(
             available_response,
@@ -1386,12 +1386,12 @@ class InventoryMutationRouteTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/_product_results.html")
-        self.assertContains(response, "Choice quantity cannot be negative.")
-        self.assertContains(response, f"Choice #{self.choice.pk}:")
+        self.assertContains(response, "მარაგი ნულზე ნაკლები ვერ იქნება.")
+        self.assertContains(response, f"არჩევანი #{self.choice.pk}:")
         self.assertContains(response, 'role="alert"')
         self.assertContains(response, 'aria-atomic="true"')
-        self.assertContains(response, "Sold out")
-        self.assertContains(response, "1 active · 0 total stock")
+        self.assertContains(response, "ამოიწურა")
+        self.assertContains(response, "აქტიური: 1 · სულ მარაგი: 0")
         self.choice.refresh_from_db()
         self.assertEqual(self.choice.quantity, 0)
         self.assertFalse(InventoryAdjustment.objects.exists())
@@ -1425,7 +1425,7 @@ class InventoryMutationRouteTests(TestCase):
         self.assertContains(response, self.product.name)
         self.assertContains(
             response,
-            f"Choice #{self.choice.pk}: Stock updated to 2.",
+            f"არჩევანი #{self.choice.pk}: მარაგი განახლდა: 2.",
         )
         self.assertNotContains(
             response,
@@ -1433,7 +1433,7 @@ class InventoryMutationRouteTests(TestCase):
         )
         self.assertNotContains(
             response,
-            "The Product moved out of the current results",
+            "ხელმისაწვდომობის შეცვლის გამო პროდუქტი მიმდინარე შედეგებიდან გადავიდა",
         )
         self.choice.refresh_from_db()
         self.assertEqual(self.choice.quantity, 2)
@@ -1602,7 +1602,7 @@ class InventoryMutationRouteTests(TestCase):
                     fetch_redirect_response=False,
                 )
                 self.assertIn(
-                    "Stock adjustment must be +1 or -1.",
+                    "მარაგის ცვლილება უნდა იყოს +1 ან -1.",
                     self.response_messages(response),
                 )
 
@@ -1626,7 +1626,7 @@ class InventoryMutationRouteTests(TestCase):
             fetch_redirect_response=False,
         )
         self.assertIn(
-            "Choice quantity cannot be negative.",
+            "მარაგი ნულზე ნაკლები ვერ იქნება.",
             self.response_messages(response),
         )
         self.choice.refresh_from_db()
@@ -2080,9 +2080,9 @@ class InventoryDirectSetRouteTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/_product_results.html")
-        self.assertContains(response, "Stock set to 0.")
-        self.assertContains(response, "Sold out")
-        self.assertContains(response, "1 active · 0 total stock")
+        self.assertContains(response, "მარაგი განისაზღვრა: 0.")
+        self.assertContains(response, "ამოიწურა")
+        self.assertContains(response, "აქტიური: 1 · სულ მარაგი: 0")
         self.assertContains(
             response,
             f'data-workspace-focus-choice-id="{self.choice.pk}"',
@@ -2109,7 +2109,7 @@ class InventoryDirectSetRouteTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            "Stock is already 3; no adjustment was recorded.",
+            "მარაგი უკვე 3-ია; ცვლილება არ ჩაწერილა.",
         )
         self.choice.refresh_from_db()
         self.assertEqual(self.choice.quantity, 3)

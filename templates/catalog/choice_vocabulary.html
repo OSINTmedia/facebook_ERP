@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 
-{% block title %}Product Vocabulary | Seller Workspace{% endblock %}
+{% block title %}პროდუქტის სიტყვარი | გამყიდველის სივრცე{% endblock %}
 
 {% block content %}
   <section class="shell-page" aria-labelledby="choice-vocabulary-title">
     <div class="shell-heading">
-      <p class="eyebrow">Seller workspace</p>
-      <h1 id="choice-vocabulary-title">Product vocabulary</h1>
-      <p>Prepare canonical Product Types, Tags, Sizes, and Colors, and group every approved alternative wording under the value it means.</p>
+      <p class="eyebrow">გამყიდველის სივრცე</p>
+      <h1 id="choice-vocabulary-title">პროდუქტის სიტყვარი</h1>
+      <p>მოამზადეთ პროდუქტის ტიპების, ჭდეების, ზომებისა და ფერების მთავარი მნიშვნელობები და თითოეულ მათგანთან დააჯგუფეთ დამტკიცებული ალტერნატიული სიტყვები.</p>
     </div>
 
     <div>
-      <a class="return-link" href="{{ return_url }}">Back to Products</a>
+      <a class="return-link" href="{{ return_url }}">პროდუქტებზე დაბრუნება</a>
     </div>
 
     {% if vocabulary_error %}
@@ -20,11 +20,11 @@
 
     {% if business_policy_blocked %}
       <div class="empty-state empty-state--warning" role="alert">
-        <p>Multiple business workspaces need an approved switcher before vocabulary can be changed.</p>
+        <p>სიტყვარის შესაცვლელად უნდა არჩეული იყოს ერთი ბიზნესის სივრცე.</p>
       </div>
     {% elif not active_business %}
       <div class="empty-state" role="status">
-        <p>No business workspace yet.</p>
+        <p>ბიზნესის სივრცე ჯერ არ არის.</p>
       </div>
     {% else %}
       <div class="vocabulary-manager">
@@ -35,7 +35,7 @@
                 <h2 id="{{ group.kind }}-vocabulary-title">{{ group.title }}</h2>
                 <p>{{ group.description }}</p>
               </div>
-              <span class="status-pill">{{ group.entries|length }} canonical</span>
+              <span class="status-pill">მთავარი: {{ group.entries|length }}</span>
             </div>
 
             <details class="vocabulary-editor" {% if group.add_form.errors %}open{% endif %}>
@@ -62,28 +62,28 @@
             </details>
 
             {% if group.entries %}
-              <ul class="vocabulary-manager__list" aria-label="{{ group.title }} vocabulary">
+              <ul class="vocabulary-manager__list" aria-label="{{ group.title }} — სიტყვარი">
                 {% for row in group.entries %}
                   <li class="vocabulary-entry">
                     <div class="vocabulary-entry__summary">
                       <div>
                         <h3>{{ row.entry.name }}</h3>
-                        <p class="vocabulary-entry__state">{% if row.entry.is_active %}Active{% else %}Inactive{% endif %}</p>
+                        <p class="vocabulary-entry__state">{% if row.entry.is_active %}აქტიური{% else %}არააქტიური{% endif %}</p>
                       </div>
-                      <div class="vocabulary-entry__aliases" aria-label="Aliases for {{ row.entry.name }}">
-                        <span class="vocabulary-entry__aliases-label">Aliases</span>
+                      <div class="vocabulary-entry__aliases" aria-label="{{ row.entry.name }} — ალიასები">
+                        <span class="vocabulary-entry__aliases-label">ალიასები</span>
                         {% if row.aliases %}
                           <ul>
                             {% for alias in row.aliases %}<li>{{ alias.alias }}</li>{% endfor %}
                           </ul>
                         {% else %}
-                          <span class="vocabulary-entry__empty">No aliases yet</span>
+                          <span class="vocabulary-entry__empty">ალიასები ჯერ არ არის</span>
                         {% endif %}
                       </div>
                     </div>
 
                     <details class="vocabulary-entry__editor" {% if row.form.errors %}open{% endif %}>
-                      <summary>Edit {{ row.entry.name }}</summary>
+                      <summary>{{ row.entry.name }} — რედაქტირება</summary>
                       <form class="vocabulary-entry__form" method="post" novalidate>
                         {% csrf_token %}
                         <p class="vocabulary-entry__warning">{{ group.warning }}</p>
@@ -100,7 +100,7 @@
                         <div class="form-field">
                           <label for="{{ row.form.aliases.id_for_label }}">{{ row.form.aliases.label }}</label>
                           {{ row.form.aliases }}
-                          <p class="field-help">Comma-separated. Removing a word here removes that alias after Save.</p>
+                          <p class="field-help">გამოყავით მძიმით. აქედან სიტყვის ამოღება შენახვისას ალიასსაც ამოშლის.</p>
                           {% for error in row.form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
                         </div>
                         <div class="choice-option">

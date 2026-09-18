@@ -26,8 +26,8 @@ class MaterialCandidateTransfer:
     @property
     def feedback(self) -> str:
         return (
-            f'Material "{self.candidate.canonical_value}" added to '
-            f"Material {self.row_index + 1}. Review the fact before saving."
+            f'მასალა „{self.candidate.canonical_value}“ დაემატა '
+            f"მასალის რიგს {self.row_index + 1}. შენახვამდე გადაამოწმეთ მონაცემი."
         )
 
 
@@ -54,7 +54,7 @@ def transfer_material_candidate(
 
     if row_index is None:
         if total_forms >= ProductMaterialFactFormSet.max_num:
-            raise ValidationError("No additional material row can be added.")
+            raise ValidationError("მასალის დამატებითი რიგი ვეღარ დაემატება.")
         row_index = total_forms
         transferred_data[f"{material_prefix}-TOTAL_FORMS"] = str(total_forms + 1)
         transferred_data[f"{material_prefix}-{row_index}-percentage"] = ""
@@ -89,7 +89,7 @@ def _current_material_candidate(*, data, business, candidate_reference):
         expected_span = (int(span_start), int(span_end))
         expected_canonical_value = unquote(encoded_canonical_value)
     except (TypeError, ValueError) as exc:
-        raise ValidationError("The selected candidate is invalid.") from exc
+        raise ValidationError("არჩეული შეთავაზება არასწორია.") from exc
 
     preview = recognize_product_preview_for_business(
         data.get("description"),
@@ -97,8 +97,8 @@ def _current_material_candidate(*, data, business, candidate_reference):
     )
     if candidate_index < 0 or candidate_index >= len(preview.candidates):
         raise ValidationError(
-            "That candidate is no longer available. "
-            "Review the description and try again."
+            "ეს შეთავაზება აღარ არის ხელმისაწვდომი. "
+            "გადაამოწმეთ აღწერა და სცადეთ ხელახლა."
         )
 
     candidate = preview.candidates[candidate_index]
@@ -108,11 +108,13 @@ def _current_material_candidate(*, data, business, candidate_reference):
         or candidate.canonical_value != expected_canonical_value
     ):
         raise ValidationError(
-            "That candidate is no longer available. "
-            "Review the description and try again."
+            "ეს შეთავაზება აღარ არის ხელმისაწვდომი. "
+            "გადაამოწმეთ აღწერა და სცადეთ ხელახლა."
         )
     if candidate.destination != SemanticDestination.MATERIAL:
-        raise ValidationError("Only Material candidates can become material facts.")
+        raise ValidationError(
+            "მასალის მონაცემად მხოლოდ მასალის შეთავაზების გამოყენება შეიძლება."
+        )
     return candidate
 
 
@@ -122,7 +124,7 @@ def _validated_total_forms(data, prefix):
         initial_forms = int(data[f"{prefix}-INITIAL_FORMS"])
     except (KeyError, TypeError, ValueError) as exc:
         raise ValidationError(
-            "Material form state is invalid. Refresh and try again."
+            "მასალის ფორმის მდგომარეობა არასწორია. განაახლეთ გვერდი და სცადეთ ხელახლა."
         ) from exc
 
     if (
@@ -131,7 +133,9 @@ def _validated_total_forms(data, prefix):
         or initial_forms > total_forms
         or total_forms > ProductMaterialFactFormSet.absolute_max
     ):
-        raise ValidationError("Material form state is invalid. Refresh and try again.")
+        raise ValidationError(
+            "მასალის ფორმის მდგომარეობა არასწორია. განაახლეთ გვერდი და სცადეთ ხელახლა."
+        )
     return total_forms
 
 

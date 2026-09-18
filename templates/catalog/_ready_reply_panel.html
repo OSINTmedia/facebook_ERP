@@ -7,18 +7,18 @@
 >
   <div class="product-card__readiness-heading">
     <div>
-      <h3 id="product-ready-reply-title-{{ product.pk }}">Ready Reply</h3>
-      <p>Review the buyer-facing text before copying.</p>
+      <h3 id="product-ready-reply-title-{{ product.pk }}">მზა პასუხი</h3>
+      <p>დაკოპირებამდე გადაამოწმეთ მომხმარებლისთვის მომზადებული ტექსტი.</p>
     </div>
     <button
       class="button button--secondary button--compact"
       type="button"
       data-ready-reply-close
-    >Close</button>
+    >დახურვა</button>
   </div>
 
   <div class="form-field">
-    <label for="product-ready-reply-text-{{ product.pk }}">Buyer-facing text</label>
+    <label for="product-ready-reply-text-{{ product.pk }}">ტექსტი მომხმარებლისთვის</label>
     <textarea
       id="product-ready-reply-text-{{ product.pk }}"
       rows="7"
@@ -31,7 +31,7 @@
     type="button"
     data-ready-reply-copy
     data-ready-reply-copy-target="product-ready-reply-text-{{ product.pk }}"
-  >Copy reply</button>
+  >პასუხის დაკოპირება</button>
   <p
     role="status"
     aria-live="polite"
@@ -42,7 +42,7 @@
 
   {% if ready_reply_seller_notes %}
     <section aria-labelledby="product-ready-reply-notes-{{ product.pk }}">
-      <h4 id="product-ready-reply-notes-{{ product.pk }}">Before sending</h4>
+      <h4 id="product-ready-reply-notes-{{ product.pk }}">გაგზავნამდე</h4>
       <ul>
         {% for note in ready_reply_seller_notes %}
           <li>
@@ -51,7 +51,7 @@
               <a
                 class="button button--secondary button--compact"
                 href="{{ note.correction_url }}"
-              >Correct product</a>
+              >პროდუქტის შესწორება</a>
             {% endif %}
           </li>
         {% endfor %}

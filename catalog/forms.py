@@ -28,74 +28,82 @@ from dashboard.attention import ATTENTION_FILTER_CHOICES
 PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH = 120
 PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS = 8
 PRODUCT_WORKSPACE_LIFECYCLE_CHOICES = (
-    ("", "All lifecycle states"),
-    (Product.Lifecycle.ACTIVE, "Active"),
-    (Product.Lifecycle.DRAFT, "Draft"),
-    (Product.Lifecycle.ARCHIVED, "Archived"),
+    ("", "ყველა სტატუსი"),
+    (Product.Lifecycle.ACTIVE, "აქტიური"),
+    (Product.Lifecycle.DRAFT, "მონახაზი"),
+    (Product.Lifecycle.ARCHIVED, "დაარქივებული"),
 )
 PRODUCT_WORKSPACE_AVAILABILITY_CHOICES = (
-    ("", "All availability states"),
-    ("available", "Available"),
-    ("sold_out", "Sold out"),
+    ("", "ყველა ხელმისაწვდომობა"),
+    ("available", "მარაგშია"),
+    ("sold_out", "ამოიწურა"),
 )
 PRODUCT_WORKSPACE_ORIGIN_CHOICES = (
     ("", ""),
-    ("dashboard", "Dashboard"),
+    ("dashboard", "მიმოხილვა"),
+)
+PRODUCT_FORM_LIFECYCLE_CHOICES = (
+    (Product.Lifecycle.DRAFT, "მონახაზი"),
+    (Product.Lifecycle.ACTIVE, "აქტიური"),
 )
 
 
 class ProductWorkspaceSearchForm(forms.Form):
     q = forms.CharField(
         required=False,
-        label="Search products",
-        help_text="Use up to 8 words.",
+        label="პროდუქტების ძიება",
+        help_text="გამოიყენეთ მაქსიმუმ 8 სიტყვა.",
         widget=forms.TextInput(
             attrs={
                 "type": "search",
                 "autocomplete": "off",
                 "maxlength": PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH,
-                "placeholder": "Name, description, type, tag, choice, or material",
+                "placeholder": "აღწერა, ტიპი, ჭდე, არჩევანი ან მასალა",
             }
         ),
     )
     lifecycle = forms.ChoiceField(
         required=False,
-        label="Lifecycle",
+        label="სტატუსი",
         choices=PRODUCT_WORKSPACE_LIFECYCLE_CHOICES,
+        error_messages={"invalid_choice": "აირჩიეთ დასაშვები მნიშვნელობა."},
     )
     availability = forms.ChoiceField(
         required=False,
-        label="Availability",
+        label="ხელმისაწვდომობა",
         choices=PRODUCT_WORKSPACE_AVAILABILITY_CHOICES,
+        error_messages={"invalid_choice": "აირჩიეთ დასაშვები მნიშვნელობა."},
     )
     attention = forms.ChoiceField(
         required=False,
-        label="Needs attention",
+        label="საჭიროებს ყურადღებას",
         choices=ATTENTION_FILTER_CHOICES,
+        error_messages={"invalid_choice": "აირჩიეთ დასაშვები მნიშვნელობა."},
     )
     origin = forms.ChoiceField(
         required=False,
         choices=PRODUCT_WORKSPACE_ORIGIN_CHOICES,
         widget=forms.HiddenInput,
+        error_messages={"invalid_choice": "აირჩიეთ დასაშვები მნიშვნელობა."},
     )
 
     def clean_q(self):
         if hasattr(self.data, "getlist") and len(self.data.getlist("q")) > 1:
-            raise ValidationError("Enter one search query.")
+            raise ValidationError("შეიყვანეთ ერთი საძიებო მოთხოვნა.")
 
         query = " ".join((self.cleaned_data.get("q") or "").split())
         if any(
             unicodedata.category(character) in {"Cc", "Cs"}
             for character in query
         ):
-            raise ValidationError("Search contains unsupported characters.")
+            raise ValidationError("ძიება შეუთავსებელ სიმბოლოებს შეიცავს.")
         if len(query) > PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH:
             raise ValidationError(
-                f"Search must be {PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH} characters or fewer."
+                f"ძიება მაქსიმუმ {PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH} სიმბოლოს უნდა შეიცავდეს."
             )
         if len(query.split()) > PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS:
             raise ValidationError(
-                f"Search must use {PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS} words or fewer."
+                f"ძიებაში მაქსიმუმ {PRODUCT_WORKSPACE_SEARCH_MAX_TOKENS} სიტყვა გამოიყენეთ."
             )
         return query
 
@@ -104,7 +112,7 @@ class ProductWorkspaceSearchForm(forms.Form):
             hasattr(self.data, "getlist")
             and len(self.data.getlist("lifecycle")) > 1
         ):
-            raise ValidationError("Select one lifecycle filter.")
+            raise ValidationError("აირჩიეთ ერთი სტატუსის ფილტრი.")
         return self.cleaned_data.get("lifecycle", "")
 
     def clean_availability(self):
@@ -112,7 +120,7 @@ class ProductWorkspaceSearchForm(forms.Form):
             hasattr(self.data, "getlist")
             and len(self.data.getlist("availability")) > 1
         ):
-            raise ValidationError("Select one availability filter.")
+            raise ValidationError("აირჩიეთ ერთი ხელმისაწვდომობის ფილტრი.")
         return self.cleaned_data.get("availability", "")
 
     def clean_attention(self):
@@ -120,7 +128,7 @@ class ProductWorkspaceSearchForm(forms.Form):
             hasattr(self.data, "getlist")
             and len(self.data.getlist("attention")) > 1
         ):
-            raise ValidationError("Select one attention filter.")
+            raise ValidationError("აირჩიეთ ერთი საყურადღებო ფილტრი.")
         return self.cleaned_data.get("attention", "")
 
     def clean_origin(self):
@@ -128,7 +136,7 @@ class ProductWorkspaceSearchForm(forms.Form):
             hasattr(self.data, "getlist")
             and len(self.data.getlist("origin")) > 1
         ):
-            raise ValidationError("Select one Workspace origin.")
+            raise ValidationError("აირჩიეთ ერთი დასაბრუნებელი სივრცე.")
         return self.cleaned_data.get("origin", "")
 
 
@@ -136,7 +144,7 @@ class ProductForm(forms.ModelForm):
     tags = forms.ModelMultipleChoiceField(
         queryset=BusinessTag.objects.none(),
         required=False,
-        label="Confirmed tags",
+        label="დადასტურებული ჭდეები",
         widget=forms.CheckboxSelectMultiple(
             attrs={"class": "classification-options"}
         ),
@@ -176,22 +184,21 @@ class ProductForm(forms.ModelForm):
         }
         help_texts = {
             "description": (
-                "Start with the words you already use for this Product. "
-                "Recognized meaning stays a suggestion until you confirm it."
+                "დაიწყეთ იმ სიტყვებით, რომლებსაც ამ პროდუქტისთვის უკვე იყენებთ. "
+                "ამოცნობილი მნიშვნელობა დადასტურებამდე მხოლოდ შეთავაზებაა."
             ),
         }
 
     def __init__(self, *args, business=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["lifecycle"].choices = (
-            (Product.Lifecycle.DRAFT, Product.Lifecycle.DRAFT.label),
-            (Product.Lifecycle.ACTIVE, Product.Lifecycle.ACTIVE.label),
-        )
+        self.fields["description"].label = "აღწერა"
+        self.fields["lifecycle"].label = "სტატუსი"
+        self.fields["lifecycle"].choices = PRODUCT_FORM_LIFECYCLE_CHOICES
         product_types = BusinessProductType.objects.none()
         tags = BusinessTag.objects.none()
 
         if business is not None:
-            self.fields["price"].label = f"Price ({business.default_currency})"
+            self.fields["price"].label = f"ფასი ({business.default_currency})"
             product_type_filter = Q(business=business, is_active=True)
             tag_filter = Q(business=business, is_active=True)
             if self.instance.pk and self.instance.business_id == business.pk:
@@ -219,8 +226,8 @@ class ProductForm(forms.ModelForm):
                 )
 
         self.fields["product_type"].queryset = product_types
-        self.fields["product_type"].empty_label = "No confirmed product type"
-        self.fields["product_type"].label = "Confirmed product type"
+        self.fields["product_type"].empty_label = "დადასტურებული ტიპი არ არის"
+        self.fields["product_type"].label = "დადასტურებული პროდუქტის ტიპი"
         self.fields["tags"].queryset = tags
 
     def clean_description(self):
@@ -234,8 +241,8 @@ class ProductForm(forms.ModelForm):
 class ProductMediaForm(forms.Form):
     image = forms.ImageField(
         required=False,
-        label="Product image",
-        help_text="Optional JPEG, PNG, or WebP image, up to 5 MiB.",
+        label="პროდუქტის სურათი",
+        help_text="არასავალდებულო JPEG, PNG ან WebP სურათი, მაქსიმუმ 5 MiB.",
         widget=forms.ClearableFileInput(
             attrs={"accept": "image/jpeg,image/png,image/webp"}
         ),
@@ -258,12 +265,12 @@ class ProductMediaForm(forms.Form):
         self.existing_media = existing_media
         super().__init__(*args, **kwargs)
         if existing_media is not None:
-            self.fields["image"].label = "Replace Product image"
+            self.fields["image"].label = "პროდუქტის სურათის შეცვლა"
 
     def clean_image(self):
         image = self.cleaned_data.get("image")
         if self._multiple_uploads:
-            raise ValidationError("Select only one Product image.")
+            raise ValidationError("აირჩიეთ მხოლოდ ერთი პროდუქტის სურათი.")
         if image is not None:
             validate_declared_product_media_type(
                 image,
@@ -296,19 +303,19 @@ class ProductChoiceForm(forms.ModelForm):
             )
 
         self.fields["size"].queryset = size_queryset
-        self.fields["size"].empty_label = "Select size"
+        self.fields["size"].empty_label = "აირჩიეთ ზომა"
         self.fields["color"].queryset = color_queryset
-        self.fields["color"].empty_label = "Select color"
+        self.fields["color"].empty_label = "აირჩიეთ ფერი"
         if self.instance.pk:
             self.fields["quantity"].disabled = True
-            self.fields["quantity"].label = "Current stock"
+            self.fields["quantity"].label = "მიმდინარე მარაგი"
             self.fields["quantity"].help_text = (
-                "Use the -1 and +1 controls for later stock changes."
+                "მარაგის შემდეგი ცვლილებისთვის გამოიყენეთ -1 და +1 ღილაკები."
             )
         else:
-            self.fields["quantity"].label = "Starting stock"
+            self.fields["quantity"].label = "საწყისი მარაგი"
             self.fields["quantity"].help_text = (
-                "Set stock for this new choice now. Later changes use -1 and +1."
+                "ახალი არჩევანის მარაგი ახლავე მიუთითეთ. შემდეგი ცვლილებისთვის გამოიყენება -1 და +1."
             )
             self.fields["quantity"].widget.attrs.update(
                 {"min": "0", "step": "1", "inputmode": "numeric"}
@@ -336,10 +343,10 @@ class ProductMaterialFactForm(forms.ModelForm):
         model = ProductMaterialFact
         fields = ["canonical_material", "percentage", "original_text", "source"]
         labels = {
-            "canonical_material": "Canonical material",
-            "percentage": "Percentage",
-            "original_text": "Original seller wording",
-            "source": "Source",
+            "canonical_material": "მასალის მთავარი სახელი",
+            "percentage": "პროცენტი",
+            "original_text": "გამყიდველის საწყისი ფორმულირება",
+            "source": "წყარო",
         }
         widgets = {
             "percentage": forms.NumberInput(attrs={"min": 1, "max": 100}),
@@ -349,6 +356,10 @@ class ProductMaterialFactForm(forms.ModelForm):
         self.business = business
         super().__init__(*args, **kwargs)
         self.fields["percentage"].widget.attrs.update({"min": 1, "max": 100})
+        self.fields["source"].choices = (
+            (ProductMaterialFact.Source.DESCRIPTION, "აღწერა"),
+            (ProductMaterialFact.Source.MANUAL, "ხელით მითითებული"),
+        )
         if not self.is_bound and not self.instance.pk:
             self.initial.setdefault("source", ProductMaterialFact.Source.MANUAL)
 
@@ -360,7 +371,7 @@ class ProductMaterialFactForm(forms.ModelForm):
             and self.instance.business_id != self.business.pk
         ):
             raise ValidationError(
-                "Material fact must belong to the active Business."
+                "მასალის მონაცემი აქტიურ ბიზნესს უნდა ეკუთვნოდეს."
             )
         return cleaned_data
 
@@ -386,16 +397,16 @@ class ChoiceVocabularyForm(forms.Form):
     aliases = forms.CharField(
         required=False,
         widget=forms.TextInput(
-            attrs={"placeholder": "Optional: comma-separated alternative wording"}
+            attrs={"placeholder": "არასავალდებულო: მძიმით გამოყოფილი ალტერნატიული სიტყვები"}
         ),
     )
 
     def __init__(self, *args, kind, **kwargs):
         labels = {
-            SIZE_VOCABULARY: "Size",
-            COLOR_VOCABULARY: "Color",
-            PRODUCT_TYPE_VOCABULARY: "Product type",
-            TAG_VOCABULARY: "Tag",
+            SIZE_VOCABULARY: "ზომა",
+            COLOR_VOCABULARY: "ფერი",
+            PRODUCT_TYPE_VOCABULARY: "პროდუქტის ტიპი",
+            TAG_VOCABULARY: "ჭდე",
         }
         if kind not in labels:
             raise ValueError("Unsupported vocabulary kind.")
@@ -403,14 +414,14 @@ class ChoiceVocabularyForm(forms.Form):
         super().__init__(*args, **kwargs)
 
         label = labels[kind]
-        self.fields["name"].label = f"Canonical {label.lower()}"
+        self.fields["name"].label = f"მთავარი მნიშვნელობა — {label}"
         self.fields["name"].max_length = 40 if kind == SIZE_VOCABULARY else 80
-        self.fields["aliases"].label = "Approved aliases"
+        self.fields["aliases"].label = "დამტკიცებული ალიასები"
 
     def clean_name(self):
         name = self.cleaned_data["name"].strip()
         if not name:
-            raise ValidationError("Canonical value is required.")
+            raise ValidationError("მთავარი მნიშვნელობა სავალდებულოა.")
         return name
 
     def clean_aliases(self):
@@ -425,7 +436,7 @@ class ChoiceVocabularyForm(forms.Form):
                 continue
             if len(alias) > max_length:
                 raise ValidationError(
-                    f"Each alias must contain at most {max_length} characters."
+                    f"თითოეული ალიასი მაქსიმუმ {max_length} სიმბოლოს უნდა შეიცავდეს."
                 )
             normalized = alias.casefold()
             if normalized not in seen:
@@ -441,7 +452,7 @@ class ChoiceVocabularyForm(forms.Form):
         if name and name.casefold() in {alias.casefold() for alias in aliases}:
             self.add_error(
                 "aliases",
-                "An alias must differ from the canonical value.",
+                "ალიასი მთავარი მნიშვნელობისგან უნდა განსხვავდებოდეს.",
             )
         return cleaned_data
 
@@ -449,7 +460,7 @@ class ChoiceVocabularyForm(forms.Form):
 class ChoiceVocabularyEditForm(ChoiceVocabularyForm):
     is_active = forms.BooleanField(
         required=False,
-        label="Available for new choices and recognition",
+        label="ხელმისაწვდომია ახალი არჩევანისა და ამოცნობისთვის",
     )
 
     def __init__(self, *args, kind, instance, **kwargs):
@@ -463,7 +474,7 @@ class ChoiceVocabularyEditForm(ChoiceVocabularyForm):
         initial.setdefault("is_active", instance.is_active)
         super().__init__(*args, kind=kind, **kwargs)
         self.fields["is_active"].label = (
-            "Available for new selection and recognition"
+            "ხელმისაწვდომია ახალი არჩევანისა და ამოცნობისთვის"
         )
 
 
@@ -488,8 +499,8 @@ class BaseProductChoiceFormSet(BaseInlineFormSet):
                     form.add_error(
                         "DELETE",
                         (
-                            "Saved choices cannot be removed. "
-                            "Deactivate the choice instead."
+                            "შენახული არჩევანი ვერ წაიშლება. "
+                            "მის ნაცვლად გააუქმეთ არჩევანი."
                         ),
                     )
                 continue
@@ -501,7 +512,7 @@ class BaseProductChoiceFormSet(BaseInlineFormSet):
             and active_choices == 0
         ):
             raise ValidationError(
-                "An active product requires at least one active choice."
+                "აქტიურ პროდუქტს მინიმუმ ერთი აქტიური არჩევანი სჭირდება."
             )
 
 

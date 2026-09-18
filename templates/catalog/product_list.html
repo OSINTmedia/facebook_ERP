@@ -1,30 +1,30 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Products | Seller Workspace{% endblock %}
+{% block title %}პროდუქტები | გამყიდველის სივრცე{% endblock %}
 
 {% block content %}
   <section class="shell-page product-workspace" aria-labelledby="products-title">
     <div class="product-workspace-heading">
       <div class="shell-heading">
-        <p class="eyebrow">Seller workspace</p>
-        <h1 id="products-title">Products</h1>
+        <p class="eyebrow">გამყიდველის სივრცე</p>
+        <h1 id="products-title">პროდუქტები</h1>
       </div>
       {% if active_business and product_cards %}
         <a
           class="button button--primary product-workspace-heading__action"
           href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}"
-        >Add product</a>
+        >პროდუქტის დამატება</a>
       {% endif %}
     </div>
 
     {% if business_policy_blocked %}
       <div class="empty-state empty-state--warning" role="alert">
-        <p>Multiple business workspaces need an approved switcher before products can be shown.</p>
+        <p>პროდუქტების სანახავად უნდა არჩეული იყოს ერთი ბიზნესის სივრცე.</p>
       </div>
     {% elif not active_business %}
       <div class="empty-state" role="status">
-        <p>No business workspace yet.</p>
+        <p>ბიზნესის სივრცე ჯერ არ არის.</p>
       </div>
     {% else %}
       <form
@@ -38,7 +38,7 @@
           {{ search_form.q.label_tag }}
           <div class="product-workspace-search__input-row">
             {{ search_form.q }}
-            <button class="button button--primary" type="submit">Search</button>
+            <button class="button button--primary" type="submit">ძებნა</button>
           </div>
           <small
             id="{{ search_form.q.id_for_label }}_helptext"
@@ -57,15 +57,15 @@
 
         <details class="product-workspace-filters"{% if not workspace_filters_are_valid %} open{% endif %}>
           <summary>
-            Filters
+            ფილტრები
             {% if workspace_has_active_filters %}
               <span class="product-workspace-filters__count">
-                {{ workspace_active_filter_count }} active
+                აქტიური: {{ workspace_active_filter_count }}
               </span>
             {% endif %}
           </summary>
           <fieldset class="product-workspace-filters__fields">
-            <legend>Filter products</legend>
+            <legend>პროდუქტების გაფილტვრა</legend>
             <div class="form-field">
               {{ search_form.lifecycle.label_tag }}
               {{ search_form.lifecycle }}
@@ -108,13 +108,13 @@
                 <div class="form-errors" role="alert" aria-atomic="true">{{ search_form.origin.errors }}</div>
               {% endif %}
             </div>
-            <button class="button button--secondary" type="submit">Apply filters</button>
+            <button class="button button--secondary" type="submit">ფილტრების გამოყენება</button>
           </fieldset>
         </details>
       </form>
 
       {% if workspace_back_to_dashboard_url %}
-        <a class="return-link" href="{{ workspace_back_to_dashboard_url }}">Back to Dashboard</a>
+        <a class="return-link" href="{{ workspace_back_to_dashboard_url }}">მიმოხილვაზე დაბრუნება</a>
       {% endif %}
 
       {% include "catalog/_product_results.html" %}

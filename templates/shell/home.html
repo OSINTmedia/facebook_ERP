@@ -1,49 +1,49 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard | Seller Workspace{% endblock %}
+{% block title %}მიმოხილვა | გამყიდველის სივრცე{% endblock %}
 
 {% block content %}
   <section class="shell-page seller-dashboard" aria-labelledby="dashboard-title">
     <header class="seller-dashboard__heading">
       <div class="shell-heading">
-        <p class="eyebrow">Seller workspace</p>
-        <h1 id="dashboard-title">What needs attention now?</h1>
+        <p class="eyebrow">გამყიდველის სივრცე</p>
+        <h1 id="dashboard-title">რას სჭირდება ყურადღება?</h1>
       </div>
       {% if active_business and not attention.empty_catalog %}
-        <a class="button button--secondary" href="{% url 'catalog:product_list' %}">Open all products</a>
+        <a class="button button--secondary" href="{% url 'catalog:product_list' %}">ყველა პროდუქტის ნახვა</a>
       {% endif %}
     </header>
 
     {% if business_policy_blocked %}
       <div class="empty-state empty-state--warning" role="alert">
-        <p>Multiple business workspaces need an approved switcher before attention signals can be shown.</p>
+        <p>საყურადღებო ელემენტების სანახავად უნდა არჩეული იყოს ერთი ბიზნესის სივრცე.</p>
       </div>
     {% elif not active_business %}
       <div class="empty-state" role="status">
-        <p>No business workspace yet.</p>
+        <p>ბიზნესის სივრცე ჯერ არ არის.</p>
       </div>
     {% elif attention.empty_catalog %}
       <div class="empty-state seller-dashboard__empty" role="status">
-        <h2>Start with one Product</h2>
-        <p>Add a Description first. You can complete price, choices, and confirmed facts as you go.</p>
-        <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ dashboard_return_url|urlencode }}">Add product</a>
+        <h2>დაიწყეთ ერთი პროდუქტით</h2>
+        <p>ჯერ აღწერა დაამატეთ. ფასი, არჩევანი და დადასტურებული მონაცემები შემდეგაც შეგიძლიათ შეავსოთ.</p>
+        <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ dashboard_return_url|urlencode }}">პროდუქტის დამატება</a>
       </div>
     {% else %}
-      <p class="seller-dashboard__intro">Open a signal to continue the work in the Product Workspace.</p>
+      <p class="seller-dashboard__intro">გახსენით საყურადღებო ელემენტი და განაგრძეთ მუშაობა პროდუქტებში.</p>
       {% if not attention.missing_information_products.count and not attention.low_stock_choices.count and not attention.sold_out_products.count and not attention.partially_sold_out_choices.count %}
         <div class="empty-state" role="status">
-          <h2>Nothing needs attention right now</h2>
-          <p>Your current Product truth and stock signals have no flagged work.</p>
+          <h2>ამჟამად ყურადღება არაფერს სჭირდება</h2>
+          <p>პროდუქტის მონაცემები და მარაგი ამ ეტაპზე დამატებით სამუშაოს არ ითხოვს.</p>
         </div>
       {% else %}
         <div class="seller-dashboard__grid">
         {% if attention.missing_information_products.count %}
           <article class="attention-card attention-card--priority" aria-labelledby="missing-information-title">
           <header class="attention-card__heading">
-            <h2 id="missing-information-title">Missing information</h2>
-            <strong class="attention-card__count" aria-label="{{ attention.missing_information_products.count }} Product{{ attention.missing_information_products.count|pluralize }}">{{ attention.missing_information_products.count }}</strong>
+            <h2 id="missing-information-title">აკლია ინფორმაცია</h2>
+            <strong class="attention-card__count" aria-label="{{ attention.missing_information_products.count }} პროდუქტი">{{ attention.missing_information_products.count }}</strong>
           </header>
-          <p>Complete the next buyer-answer gap.</p>
+          <p>შეავსეთ მომხმარებლის შემდეგი პასუხგაუცემელი კითხვა.</p>
           {% if attention.missing_information_products.items %}
             <ul class="attention-card__items">
               {% for product in attention.missing_information_products.items %}
@@ -51,35 +51,35 @@
               {% endfor %}
             </ul>
           {% endif %}
-          <a class="button button--primary" href="{{ missing_information_workspace_url }}">Review missing information</a>
+          <a class="button button--primary" href="{{ missing_information_workspace_url }}">დაკლებული ინფორმაციის ნახვა</a>
         </article>
         {% endif %}
 
         {% if attention.low_stock_choices.count %}
         <article class="attention-card" aria-labelledby="low-stock-title">
           <header class="attention-card__heading">
-            <h2 id="low-stock-title">Low stock</h2>
-            <strong class="attention-card__count" aria-label="{{ attention.low_stock_choices.count }} Choice{{ attention.low_stock_choices.count|pluralize }}">{{ attention.low_stock_choices.count }}</strong>
+            <h2 id="low-stock-title">მცირე მარაგი</h2>
+            <strong class="attention-card__count" aria-label="{{ attention.low_stock_choices.count }} არჩევანი">{{ attention.low_stock_choices.count }}</strong>
           </header>
-          <p>Choices with 1–{{ attention.low_stock_threshold }} remaining.</p>
+          <p>არჩევანი, რომლის მარაგია 1–{{ attention.low_stock_threshold }}.</p>
           {% if attention.low_stock_choices.items %}
             <ul class="attention-card__items">
               {% for choice in attention.low_stock_choices.items %}
-                <li>{{ choice.product.name }} · Choice #{{ choice.pk }} · {{ choice.size.name }} / {{ choice.color.name }} · {{ choice.quantity }} left</li>
+                <li>{{ choice.product.name }} · არჩევანი #{{ choice.pk }} · {{ choice.size.name }} / {{ choice.color.name }} · დარჩა {{ choice.quantity }}</li>
               {% endfor %}
             </ul>
           {% endif %}
-          <a class="button button--secondary" href="{{ low_stock_workspace_url }}">Update low stock</a>
+          <a class="button button--secondary" href="{{ low_stock_workspace_url }}">მცირე მარაგის განახლება</a>
         </article>
         {% endif %}
 
         {% if attention.sold_out_products.count %}
         <article class="attention-card" aria-labelledby="sold-out-title">
           <header class="attention-card__heading">
-            <h2 id="sold-out-title">Sold out / restock</h2>
-            <strong class="attention-card__count" aria-label="{{ attention.sold_out_products.count }} Product{{ attention.sold_out_products.count|pluralize }}">{{ attention.sold_out_products.count }}</strong>
+            <h2 id="sold-out-title">ამოიწურა / მარაგის შევსება</h2>
+            <strong class="attention-card__count" aria-label="{{ attention.sold_out_products.count }} პროდუქტი">{{ attention.sold_out_products.count }}</strong>
           </header>
-          <p>Active Products with no available choice.</p>
+          <p>აქტიური პროდუქტები, რომლებსაც მარაგში არცერთი არჩევანი აღარ აქვთ.</p>
           {% if attention.sold_out_products.items %}
             <ul class="attention-card__items">
               {% for product in attention.sold_out_products.items %}
@@ -87,25 +87,25 @@
               {% endfor %}
             </ul>
           {% endif %}
-          <a class="button button--secondary" href="{{ sold_out_workspace_url }}">Open restock candidates</a>
+          <a class="button button--secondary" href="{{ sold_out_workspace_url }}">მარაგში შესავსები პროდუქტების ნახვა</a>
         </article>
         {% endif %}
 
         {% if attention.partially_sold_out_choices.count %}
         <article class="attention-card" aria-labelledby="partial-stock-title">
           <header class="attention-card__heading">
-            <h2 id="partial-stock-title">Partially sold out</h2>
-            <strong class="attention-card__count" aria-label="{{ attention.partially_sold_out_choices.count }} Choice{{ attention.partially_sold_out_choices.count|pluralize }}">{{ attention.partially_sold_out_choices.count }}</strong>
+            <h2 id="partial-stock-title">ზოგი არჩევანი ამოიწურა</h2>
+            <strong class="attention-card__count" aria-label="{{ attention.partially_sold_out_choices.count }} არჩევანი">{{ attention.partially_sold_out_choices.count }}</strong>
           </header>
-          <p>Sold-out choices on Products that remain available.</p>
+          <p>ამოწურული არჩევანი კვლავ ხელმისაწვდომ პროდუქტებზე.</p>
           {% if attention.partially_sold_out_choices.items %}
             <ul class="attention-card__items">
               {% for choice in attention.partially_sold_out_choices.items %}
-                <li>{{ choice.product.name }} · Choice #{{ choice.pk }} · {{ choice.size.name }} / {{ choice.color.name }}</li>
+                <li>{{ choice.product.name }} · არჩევანი #{{ choice.pk }} · {{ choice.size.name }} / {{ choice.color.name }}</li>
               {% endfor %}
             </ul>
           {% endif %}
-          <a class="button button--secondary" href="{{ partial_stock_workspace_url }}">Review sold-out choices</a>
+          <a class="button button--secondary" href="{{ partial_stock_workspace_url }}">ამოწურული არჩევანების ნახვა</a>
         </article>
         {% endif %}
         </div>

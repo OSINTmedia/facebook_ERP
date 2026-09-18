@@ -3,29 +3,29 @@
     <img
       class="product-card__media"
       src="{% url 'catalog:product_media' card.primary_media_id %}"
-      alt="Image of {{ card.name }}"
+      alt="{{ card.name }} — პროდუქტის სურათი"
       loading="lazy"
       decoding="async"
     >
   {% else %}
-    <div class="product-card__media product-media-placeholder" role="img" aria-label="No image available for {{ card.name }}">
-      <span aria-hidden="true">No image</span>
+    <div class="product-card__media product-media-placeholder" role="img" aria-label="{{ card.name }} — სურათი არ არის">
+      <span aria-hidden="true">სურათი არ არის</span>
     </div>
   {% endif %}
   <header class="product-card__header">
     <div class="product-card__identity">
       <h2 id="product-card-title-{{ card.product_id }}">{{ card.name }}</h2>
       <p class="product-card__type product-card__price">
-        <span>Price</span>
+        <span>ფასი</span>
         {% if card.price is None %}
-          <strong>Missing</strong>
+          <strong>აკლია</strong>
         {% else %}
           <strong>{{ card.price|floatformat:2 }} {{ card.currency }}</strong>
         {% endif %}
       </p>
       {% if card.product_type_name %}
         <p class="product-card__type">
-          <span>Product type</span>
+          <span>პროდუქტის ტიპი</span>
           <strong>{{ card.product_type_name }}</strong>
         </p>
       {% endif %}
@@ -33,15 +33,15 @@
 
     <dl class="product-card__states">
       <div class="product-card__state">
-        <dt>Lifecycle</dt>
+        <dt>სტატუსი</dt>
         <dd><span class="status-pill status-pill--lifecycle">{{ card.lifecycle_label }}</span></dd>
       </div>
       <div class="product-card__state">
-        <dt>Availability</dt>
+        <dt>ხელმისაწვდომობა</dt>
         <dd>
           <span class="status-pill status-pill--{{ card.availability_state }}">{{ card.availability_label }}</span>
           {% if card.is_partially_sold_out %}
-            <span class="status-pill status-pill--partial-stock">Some choices sold out</span>
+            <span class="status-pill status-pill--partial-stock">ზოგი არჩევანი ამოიწურა</span>
           {% endif %}
         </dd>
       </div>
@@ -54,8 +54,8 @@
 
   {% if card.is_archived %}
     <section class="product-card__readiness" aria-labelledby="product-card-archived-{{ card.product_id }}">
-      <h3 id="product-card-archived-{{ card.product_id }}">Archived Product</h3>
-      <p>This Product is outside daily work. Its choices, stock, and history are preserved.</p>
+      <h3 id="product-card-archived-{{ card.product_id }}">დაარქივებული პროდუქტი</h3>
+      <p>ეს პროდუქტი ყოველდღიურ სამუშაოში აღარ ჩანს. მისი არჩევანი, მარაგი და ისტორია შენახულია.</p>
     </section>
     <footer class="product-card__actions">
       <form
@@ -67,37 +67,37 @@
         <button
           class="button button--secondary button--compact"
           type="submit"
-          aria-label="Restore {{ card.name }} as a Draft"
-        >Restore to Draft</button>
+          aria-label="{{ card.name }} აღადგინეთ მონახაზად"
+        >მონახაზად აღდგენა</button>
       </form>
     </footer>
   {% else %}
   <section class="product-card__choices" aria-labelledby="product-card-choices-{{ card.product_id }}">
     <div class="product-card__choice-heading">
       <div>
-        <h3 id="product-card-choices-{{ card.product_id }}">Choices</h3>
-        <p>{{ card.active_choice_count }} active · {{ card.active_stock_total }} total stock</p>
+        <h3 id="product-card-choices-{{ card.product_id }}">არჩევანი</h3>
+        <p>აქტიური: {{ card.active_choice_count }} · სულ მარაგი: {{ card.active_stock_total }}</p>
       </div>
       {% if card.inactive_choice_count %}
-        <p class="product-card__inactive-count">{{ card.inactive_choice_count }} inactive</p>
+        <p class="product-card__inactive-count">არააქტიური: {{ card.inactive_choice_count }}</p>
       {% endif %}
     </div>
 
     {% if card.active_choices %}
-      <ul class="product-card__choice-list" aria-label="Active choices for {{ card.name }}">
+      <ul class="product-card__choice-list" aria-label="{{ card.name }} — აქტიური არჩევანი">
         {% for choice in card.active_choices %}
           <li class="product-card__choice-row{% if choice.is_attention_target %} product-card__choice-row--attention{% endif %}">
             <div class="product-card__choice-identity">
-              <strong>Choice #{{ choice.choice_id }}</strong>
-              <span><span class="product-card__choice-label">Size</span> {{ choice.size_name }}</span>
-              <span><span class="product-card__choice-label">Color</span> {{ choice.color_name }}</span>
-              {% if choice.is_attention_target %}<span class="status-pill status-pill--attention">Attention target</span>{% endif %}
+              <strong>არჩევანი #{{ choice.choice_id }}</strong>
+              <span><span class="product-card__choice-label">ზომა</span> {{ choice.size_name }}</span>
+              <span><span class="product-card__choice-label">ფერი</span> {{ choice.color_name }}</span>
+              {% if choice.is_attention_target %}<span class="status-pill status-pill--attention">საყურადღებო არჩევანი</span>{% endif %}
             </div>
             <form
               class="product-card__stock-form"
               method="post"
               action="{% url 'inventory:choice_stock_adjust' choice.choice_id %}"
-              aria-label="Stock controls for Choice #{{ choice.choice_id }}, size {{ choice.size_name }}, color {{ choice.color_name }}"
+              aria-label="მარაგის მართვა: არჩევანი #{{ choice.choice_id }}, ზომა {{ choice.size_name }}, ფერი {{ choice.color_name }}"
             >
               {% csrf_token %}
               <input type="hidden" name="next" value="{{ workspace_return_url }}">
@@ -116,11 +116,11 @@
                 hx-disabled-elt="#workspace-stock-decrease-{{ choice.choice_id }}, #workspace-stock-increase-{{ choice.choice_id }}"
                 hx-sync="#product-workspace-results:drop"
                 data-workspace-stock-button
-                aria-label="Decrease stock for Choice #{{ choice.choice_id }}, size {{ choice.size_name }}, color {{ choice.color_name }}"
+                aria-label="მარაგის შემცირება: არჩევანი #{{ choice.choice_id }}, ზომა {{ choice.size_name }}, ფერი {{ choice.color_name }}"
               >−1</button>
               <div class="product-card__quantity">
-                <span>Quantity</span>
-                <output aria-label="Current quantity for Choice #{{ choice.choice_id }}, size {{ choice.size_name }}, color {{ choice.color_name }}">{{ choice.quantity }}</output>
+                <span>რაოდენობა</span>
+                <output aria-label="მიმდინარე რაოდენობა: არჩევანი #{{ choice.choice_id }}, ზომა {{ choice.size_name }}, ფერი {{ choice.color_name }}">{{ choice.quantity }}</output>
               </div>
               <button
                 id="workspace-stock-increase-{{ choice.choice_id }}"
@@ -136,36 +136,36 @@
                 hx-disabled-elt="#workspace-stock-decrease-{{ choice.choice_id }}, #workspace-stock-increase-{{ choice.choice_id }}"
                 hx-sync="#product-workspace-results:drop"
                 data-workspace-stock-button
-                aria-label="Increase stock for Choice #{{ choice.choice_id }}, size {{ choice.size_name }}, color {{ choice.color_name }}"
+                aria-label="მარაგის გაზრდა: არჩევანი #{{ choice.choice_id }}, ზომა {{ choice.size_name }}, ფერი {{ choice.color_name }}"
               >+1</button>
               <span
                 id="workspace-stock-loading-{{ choice.choice_id }}"
                 class="htmx-indicator product-card__stock-loading"
                 role="status"
                 aria-atomic="true"
-              >Updating…</span>
+              >ახლდება…</span>
               {% if workspace_stock_choice_id == choice.choice_id and workspace_stock_feedback %}
                 <p class="product-card__stock-feedback" role="status" aria-atomic="true">{{ workspace_stock_feedback }}</p>
               {% endif %}
               {% if workspace_stock_choice_id == choice.choice_id and workspace_stock_error %}
-                <p class="product-card__stock-error" role="alert" aria-atomic="true">Choice #{{ choice.choice_id }}: {{ workspace_stock_error }}</p>
+                <p class="product-card__stock-error" role="alert" aria-atomic="true">არჩევანი #{{ choice.choice_id }}: {{ workspace_stock_error }}</p>
               {% endif %}
             </form>
             <details
               class="product-card__stock-set"
               {% if workspace_stock_choice_id == choice.choice_id and workspace_stock_action == "set" %}open{% endif %}
             >
-              <summary>Set exact quantity</summary>
+              <summary>ზუსტი რაოდენობის მითითება</summary>
               <form
                 class="product-card__stock-set-form"
                 method="post"
                 action="{% url 'inventory:choice_stock_adjust' choice.choice_id %}"
-                aria-label="Set exact stock for Choice #{{ choice.choice_id }}, size {{ choice.size_name }}, color {{ choice.color_name }}"
+                aria-label="ზუსტი მარაგის მითითება: არჩევანი #{{ choice.choice_id }}, ზომა {{ choice.size_name }}, ფერი {{ choice.color_name }}"
               >
                 {% csrf_token %}
                 <input type="hidden" name="next" value="{{ workspace_return_url }}">
                 <input type="hidden" name="response_scope" value="workspace">
-                <label for="workspace-stock-set-input-{{ choice.choice_id }}">Quantity</label>
+                <label for="workspace-stock-set-input-{{ choice.choice_id }}">რაოდენობა</label>
                 <input
                   id="workspace-stock-set-input-{{ choice.choice_id }}"
                   name="quantity"
@@ -188,37 +188,37 @@
                   hx-disabled-elt="#workspace-stock-set-input-{{ choice.choice_id }}, #workspace-stock-set-submit-{{ choice.choice_id }}"
                   hx-sync="#product-workspace-results:drop"
                   data-workspace-stock-button
-                >Set quantity</button>
+                >რაოდენობის შენახვა</button>
                 <span
                   id="workspace-stock-set-loading-{{ choice.choice_id }}"
                   class="htmx-indicator product-card__stock-loading"
                   role="status"
                   aria-atomic="true"
-                >Updating…</span>
+                >ახლდება…</span>
               </form>
             </details>
           </li>
         {% endfor %}
       </ul>
     {% else %}
-      <p class="product-card__choice-empty">No active choices. Edit this Product to add or activate one.</p>
+      <p class="product-card__choice-empty">აქტიური არჩევანი არ არის. დაამატეთ ან გაააქტიურეთ არჩევანი პროდუქტის რედაქტირებით.</p>
     {% endif %}
   </section>
 
   <section class="product-card__readiness" aria-labelledby="product-card-readiness-{{ card.product_id }}">
     <div class="product-card__readiness-heading">
-      <h3 id="product-card-readiness-{{ card.product_id }}">Buyer answers</h3>
+      <h3 id="product-card-readiness-{{ card.product_id }}">პასუხები მომხმარებლისთვის</h3>
       {% if not card.missing_question_labels %}
-        <span class="status-pill status-pill--ready">Supported answers ready</span>
+        <span class="status-pill status-pill--ready">საჭირო პასუხები მზადაა</span>
       {% endif %}
     </div>
     {% if card.answerable_question_labels %}
-      <p><strong>Ready:</strong> {{ card.answerable_question_labels|join:", " }}</p>
+      <p><strong>მზადაა:</strong> {{ card.answerable_question_labels|join:", " }}</p>
     {% else %}
-      <p>No supported answers are ready yet.</p>
+      <p>საჭირო პასუხები ჯერ არ არის მზად.</p>
     {% endif %}
     {% if card.missing_question_labels %}
-      <p><strong>Missing:</strong> {{ card.missing_question_labels|join:", " }}</p>
+      <p><strong>აკლია:</strong> {{ card.missing_question_labels|join:", " }}</p>
       <a
         class="button button--secondary button--compact product-card__readiness-action"
         href="{% url 'catalog:product_edit' card.product_id %}?focus={{ card.readiness_correction_target }}&amp;next={{ workspace_return_url|urlencode }}{{ card.readiness_correction_fragment }}"
@@ -239,18 +239,18 @@
       data-ready-reply-trigger
       aria-controls="product-ready-reply-panel-{{ card.product_id }}"
       aria-expanded="false"
-    >Ready Reply</button>
+    >მზა პასუხი</button>
     <span
       id="product-ready-reply-loading-{{ card.product_id }}"
       class="htmx-indicator product-card__stock-loading"
       role="status"
       aria-atomic="true"
-    >Loading reply…</span>
+    >პასუხი იტვირთება…</span>
     <a
       class="button button--secondary button--compact"
       href="{% url 'catalog:product_edit' card.product_id %}?next={{ workspace_return_url|urlencode }}"
-      aria-label="Edit {{ card.name }}"
-    >Edit product</a>
+      aria-label="{{ card.name }} — რედაქტირება"
+    >პროდუქტის რედაქტირება</a>
     <form
       method="post"
       action="{% url 'catalog:product_add_similar' card.product_id %}"
@@ -260,12 +260,12 @@
       <button
         class="button button--secondary button--compact"
         type="submit"
-        aria-label="Add a similar Product from {{ card.name }}"
-      >Add similar</button>
+        aria-label="{{ card.name }}-ის მსგავსი პროდუქტის დამატება"
+      >მსგავსის დამატება</button>
     </form>
     <details>
-      <summary>Archive product</summary>
-      <p>Remove this Product from daily work while preserving its history and stock.</p>
+      <summary>პროდუქტის დაარქივება</summary>
+      <p>პროდუქტი ყოველდღიური სამუშაოდან ამოიღება, ხოლო ისტორია და მარაგი შენახული დარჩება.</p>
       <form
         method="post"
         action="{% url 'catalog:product_archive' card.product_id %}"
@@ -275,8 +275,8 @@
         <button
           class="button button--secondary button--compact"
           type="submit"
-          aria-label="Confirm archive for {{ card.name }}"
-        >Confirm archive</button>
+          aria-label="{{ card.name }} — დაარქივების დადასტურება"
+        >დაარქივების დადასტურება</button>
       </form>
     </details>
   </footer>
@@ -286,7 +286,7 @@
     tabindex="-1"
     data-ready-reply-error
     hidden
-  >Ready Reply could not be loaded. Try again.</p>
+  >მზა პასუხი ვერ ჩაიტვირთა. სცადეთ ხელახლა.</p>
   <div
     id="product-ready-reply-slot-{{ card.product_id }}"
     data-ready-reply-slot

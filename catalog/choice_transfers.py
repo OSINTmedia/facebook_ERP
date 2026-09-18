@@ -29,13 +29,13 @@ class ChoiceCandidateTransfer:
     def feedback(self) -> str:
         if self.already_present:
             return (
-                f'{self.label} "{self.candidate.canonical_value}" is already '
-                f"in Choice {self.row_index + 1}. Use Add another choice if "
-                "you intend a separate choice with the same value."
+                f'{self.label} „{self.candidate.canonical_value}“ უკვე არის '
+                f'არჩევანში {self.row_index + 1}. გამოიყენეთ „კიდევ ერთი '
+                "არჩევანის დამატება“, თუ იმავე მნიშვნელობით ცალკე არჩევანი გსურთ."
             )
         return (
-            f'{self.label} "{self.candidate.canonical_value}" added to '
-            f"Choice {self.row_index + 1}. Review the row before saving."
+            f'{self.label} „{self.candidate.canonical_value}“ დაემატა '
+            f"არჩევანს {self.row_index + 1}. შენახვამდე გადაამოწმეთ რიგი."
         )
 
 
@@ -83,7 +83,7 @@ def transfer_choice_candidate(
 
     if row_index is None:
         if total_forms >= ProductChoiceFormSet.max_num:
-            raise ValidationError("No additional choice row can be added.")
+            raise ValidationError("არჩევანის დამატებითი რიგი ვეღარ დაემატება.")
         row_index = total_forms
         transferred_data[f"{choice_prefix}-TOTAL_FORMS"] = str(total_forms + 1)
         transferred_data[f"{choice_prefix}-{row_index}-size"] = ""
@@ -107,7 +107,7 @@ def append_choice_row(*, data, choice_prefix="choices") -> QueryDict:
     appended_data = data.copy()
     total_forms = _validated_total_forms(appended_data, choice_prefix)
     if total_forms >= ProductChoiceFormSet.max_num:
-        raise ValidationError("No additional choice row can be added.")
+        raise ValidationError("არჩევანის დამატებითი რიგი ვეღარ დაემატება.")
 
     appended_data[f"{choice_prefix}-TOTAL_FORMS"] = str(total_forms + 1)
     appended_data[f"{choice_prefix}-{total_forms}-size"] = ""
@@ -131,7 +131,7 @@ def _current_choice_candidate(*, data, business, candidate_reference):
         expected_span = (int(span_start), int(span_end))
         expected_canonical_value = unquote(encoded_canonical_value)
     except (TypeError, ValueError) as exc:
-        raise ValidationError("The selected candidate is invalid.") from exc
+        raise ValidationError("არჩეული შეთავაზება არასწორია.") from exc
 
     preview = recognize_product_preview_for_business(
         data.get("description"),
@@ -139,8 +139,8 @@ def _current_choice_candidate(*, data, business, candidate_reference):
     )
     if candidate_index < 0 or candidate_index >= len(preview.candidates):
         raise ValidationError(
-            "That candidate is no longer available. "
-            "Review the description and try again."
+            "ეს შეთავაზება აღარ არის ხელმისაწვდომი. "
+            "გადაამოწმეთ აღწერა და სცადეთ ხელახლა."
         )
 
     candidate = preview.candidates[candidate_index]
@@ -150,14 +150,16 @@ def _current_choice_candidate(*, data, business, candidate_reference):
         or candidate.canonical_value != expected_canonical_value
     ):
         raise ValidationError(
-            "That candidate is no longer available. "
-            "Review the description and try again."
+            "ეს შეთავაზება აღარ არის ხელმისაწვდომი. "
+            "გადაამოწმეთ აღწერა და სცადეთ ხელახლა."
         )
     if candidate.destination not in {
         SemanticDestination.CHOICE_SIZE,
         SemanticDestination.CHOICE_COLOR,
     }:
-        raise ValidationError("Only Size and Color candidates can become choices.")
+        raise ValidationError(
+            "არჩევანში მხოლოდ ზომისა და ფერის შეთავაზებების გამოყენება შეიძლება."
+        )
     return candidate
 
 
@@ -165,11 +167,11 @@ def _canonical_choice_value(*, business, candidate):
     if candidate.destination == SemanticDestination.CHOICE_SIZE:
         model = BusinessSize
         field_name = "size"
-        label = "Size"
+        label = "ზომა"
     else:
         model = BusinessColor
         field_name = "color"
-        label = "Color"
+        label = "ფერი"
 
     try:
         canonical = model.objects.get(
@@ -179,7 +181,7 @@ def _canonical_choice_value(*, business, candidate):
         )
     except model.DoesNotExist as exc:
         raise ValidationError(
-            f"That {label.lower()} is no longer available for this Business."
+            f"{label} ამ ბიზნესისთვის აღარ არის ხელმისაწვდომი."
         ) from exc
     return field_name, canonical, label
 
@@ -190,7 +192,7 @@ def _validated_total_forms(data, prefix):
         initial_forms = int(data[f"{prefix}-INITIAL_FORMS"])
     except (KeyError, TypeError, ValueError) as exc:
         raise ValidationError(
-            "Choice form state is invalid. Refresh and try again."
+            "არჩევანის ფორმის მდგომარეობა არასწორია. განაახლეთ გვერდი და სცადეთ ხელახლა."
         ) from exc
 
     if (
@@ -199,7 +201,9 @@ def _validated_total_forms(data, prefix):
         or initial_forms > total_forms
         or total_forms > ProductChoiceFormSet.absolute_max
     ):
-        raise ValidationError("Choice form state is invalid. Refresh and try again.")
+        raise ValidationError(
+            "არჩევანის ფორმის მდგომარეობა არასწორია. განაახლეთ გვერდი და სცადეთ ხელახლა."
+        )
     return total_forms
 
 

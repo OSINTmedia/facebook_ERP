@@ -27,12 +27,17 @@ class ShellHomeTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "base.html")
         self.assertTemplateUsed(response, "shell/home.html")
-        self.assertContains(response, 'aria-label="Primary"')
+        self.assertContains(response, 'aria-label="მთავარი ნავიგაცია"')
         self.assertContains(response, 'aria-current="page"')
         self.assertContains(response, 'id="messages"')
         self.assertContains(response, "css/app.css")
 
-        for label in ("Dashboard", "Products", "Add product", "Account", "Sign out"):
+        for label in (
+            "მიმოხილვა",
+            "პროდუქტები",
+            "პროდუქტის დამატება",
+            "გასვლა",
+        ):
             self.assertContains(response, label)
 
         for excluded in ("ERP", "Orders", "Payments", "Public catalog"):

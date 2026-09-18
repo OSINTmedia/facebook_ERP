@@ -81,10 +81,10 @@ VOCABULARY_MODELS = {
     TAG_VOCABULARY: BusinessTag,
 }
 VOCABULARY_LABELS = {
-    SIZE_VOCABULARY: "Size",
-    COLOR_VOCABULARY: "Color",
-    PRODUCT_TYPE_VOCABULARY: "Product type",
-    TAG_VOCABULARY: "Tag",
+    SIZE_VOCABULARY: "ზომა",
+    COLOR_VOCABULARY: "ფერი",
+    PRODUCT_TYPE_VOCABULARY: "პროდუქტის ტიპი",
+    TAG_VOCABULARY: "ჭდე",
 }
 
 
@@ -317,7 +317,7 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
             self.template_name,
             self.get_context(
                 request,
-                vocabulary_error="Unknown vocabulary action. Refresh and try again.",
+                vocabulary_error="სიტყვარის უცნობი მოქმედებაა. განაახლეთ და სცადეთ ხელახლა.",
             ),
             status=400,
         )
@@ -342,7 +342,7 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
             else:
                 messages.success(
                     request,
-                    f'{VOCABULARY_LABELS[kind]} "{canonical.name}" saved.',
+                    f'{VOCABULARY_LABELS[kind]} „{canonical.name}“ შენახულია.',
                 )
                 return redirect(request.get_full_path())
 
@@ -364,7 +364,7 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
                 self.get_context(
                     request,
                     vocabulary_error=(
-                        "Invalid vocabulary selection. Refresh and try again."
+                        "სიტყვარის არასწორი არჩევანია. განაახლეთ და სცადეთ ხელახლა."
                     ),
                 ),
                 status=400,
@@ -378,7 +378,7 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
                 self.get_context(
                     request,
                     vocabulary_error=(
-                        "Invalid vocabulary selection. Refresh and try again."
+                        "სიტყვარის არასწორი არჩევანია. განაახლეთ და სცადეთ ხელახლა."
                     ),
                 ),
                 status=400,
@@ -410,7 +410,7 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
             else:
                 messages.success(
                     request,
-                    f'{VOCABULARY_LABELS[kind]} "{canonical.name}" updated.',
+                    f'{VOCABULARY_LABELS[kind]} „{canonical.name}“ განახლებულია.',
                 )
                 return redirect(request.get_full_path())
 
@@ -499,79 +499,75 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
         context["vocabulary_groups"] = (
             {
                 "kind": PRODUCT_TYPE_VOCABULARY,
-                "title": "Product types",
+                "title": "პროდუქტის ტიპები",
                 "description": (
-                    "Use one canonical product category and keep alternative wording "
-                    "as explicit aliases."
+                    "აირჩიეთ ერთი მთავარი პროდუქტის კატეგორია და ალტერნატიული "
+                    "სიტყვები ცალკე ალიასებად შეინახეთ."
                 ),
                 "entries": context["product_type_entries"],
                 "add_form": context["product_type_add_form"],
                 "add_intent": ADD_PRODUCT_TYPE_VOCABULARY_INTENT,
-                "add_summary": "Add canonical product type",
-                "add_button": "Add product type",
-                "save_button": "Save product type",
-                "empty_message": "No canonical product types yet.",
+                "add_summary": "პროდუქტის მთავარი ტიპის დამატება",
+                "add_button": "პროდუქტის ტიპის დამატება",
+                "save_button": "პროდუქტის ტიპის შენახვა",
+                "empty_message": "პროდუქტის მთავარი ტიპი ჯერ არ არის.",
                 "warning": (
-                    "Renaming updates the label on every Product that references it. "
-                    "Deactivation keeps existing Product truth but removes this value "
-                    "from new selection and recognition."
+                    "სახელის შეცვლა განაახლებს ყველა პროდუქტს, რომელიც მას იყენებს. "
+                    "გაუქმება არსებულ მონაცემს შეინახავს, ახალი არჩევანიდან და ამოცნობიდან კი ამ მნიშვნელობას ამოიღებს."
                 ),
             },
             {
                 "kind": TAG_VOCABULARY,
-                "title": "Tags",
+                "title": "ჭდეები",
                 "description": (
-                    "Use tags for approved product features or groupings and keep "
-                    "alternative wording as explicit aliases."
+                    "ჭდეები გამოიყენეთ დამტკიცებული თვისებებისა ან ჯგუფებისთვის; "
+                    "ალტერნატიული სიტყვები ალიასებად შეინახეთ."
                 ),
                 "entries": context["tag_entries"],
                 "add_form": context["tag_add_form"],
                 "add_intent": ADD_TAG_VOCABULARY_INTENT,
-                "add_summary": "Add canonical tag",
-                "add_button": "Add tag",
-                "save_button": "Save tag",
-                "empty_message": "No canonical tags yet.",
+                "add_summary": "მთავარი ჭდის დამატება",
+                "add_button": "ჭდის დამატება",
+                "save_button": "ჭდის შენახვა",
+                "empty_message": "მთავარი ჭდე ჯერ არ არის.",
                 "warning": (
-                    "Renaming updates the label on every Product that references it. "
-                    "Deactivation keeps existing Product truth but removes this value "
-                    "from new selection and recognition."
+                    "სახელის შეცვლა განაახლებს ყველა პროდუქტს, რომელიც მას იყენებს. "
+                    "გაუქმება არსებულ მონაცემს შეინახავს, ახალი არჩევანიდან და ამოცნობიდან კი ამ მნიშვნელობას ამოიღებს."
                 ),
             },
             {
                 "kind": SIZE_VOCABULARY,
-                "title": "Sizes",
-                "description": "Examples: M with aliases M-ზომა, M ზომა, or M size.",
+                "title": "ზომები",
+                "description": "მაგალითად: M, ხოლო ალიასებად — M-ზომა, M ზომა ან M size.",
                 "entries": context["size_entries"],
                 "add_form": context["size_add_form"],
                 "add_intent": ADD_SIZE_VOCABULARY_INTENT,
-                "add_summary": "Add canonical size",
-                "add_button": "Add size",
-                "save_button": "Save size",
-                "empty_message": "No canonical sizes yet.",
+                "add_summary": "მთავარი ზომის დამატება",
+                "add_button": "ზომის დამატება",
+                "save_button": "ზომის შენახვა",
+                "empty_message": "მთავარი ზომა ჯერ არ არის.",
                 "warning": (
-                    "Renaming updates this label on every choice that references it. "
-                    "Deactivation keeps existing choices but removes this value from "
-                    "new selection and recognition."
+                    "სახელის შეცვლა განაახლებს ყველა არჩევანს, რომელიც მას იყენებს. "
+                    "გაუქმება არსებულ არჩევანს შეინახავს, ახალი არჩევანიდან და ამოცნობიდან კი ამ მნიშვნელობას ამოიღებს."
                 ),
             },
             {
                 "kind": COLOR_VOCABULARY,
-                "title": "Colors",
+                "title": "ფერები",
                 "description": (
-                    "Prefer a seller-facing Georgian canonical label and keep English "
-                    "or inconsistent wording as aliases."
+                    "მთავარ სახელად ქართული ფორმა აირჩიეთ, ინგლისური ან "
+                    "არათანმიმდევრული ფორმები კი ალიასებად შეინახეთ."
                 ),
                 "entries": context["color_entries"],
                 "add_form": context["color_add_form"],
                 "add_intent": ADD_COLOR_VOCABULARY_INTENT,
-                "add_summary": "Add canonical color",
-                "add_button": "Add color",
-                "save_button": "Save color",
-                "empty_message": "No canonical colors yet.",
+                "add_summary": "მთავარი ფერის დამატება",
+                "add_button": "ფერის დამატება",
+                "save_button": "ფერის შენახვა",
+                "empty_message": "მთავარი ფერი ჯერ არ არის.",
                 "warning": (
-                    "Renaming updates this label on every choice that references it. "
-                    "Deactivation keeps existing choices but removes this value from "
-                    "new selection and recognition."
+                    "სახელის შეცვლა განაახლებს ყველა არჩევანს, რომელიც მას იყენებს. "
+                    "გაუქმება არსებულ არჩევანს შეინახავს, ახალი არჩევანიდან და ამოცნობიდან კი ამ მნიშვნელობას ამოიღებს."
                 ),
             },
         )
@@ -621,14 +617,14 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
         context.setdefault("active_business", self.active_business)
         context.setdefault("business_policy_blocked", self.business_policy_blocked)
         context.setdefault("current_nav", "products")
-        context.setdefault("page_title", "Product")
+        context.setdefault("page_title", "პროდუქტი")
         return_url = get_canonical_product_workspace_return_url(request)
         context.setdefault("return_url", return_url)
         context.setdefault(
             "return_label",
-            "Back to Dashboard"
+            "მიმოხილვაზე დაბრუნება"
             if return_url == reverse("shell_home")
-            else "Back to Products",
+            else "პროდუქტებზე დაბრუნება",
         )
         correction_target = request.GET.get("focus", "")
         if correction_target not in READINESS_CORRECTION_TARGETS:
@@ -757,7 +753,7 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
                 files=request.FILES,
                 instance=bundle.product,
             )
-            choice_row_feedback = "Another empty choice is ready."
+            choice_row_feedback = "კიდევ ერთი ცარიელი არჩევანი მზადაა."
 
         return render(
             request,
@@ -899,8 +895,8 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
             except ValidationError as error:
                 add_validation_errors_to_form(vocabulary_form, error)
             else:
-                label = "Size" if kind == SIZE_VOCABULARY else "Color"
-                vocabulary_feedback = f'{label} "{canonical.name}" saved.'
+                label = "ზომა" if kind == SIZE_VOCABULARY else "ფერი"
+                vocabulary_feedback = f'{label} „{canonical.name}“ შენახულია.'
                 if kind == SIZE_VOCABULARY:
                     size_form = ChoiceVocabularyForm(
                         kind=SIZE_VOCABULARY,
@@ -953,8 +949,8 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
             self.bundle_context(
                 request,
                 bundle,
-                page_title="Add product",
-                submit_label="Create product",
+                page_title="პროდუქტის დამატება",
+                submit_label="პროდუქტის შექმნა",
             ),
         )
 
@@ -974,8 +970,8 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
                 bundle,
                 preview_requested=True,
                 show_form_errors=False,
-                page_title="Add product",
-                submit_label="Create product",
+                page_title="პროდუქტის დამატება",
+                submit_label="პროდუქტის შექმნა",
             )
             return render(
                 request,
@@ -991,37 +987,37 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
             return self.handle_vocabulary_request(
                 request,
                 bundle,
-                page_title="Add product",
-                submit_label="Create product",
+                page_title="პროდუქტის დამატება",
+                submit_label="პროდუქტის შექმნა",
             )
 
         if self.is_choice_candidate_transfer_request(request):
             return self.handle_choice_candidate_transfer(
                 request,
                 bundle,
-                page_title="Add product",
-                submit_label="Create product",
+                page_title="პროდუქტის დამატება",
+                submit_label="პროდუქტის შექმნა",
             )
 
         if self.is_add_choice_row_request(request):
             return self.handle_add_choice_row(
                 request,
                 bundle,
-                page_title="Add product",
-                submit_label="Create product",
+                page_title="პროდუქტის დამატება",
+                submit_label="პროდუქტის შექმნა",
             )
 
         if self.is_material_candidate_transfer_request(request):
             return self.handle_material_candidate_transfer(
                 request,
                 bundle,
-                page_title="Add product",
-                submit_label="Create product",
+                page_title="პროდუქტის დამატება",
+                submit_label="პროდუქტის შექმნა",
             )
 
         if bundle.is_valid():
             bundle.save(actor=request.user)
-            messages.success(request, "Product created.")
+            messages.success(request, "პროდუქტი შექმნილია.")
             return redirect(get_canonical_product_workspace_return_url(request))
 
         return render(
@@ -1030,8 +1026,8 @@ class ProductCreateView(ProductMutationBusinessMixin, View):
             self.bundle_context(
                 request,
                 bundle,
-                page_title="Add product",
-                submit_label="Create product",
+                page_title="პროდუქტის დამატება",
+                submit_label="პროდუქტის შექმნა",
             ),
         )
 
@@ -1067,9 +1063,9 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
             self.bundle_context(
                 request,
                 bundle,
-                page_title=f"Edit {product.name}",
+                page_title=f"{product.name} — რედაქტირება",
                 product=product,
-                submit_label="Save changes",
+                submit_label="ცვლილებების შენახვა",
             ),
         )
     def post(self, request, *args, **kwargs):
@@ -1091,9 +1087,9 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
                 bundle,
                 preview_requested=True,
                 show_form_errors=False,
-                page_title=f"Edit {product.name}",
+                page_title=f"{product.name} — რედაქტირება",
                 product=product,
-                submit_label="Save changes",
+                submit_label="ცვლილებების შენახვა",
             )
             return render(
                 request,
@@ -1109,36 +1105,36 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
             return self.handle_vocabulary_request(
                 request,
                 bundle,
-                page_title=f"Edit {product.name}",
+                page_title=f"{product.name} — რედაქტირება",
                 product=product,
-                submit_label="Save changes",
+                submit_label="ცვლილებების შენახვა",
             )
 
         if self.is_choice_candidate_transfer_request(request):
             return self.handle_choice_candidate_transfer(
                 request,
                 bundle,
-                page_title=f"Edit {product.name}",
+                page_title=f"{product.name} — რედაქტირება",
                 product=product,
-                submit_label="Save changes",
+                submit_label="ცვლილებების შენახვა",
             )
 
         if self.is_add_choice_row_request(request):
             return self.handle_add_choice_row(
                 request,
                 bundle,
-                page_title=f"Edit {product.name}",
+                page_title=f"{product.name} — რედაქტირება",
                 product=product,
-                submit_label="Save changes",
+                submit_label="ცვლილებების შენახვა",
             )
 
         if self.is_material_candidate_transfer_request(request):
             return self.handle_material_candidate_transfer(
                 request,
                 bundle,
-                page_title=f"Edit {product.name}",
+                page_title=f"{product.name} — რედაქტირება",
                 product=product,
-                submit_label="Save changes",
+                submit_label="ცვლილებების შენახვა",
             )
 
         if bundle.is_valid():
@@ -1147,7 +1143,7 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
             except ArchivedProductMutationError as error:
                 messages.error(request, error.messages[0])
                 return redirect(get_canonical_product_workspace_return_url(request))
-            messages.success(request, "Product updated.")
+            messages.success(request, "პროდუქტი განახლებულია.")
             return redirect(get_canonical_product_workspace_return_url(request))
 
         return render(
@@ -1156,9 +1152,9 @@ class ProductUpdateView(ProductMutationBusinessMixin, View):
             self.bundle_context(
                 request,
                 bundle,
-                page_title=f"Edit {product.name}",
+                page_title=f"{product.name} — რედაქტირება",
                 product=product,
-                submit_label="Save changes",
+                submit_label="ცვლილებების შენახვა",
             ),
         )
 
@@ -1180,7 +1176,7 @@ class ProductAddSimilarView(ProductMutationBusinessMixin, View):
         return_url = get_canonical_product_workspace_return_url(request)
         messages.success(
             request,
-            "Similar Product created as a Draft. Review it before activation.",
+            "მსგავსი პროდუქტი მონახაზად შეიქმნა. გაადამოწმეთ გააქტიურებამდე.",
         )
         edit_url = reverse("catalog:product_edit", args=[product.pk])
         return redirect(f"{edit_url}?{urlencode({'next': return_url})}")
@@ -1216,9 +1212,9 @@ class ProductLifecycleMutationView(LoginRequiredMixin, View):
 
 class ProductArchiveView(ProductLifecycleMutationView):
     command = staticmethod(archive_product)
-    success_message = "Product archived. Its history and stock were preserved."
+    success_message = "პროდუქტი დაარქივებულია. მისი ისტორია და მარაგი შენახულია."
 
 
 class ProductRestoreView(ProductLifecycleMutationView):
     command = staticmethod(restore_product_to_draft)
-    success_message = "Product restored as a Draft for review."
+    success_message = "პროდუქტი გადასახედად მონახაზის სტატუსით აღდგა."

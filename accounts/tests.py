@@ -103,7 +103,12 @@ class SellerAuthenticationTests(TestCase):
         self.assertContains(response, 'name="username"')
         self.assertContains(response, 'type="password"')
 
-        for label in ("Dashboard", "Products", "Add product", "Account", "Sign out"):
+        for label in (
+            "მიმოხილვა",
+            "პროდუქტები",
+            "პროდუქტის დამატება",
+            "გასვლა",
+        ):
             self.assertNotContains(response, label)
 
     @override_settings(

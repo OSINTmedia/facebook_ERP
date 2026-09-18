@@ -19,6 +19,21 @@ from inventory.mutations import apply_choice_quantity_delta, set_choice_quantity
 WORKSPACE_STOCK_RESPONSE_SCOPE = "workspace"
 
 
+def stock_error_for_seller(error):
+    message = " ".join(error.messages)
+    translations = {
+        "Choice quantity cannot be negative.": "მარაგი ნულზე ნაკლები ვერ იქნება.",
+        "Archived Product stock cannot be changed.": "დაარქივებული პროდუქტის მარაგი ვერ შეიცვლება.",
+        "Choose exactly one stock action.": "აირჩიეთ მარაგის მხოლოდ ერთი მოქმედება.",
+        "Stock adjustment must be +1 or -1.": "მარაგის ცვლილება უნდა იყოს +1 ან -1.",
+        "Set quantity must be a nonnegative integer.": "რაოდენობა უნდა იყოს მთელი რიცხვი და არ უნდა იყოს უარყოფითი.",
+    }
+    if message.startswith("Choice quantity cannot exceed "):
+        maximum = message.removeprefix("Choice quantity cannot exceed ").removesuffix(".")
+        return f"მარაგი {maximum}-ზე მეტი ვერ იქნება."
+    return translations.get(message, message)
+
+
 def get_safe_stock_return_url(request):
     candidate = request.POST.get("next") or request.GET.get("next")
     fallback = reverse("catalog:product_list")
@@ -114,8 +129,8 @@ def render_workspace_stock_results(
     )
     if membership_changed:
         stock_feedback = (
-            f"{stock_feedback} The Product moved out of the current results "
-            "because its availability changed."
+            f"{stock_feedback} ხელმისაწვდომობის შეცვლის გამო პროდუქტი მიმდინარე "
+            "შედეგებიდან გადავიდა."
         )
     context.update(
         {
@@ -157,13 +172,13 @@ class ChoiceStockMutationView(LoginRequiredMixin, View):
             business = resolve_active_business(request.user)
         except MultipleBusinessesUnsupported:
             return HttpResponse(
-                "Stock updates require one resolved active Business.",
+                "მარაგის შესაცვლელად უნდა არჩეული იყოს ერთი აქტიური ბიზნესი.",
                 status=409,
             )
 
         if business is None:
             return HttpResponse(
-                "Stock updates require an active Business.",
+                "მარაგის შესაცვლელად აქტიური ბიზნესია საჭირო.",
                 status=409,
             )
 
@@ -213,7 +228,7 @@ class ChoiceStockMutationView(LoginRequiredMixin, View):
                     quantity=quantity,
                 )
         except ValidationError as error:
-            error_message = " ".join(error.messages)
+            error_message = stock_error_for_seller(error)
             if request.htmx:
                 if workspace_state is not None:
                     return render_workspace_stock_results(
@@ -235,15 +250,15 @@ class ChoiceStockMutationView(LoginRequiredMixin, View):
 
         if stock_action == "set":
             feedback = (
-                f"Stock set to {result.choice.quantity}."
+                f"მარაგი განისაზღვრა: {result.choice.quantity}."
                 if result.adjustment is not None
                 else (
-                    f"Stock is already {result.choice.quantity}; "
-                    "no adjustment was recorded."
+                    f"მარაგი უკვე {result.choice.quantity}-ია; "
+                    "ცვლილება არ ჩაწერილა."
                 )
             )
         else:
-            feedback = f"Stock updated to {result.choice.quantity}."
+            feedback = f"მარაგი განახლდა: {result.choice.quantity}."
         if request.htmx:
             if workspace_state is not None:
                 return render_workspace_stock_results(

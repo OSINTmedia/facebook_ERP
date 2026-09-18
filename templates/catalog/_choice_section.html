@@ -4,13 +4,13 @@
   {% if choice_section_open %}open{% endif %}
 >
   <summary class="assistant-section__summary" id="choice-section-title">
-    <span>Sizes, colors, and stock</span>
-    <small>Add sellable choices when needed</small>
+    <span>ზომები, ფერები და მარაგი</span>
+    <small>საჭიროებისამებრ დაამატეთ გასაყიდი არჩევანი</small>
   </summary>
   <div class="assistant-section__body">
     <div class="choice-section__heading">
-      <p>Select approved size and color values for each sellable choice.</p>
-      <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">View and manage full vocabulary</a>
+      <p>თითოეული გასაყიდი არჩევანისთვის აირჩიეთ დამტკიცებული ზომა და ფერი.</p>
+      <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">სრული სიტყვარის ნახვა და მართვა</a>
     </div>
 
   {% if vocabulary_feedback %}
@@ -33,11 +33,11 @@
     <p class="choice-transfer-error" role="alert">{{ choice_row_error }}</p>
   {% endif %}
 
-  <div class="choice-vocabulary" aria-label="Approved choice vocabulary">
+  <div class="choice-vocabulary" aria-label="დამტკიცებული არჩევანის სიტყვარი">
     <details class="vocabulary-editor" {% if size_vocabulary_form.errors %}open{% endif %}>
-      <summary>Add approved size</summary>
+      <summary>დამტკიცებული ზომის დამატება</summary>
       <div class="vocabulary-editor__body">
-        <p class="vocabulary-editor__help">Use one canonical label and only known alternative wording.</p>
+        <p class="vocabulary-editor__help">მიუთითეთ ერთი მთავარი სახელი და მხოლოდ ცნობილი ალტერნატიული ფორმები.</p>
 
         {% if size_vocabulary_form.non_field_errors %}
           <div class="form-errors" role="alert">
@@ -67,16 +67,16 @@
             hx-include="closest form"
             hx-indicator="#size-vocabulary-loading"
             hx-disabled-elt="this"
-          >Add size</button>
-          <span id="size-vocabulary-loading" class="htmx-indicator vocabulary-loading" role="status">Adding…</span>
+          >ზომის დამატება</button>
+          <span id="size-vocabulary-loading" class="htmx-indicator vocabulary-loading" role="status">ემატება…</span>
         </div>
       </div>
     </details>
 
     <details class="vocabulary-editor" {% if color_vocabulary_form.errors %}open{% endif %}>
-      <summary>Add approved color</summary>
+      <summary>დამტკიცებული ფერის დამატება</summary>
       <div class="vocabulary-editor__body">
-        <p class="vocabulary-editor__help">Prefer the seller-facing Georgian label; English wording can be an alias.</p>
+        <p class="vocabulary-editor__help">მთავარ სახელად ქართული ფორმა აირჩიეთ; ინგლისური ან სხვა ვარიანტი ალიასად დაამატეთ.</p>
 
         {% if color_vocabulary_form.non_field_errors %}
           <div class="form-errors" role="alert">
@@ -106,8 +106,8 @@
             hx-include="closest form"
             hx-indicator="#color-vocabulary-loading"
             hx-disabled-elt="this"
-          >Add color</button>
-          <span id="color-vocabulary-loading" class="htmx-indicator vocabulary-loading" role="status">Adding…</span>
+          >ფერის დამატება</button>
+          <span id="color-vocabulary-loading" class="htmx-indicator vocabulary-loading" role="status">ემატება…</span>
         </div>
       </div>
     </details>
@@ -128,7 +128,7 @@
   <div class="choice-list">
     {% for choice_form in choice_formset %}
       <fieldset class="choice-row">
-        <legend>Choice {{ forloop.counter }}</legend>
+        <legend>არჩევანი {{ forloop.counter }}</legend>
 
         {% for hidden_field in choice_form.hidden_fields %}
           {{ hidden_field }}
@@ -151,7 +151,7 @@
 
         <div class="choice-row__grid">
           <div class="form-field">
-            <label for="{{ choice_form.size.id_for_label }}">Size</label>
+            <label for="{{ choice_form.size.id_for_label }}">ზომა</label>
             {{ choice_form.size }}
             {% if show_form_errors %}
               {% for error in choice_form.size.errors %}
@@ -161,7 +161,7 @@
           </div>
 
           <div class="form-field">
-            <label for="{{ choice_form.color.id_for_label }}">Color</label>
+            <label for="{{ choice_form.color.id_for_label }}">ფერი</label>
             {{ choice_form.color }}
             {% if show_form_errors %}
               {% for error in choice_form.color.errors %}
@@ -188,7 +188,7 @@
         <div class="choice-row__controls">
           <div class="choice-option">
             {{ choice_form.is_active }}
-            <label for="{{ choice_form.is_active.id_for_label }}">Active choice</label>
+            <label for="{{ choice_form.is_active.id_for_label }}">აქტიური არჩევანი</label>
           </div>
           {% if show_form_errors %}
             {% for error in choice_form.is_active.errors %}
@@ -199,7 +199,7 @@
           {% if not choice_form.instance.pk %}
             <div class="choice-option choice-option--remove">
               {{ choice_form.DELETE }}
-              <label for="{{ choice_form.DELETE.id_for_label }}">Discard new choice</label>
+              <label for="{{ choice_form.DELETE.id_for_label }}">ახალი არჩევანის მოშორება</label>
             </div>
           {% endif %}
           {% if show_form_errors %}
@@ -225,9 +225,9 @@
         hx-include="closest form"
         hx-indicator="#choice-row-loading"
         hx-disabled-elt="this"
-      >Add another choice</button>
-      <span id="choice-row-loading" class="htmx-indicator vocabulary-loading" role="status">Adding…</span>
+      >კიდევ ერთი არჩევანის დამატება</button>
+      <span id="choice-row-loading" class="htmx-indicator vocabulary-loading" role="status">ემატება…</span>
     </div>
-    <p class="choice-help">Use Add another choice when two sellable choices intentionally share a size or color.</p>
+    <p class="choice-help">დაამატეთ ცალკე რიგი, როცა ორ გასაყიდ არჩევანს განზრახ ერთნაირი ზომა ან ფერი აქვს.</p>
   </div>
 </details>

@@ -5,14 +5,14 @@
   aria-atomic="true"
 >
   <p id="recognition-preview-loading" class="recognition-preview__loading htmx-indicator" role="status">
-    Checking description…
+    აღწერა მოწმდება…
   </p>
 
   {% if recognition_preview.observed_text %}
     <section class="recognition-preview" aria-labelledby="recognition-preview-title">
       <div class="recognition-preview__heading">
-        <h2 id="recognition-preview-title">Recognized candidates</h2>
-        <p>Suggestions only. Nothing here is confirmed or saved.</p>
+        <h2 id="recognition-preview-title">ამოცნობილი შეთავაზებები</h2>
+        <p>ეს მხოლოდ შეთავაზებებია. არცერთი მათგანი დადასტურებული ან შენახული არ არის.</p>
       </div>
 
       {% if recognition_preview.candidates %}
@@ -22,9 +22,9 @@
               <span class="recognition-candidate__destination">{{ candidate.destination.label }}</span>
               <span class="recognition-candidate__meaning">
                 <strong>{{ candidate.canonical_value }}</strong>
-                <span>Observed: “{{ candidate.observed_text }}”</span>
+                <span>აღწერაში ნაპოვნია: „{{ candidate.observed_text }}“</span>
               </span>
-              <span class="recognition-candidate__state">Needs confirmation</span>
+              <span class="recognition-candidate__state">საჭიროა დადასტურება</span>
               {% if candidate.destination.value == "choice_size" or candidate.destination.value == "choice_color" %}
                 <div class="recognition-candidate__actions">
                   <button
@@ -38,12 +38,12 @@
                     hx-include="closest form"
                     hx-indicator="#choice-transfer-loading-{{ forloop.counter0 }}"
                     hx-disabled-elt="this"
-                  >Use in choices</button>
+                  >არჩევანში გამოყენება</button>
                   <span
                     id="choice-transfer-loading-{{ forloop.counter0 }}"
                     class="htmx-indicator recognition-candidate__loading"
                     role="status"
-                  >Adding…</span>
+                  >ემატება…</span>
                 </div>
               {% elif candidate.destination.value == "material" %}
                 <div class="recognition-candidate__actions">
@@ -58,22 +58,22 @@
                     hx-include="closest form"
                     hx-indicator="#material-transfer-loading-{{ forloop.counter0 }}"
                     hx-disabled-elt="this"
-                  >Review as material</button>
+                  >მასალად გადახედვა</button>
                   <span
                     id="material-transfer-loading-{{ forloop.counter0 }}"
                     class="htmx-indicator recognition-candidate__loading"
                     role="status"
-                  >Adding…</span>
+                  >ემატება…</span>
                 </div>
               {% endif %}
             </li>
           {% endfor %}
         </ul>
       {% else %}
-        <p class="recognition-preview__empty" role="status">No known candidates found for this Business.</p>
+        <p class="recognition-preview__empty" role="status">ამ ბიზნესისთვის ცნობილი შეთავაზება ვერ მოიძებნა.</p>
       {% endif %}
     </section>
   {% else %}
-    <p class="recognition-preview__hint">Known candidates appear automatically as the description changes.</p>
+    <p class="recognition-preview__hint">აღწერის შეცვლისას ცნობილი შეთავაზებები ავტომატურად გამოჩნდება.</p>
   {% endif %}
 </div>

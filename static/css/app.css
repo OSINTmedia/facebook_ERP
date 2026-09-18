@@ -75,10 +75,10 @@ a {
 .primary-nav {
   display: flex;
   min-width: 0;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
   gap: 0.25rem;
-  overflow-x: auto;
 }
 
 .nav-link {
@@ -339,7 +339,8 @@ h1 {
 
 .product-workspace-transport-error:focus-visible,
 .product-workspace-stock-status:focus-visible,
-.product-workspace-stock-error:focus-visible {
+.product-workspace-stock-error:focus-visible,
+#product-form-transport-error:focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 3px;
 }
@@ -1688,9 +1689,10 @@ h1 {
 }
 
 .button--compact {
-  min-height: 2rem;
+  min-height: 2.75rem;
   padding: 0.35rem 0.65rem;
   font-size: 0.85rem;
+  white-space: normal;
 }
 
 .form-actions {
@@ -1865,7 +1867,10 @@ h1 {
   .primary-nav {
     width: 100%;
     justify-content: flex-start;
-    padding-bottom: 0.25rem;
+  }
+
+  .nav-link {
+    white-space: normal;
   }
 
   .product-summary {

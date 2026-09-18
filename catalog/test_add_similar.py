@@ -315,7 +315,7 @@ class AddSimilarViewTests(AddSimilarFixtureMixin, TestCase):
         workspace_response = self.client.get(workspace_url)
 
         self.assertContains(workspace_response, f'action="{self.url}"', count=1)
-        self.assertContains(workspace_response, ">Add similar</button>", count=1)
+        self.assertContains(workspace_response, ">მსგავსის დამატება</button>", count=1)
 
         response = self.client.post(self.url, {"next": workspace_url})
         destination = Product.objects.exclude(pk=self.source.pk).get()
@@ -338,7 +338,7 @@ class AddSimilarViewTests(AddSimilarFixtureMixin, TestCase):
         self.assertEqual(edit_response.context["return_url"], workspace_url)
         self.assertContains(
             edit_response,
-            "Similar Product created as a Draft. Review it before activation.",
+            "მსგავსი პროდუქტი მონახაზად შეიქმნა. გაადამოწმეთ გააქტიურებამდე.",
         )
 
         edit_data = self.edit_data(

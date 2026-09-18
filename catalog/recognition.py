@@ -18,13 +18,13 @@ class SemanticDestination(StrEnum):
     @property
     def label(self) -> str:
         return {
-            self.PRODUCT_TYPE: "Product type",
-            self.TAG: "Tag",
-            self.MATERIAL: "Material",
-            self.CHOICE_SIZE: "Choice size",
-            self.CHOICE_COLOR: "Choice color",
-            self.MEASUREMENT: "Measurement",
-            self.SEARCH_TOKEN: "Search token",
+            self.PRODUCT_TYPE: "პროდუქტის ტიპი",
+            self.TAG: "ჭდე",
+            self.MATERIAL: "მასალა",
+            self.CHOICE_SIZE: "არჩევანის ზომა",
+            self.CHOICE_COLOR: "არჩევანის ფერი",
+            self.MEASUREMENT: "ზომა",
+            self.SEARCH_TOKEN: "საძიებო სიტყვა",
         }[self]
 
 

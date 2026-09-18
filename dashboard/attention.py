@@ -21,11 +21,11 @@ DAILY_PRODUCT_LIFECYCLES = (
     Product.Lifecycle.ACTIVE,
 )
 ATTENTION_FILTER_CHOICES = (
-    ("", "All attention states"),
-    ("missing_information", "Missing information"),
-    ("low_stock", "Low stock"),
-    ("sold_out", "Sold out / restock"),
-    ("partial_stock", "Partially sold out"),
+    ("", "ყველა საყურადღებო მდგომარეობა"),
+    ("missing_information", "აკლია ინფორმაცია"),
+    ("low_stock", "მცირე მარაგი"),
+    ("sold_out", "ამოიწურა / მარაგის შევსება"),
+    ("partial_stock", "ზოგი არჩევანი ამოიწურა"),
 )
 ATTENTION_FILTER_GROUPS = {
     "missing_information": "missing_information_products",

@@ -13,42 +13,42 @@
     tabindex="-1"
     hidden
   >
-    <p>The stock response could not be confirmed. Refresh to load current server truth.</p>
-    <a class="button button--secondary button--compact" href="{{ workspace_return_url }}">Refresh results</a>
+    <p>მარაგის პასუხი ვერ დადასტურდა. სერვერის მიმდინარე მონაცემებისთვის განაახლეთ შედეგები.</p>
+    <a class="button button--secondary button--compact" href="{{ workspace_return_url }}">შედეგების განახლება</a>
   </div>
 
   {% if workspace_stock_feedback and not workspace_stock_choice_is_visible %}
     <p id="product-workspace-stock-status" class="product-workspace-stock-status" role="status" aria-atomic="true" tabindex="-1">
-      Choice #{{ workspace_stock_choice_id }}: {{ workspace_stock_feedback }}
+      არჩევანი #{{ workspace_stock_choice_id }}: {{ workspace_stock_feedback }}
     </p>
   {% endif %}
   {% if workspace_stock_error and not workspace_stock_choice_is_visible %}
     <p id="product-workspace-stock-status" class="product-workspace-stock-error" role="alert" aria-atomic="true" tabindex="-1">
-      Choice #{{ workspace_stock_choice_id }}: {{ workspace_stock_error }}
+      არჩევანი #{{ workspace_stock_choice_id }}: {{ workspace_stock_error }}
     </p>
   {% endif %}
 
   {% if workspace_query_is_valid %}
     {% if workspace_search_query or workspace_has_active_filters %}
-      <div class="product-workspace-state-summary" aria-label="Current Product Workspace view">
-        <p role="status" aria-atomic="true"><strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }}{% if workspace_search_query %} for “{{ workspace_search_query }}”{% endif %}{% if workspace_lifecycle_filter %} · Lifecycle — {% if workspace_lifecycle_filter == "active" %}Active{% elif workspace_lifecycle_filter == "archived" %}Archived{% else %}Draft{% endif %}{% endif %}{% if workspace_availability_filter %} · Availability — {% if workspace_availability_filter == "available" %}Available{% else %}Sold out{% endif %}{% endif %}{% if workspace_attention_filter %} · Attention — {{ workspace_attention_label }}{% endif %}</p>
+      <div class="product-workspace-state-summary" aria-label="პროდუქტების მიმდინარე ხედი">
+        <p role="status" aria-atomic="true"><strong>{{ workspace_result_count }}</strong> პროდუქტი{% if workspace_search_query %} „{{ workspace_search_query }}“ ძიებისთვის{% endif %}{% if workspace_lifecycle_filter %} · სტატუსი — {% if workspace_lifecycle_filter == "active" %}აქტიური{% elif workspace_lifecycle_filter == "archived" %}დაარქივებული{% else %}მონახაზი{% endif %}{% endif %}{% if workspace_availability_filter %} · ხელმისაწვდომობა — {% if workspace_availability_filter == "available" %}მარაგშია{% else %}ამოიწურა{% endif %}{% endif %}{% if workspace_attention_filter %} · საყურადღებო — {{ workspace_attention_label }}{% endif %}</p>
         {% if product_cards %}
           <div class="product-workspace-state-summary__actions">
             {% if workspace_search_query %}
-              <a class="button button--secondary button--compact" href="{{ workspace_clear_search_url }}">Clear search</a>
+              <a class="button button--secondary button--compact" href="{{ workspace_clear_search_url }}">ძიების გასუფთავება</a>
             {% endif %}
             {% if workspace_has_active_filters %}
-              <a class="button button--secondary button--compact" href="{{ workspace_clear_filters_url }}">Clear filters</a>
+              <a class="button button--secondary button--compact" href="{{ workspace_clear_filters_url }}">ფილტრების გასუფთავება</a>
             {% endif %}
             {% if workspace_search_query and workspace_has_active_filters %}
-              <a class="button button--secondary button--compact" href="{{ workspace_clear_all_url }}">Clear all</a>
+              <a class="button button--secondary button--compact" href="{{ workspace_clear_all_url }}">ყველას გასუფთავება</a>
             {% endif %}
           </div>
         {% endif %}
       </div>
     {% elif product_cards %}
       <p class="product-workspace-result-count" role="status">
-        <strong>{{ workspace_result_count }}</strong> product{{ workspace_result_count|pluralize }}
+        <strong>{{ workspace_result_count }}</strong> პროდუქტი
       </p>
     {% endif %}
   {% endif %}
@@ -56,13 +56,13 @@
   {% if not workspace_query_is_valid %}
     <div class="empty-state empty-state--warning" role="status">
       {% if not workspace_search_is_valid %}
-        <p>Search was not applied. Correct the query above and try again.</p>
+        <p>ძიება არ გამოყენებულა. შეასწორეთ მოთხოვნა და სცადეთ ხელახლა.</p>
       {% else %}
-        <p>Filters were not applied. Correct the filters above and try again.</p>
+        <p>ფილტრები არ გამოყენებულა. შეასწორეთ ფილტრები და სცადეთ ხელახლა.</p>
       {% endif %}
     </div>
   {% elif product_cards %}
-    <ul class="product-list" aria-label="Products">
+    <ul class="product-list" aria-label="პროდუქტები">
       {% for card in product_cards %}
         <li class="product-list__item">
           {% include "catalog/_product_card.html" with card=card workspace_return_url=workspace_return_url csrf_token=csrf_token workspace_stock_choice_id=workspace_stock_choice_id workspace_stock_feedback=workspace_stock_feedback workspace_stock_error=workspace_stock_error workspace_stock_action=workspace_stock_action only %}
@@ -70,74 +70,74 @@
       {% endfor %}
     </ul>
     {% if workspace_page_count > 1 %}
-      <nav class="product-workspace-pagination" aria-label="Product pages">
+      <nav class="product-workspace-pagination" aria-label="პროდუქტების გვერდები">
         <p>
-          Page {{ workspace_page_number }} of {{ workspace_page_count }}
-          · showing {{ workspace_page_start }}–{{ workspace_page_end }}
-          of {{ workspace_result_count }}
+          გვერდი {{ workspace_page_number }} / {{ workspace_page_count }}
+          · ნაჩვენებია {{ workspace_page_start }}–{{ workspace_page_end }}
+          · სულ {{ workspace_result_count }}
         </p>
         <div class="product-workspace-pagination__actions">
           {% if workspace_previous_page_url %}
-            <a class="button button--secondary button--compact" href="{{ workspace_previous_page_url }}" rel="prev">Previous</a>
+            <a class="button button--secondary button--compact" href="{{ workspace_previous_page_url }}" rel="prev">წინა</a>
           {% else %}
-            <span class="button button--secondary button--compact" aria-disabled="true">Previous</span>
+            <span class="button button--secondary button--compact" aria-disabled="true">წინა</span>
           {% endif %}
           {% if workspace_next_page_url %}
-            <a class="button button--secondary button--compact" href="{{ workspace_next_page_url }}" rel="next">Next</a>
+            <a class="button button--secondary button--compact" href="{{ workspace_next_page_url }}" rel="next">შემდეგი</a>
           {% else %}
-            <span class="button button--secondary button--compact" aria-disabled="true">Next</span>
+            <span class="button button--secondary button--compact" aria-disabled="true">შემდეგი</span>
           {% endif %}
         </div>
       </nav>
     {% endif %}
-    <nav class="product-workspace-tools" aria-label="Product Workspace settings">
-      <span>Catalog setup</span>
+    <nav class="product-workspace-tools" aria-label="პროდუქტების სივრცის პარამეტრები">
+      <span>კატალოგის მომზადება</span>
       <a
         class="button button--secondary button--compact"
         href="{% url 'catalog:choice_vocabulary' %}?next={{ workspace_return_url|urlencode }}"
-      >Manage product vocabulary</a>
+      >პროდუქტის სიტყვარის მართვა</a>
     </nav>
   {% elif workspace_search_query and workspace_has_active_filters and catalog_has_products %}
     <div class="empty-state" role="status">
-      <p>No products match this search and filter combination.</p>
+      <p>ამ ძიებასა და ფილტრებს არცერთი პროდუქტი არ ემთხვევა.</p>
     </div>
     <div class="page-actions">
-      <a class="button button--primary" href="{{ workspace_clear_all_url }}">Clear all</a>
+      <a class="button button--primary" href="{{ workspace_clear_all_url }}">ყველას გასუფთავება</a>
     </div>
   {% elif workspace_has_active_filters and catalog_has_products %}
     <div class="empty-state" role="status">
-      <p>No products match the active filters.</p>
+      <p>აქტიურ ფილტრებს არცერთი პროდუქტი არ ემთხვევა.</p>
     </div>
     <div class="page-actions">
-      <a class="button button--primary" href="{{ workspace_clear_filters_url }}">Clear filters</a>
+      <a class="button button--primary" href="{{ workspace_clear_filters_url }}">ფილტრების გასუფთავება</a>
     </div>
   {% elif workspace_search_query and catalog_has_products %}
     <div class="empty-state" role="status">
-      <p>No products match “{{ workspace_search_query }}”. Try a simpler search.</p>
+      <p>ძიებას „{{ workspace_search_query }}“ არცერთი პროდუქტი არ ემთხვევა. სცადეთ უფრო მარტივი ძიება.</p>
     </div>
     <div class="page-actions">
-      <a class="button button--primary" href="{{ workspace_clear_search_url }}">Clear search</a>
+      <a class="button button--primary" href="{{ workspace_clear_search_url }}">ძიების გასუფთავება</a>
     </div>
   {% elif catalog_has_archived_products %}
     <div class="empty-state" role="status">
-      <p>No Products are in daily work. Archived Products remain preserved.</p>
+      <p>ყოველდღიურ სამუშაოში პროდუქტები არ არის. დაარქივებული პროდუქტები შენახულია.</p>
     </div>
     <div class="page-actions">
-      <a class="button button--secondary" href="{{ workspace_archived_products_url }}">View archived Products</a>
-      <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">Add product</a>
+      <a class="button button--secondary" href="{{ workspace_archived_products_url }}">დაარქივებული პროდუქტების ნახვა</a>
+      <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">პროდუქტის დამატება</a>
     </div>
   {% else %}
     <div class="empty-state" role="status">
-      <p>No products yet.</p>
+      <p>პროდუქტები ჯერ არ არის.</p>
     </div>
     <div class="page-actions">
-      <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">Add product</a>
+      <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ workspace_return_url|urlencode }}">პროდუქტის დამატება</a>
       {% if workspace_search_query and workspace_has_active_filters %}
-        <a class="button button--secondary" href="{{ workspace_clear_all_url }}">Clear all</a>
+        <a class="button button--secondary" href="{{ workspace_clear_all_url }}">ყველას გასუფთავება</a>
       {% elif workspace_has_active_filters %}
-        <a class="button button--secondary" href="{{ workspace_clear_filters_url }}">Clear filters</a>
+        <a class="button button--secondary" href="{{ workspace_clear_filters_url }}">ფილტრების გასუფთავება</a>
       {% elif workspace_search_query %}
-        <a class="button button--secondary" href="{{ workspace_clear_search_url }}">Clear search</a>
+        <a class="button button--secondary" href="{{ workspace_clear_search_url }}">ძიების გასუფთავება</a>
       {% endif %}
     </div>
   {% endif %}

@@ -174,7 +174,7 @@ class ProductMediaFormAndModelTests(TemporaryMediaMixin, TestCase):
         )
 
         self.assertFalse(form.is_valid())
-        self.assertIn("Select only one Product image.", form.errors["image"])
+        self.assertIn("აირჩიეთ მხოლოდ ერთი პროდუქტის სურათი.", form.errors["image"])
 
     def test_model_rejects_cross_business_media_before_file_write(self):
         media = ProductMedia(
@@ -498,7 +498,7 @@ class ProductMediaViewTests(TemporaryMediaMixin, TestCase):
         )
         self.assertContains(get_response, 'aria-describedby="id_image_helptext"')
         self.assertContains(get_response, 'id="id_image_helptext"')
-        self.assertContains(get_response, "No Product image selected")
+        self.assertContains(get_response, "პროდუქტის სურათი არ არის არჩეული")
 
         response = self.client.post(
             create_url,
@@ -528,7 +528,7 @@ class ProductMediaViewTests(TemporaryMediaMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            "Select the image again before saving.",
+            "შენახვამდე სურათი თავიდან აირჩიეთ.",
         )
         self.assertEqual(Product.objects.count(), 1)
         self.assertEqual(ProductMedia.objects.count(), 1)
@@ -571,7 +571,7 @@ class ProductMediaViewTests(TemporaryMediaMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            "Select the image again before saving.",
+            "შენახვამდე სურათი თავიდან აირჩიეთ.",
         )
         self.assertFalse(Product.objects.filter(name="Media product").exists())
 
@@ -585,7 +585,7 @@ class ProductMediaViewTests(TemporaryMediaMixin, TestCase):
 
         get_response = self.client.get(edit_url)
         self.assertContains(get_response, self.url)
-        self.assertContains(get_response, "Replace Product image")
+        self.assertContains(get_response, "პროდუქტის სურათის შეცვლა")
 
         with self.captureOnCommitCallbacks(execute=True):
             response = self.client.post(
@@ -617,8 +617,8 @@ class ProductMediaViewTests(TemporaryMediaMixin, TestCase):
         response = self.client.get(reverse("catalog:product_list"))
 
         self.assertContains(response, self.url)
-        self.assertContains(response, f'alt="Image of {self.product.name}"')
+        self.assertContains(response, f'alt="{self.product.name} — პროდუქტის სურათი"')
         self.assertContains(
             response,
-            f'aria-label="No image available for {product_without_media.name}"',
+            f'aria-label="{product_without_media.name} — სურათი არ არის"',
         )

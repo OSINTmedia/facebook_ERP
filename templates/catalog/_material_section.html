@@ -4,12 +4,12 @@
   {% if material_section_open %}open{% endif %}
 >
   <summary class="assistant-section__summary" id="material-section-title">
-    <span>Confirm materials</span>
-    <small>Optional buyer-answer truth</small>
+    <span>მასალების დადასტურება</span>
+    <small>არასავალდებულო ზუსტი პასუხი მომხმარებლისთვის</small>
   </summary>
   <div class="assistant-section__body">
     <div class="material-section__heading">
-      <p>Review canonical material facts before saving. Percentages are optional.</p>
+      <p>შენახვამდე გადაამოწმეთ მასალის მონაცემები. პროცენტის მითითება არასავალდებულოა.</p>
     </div>
 
   {% if material_transfer_feedback %}
@@ -30,7 +30,7 @@
   <div class="material-rows">
     {% for material_form in material_formset.forms %}
       <fieldset class="material-row">
-        <legend>Material {{ forloop.counter }}</legend>
+        <legend>მასალა {{ forloop.counter }}</legend>
         {{ material_form.id }}
 
         {% if show_form_errors and material_form.id.errors %}
@@ -81,12 +81,12 @@
 
         <div class="choice-option">
           {{ material_form.DELETE }}
-          <label for="{{ material_form.DELETE.id_for_label }}">Remove material</label>
+          <label for="{{ material_form.DELETE.id_for_label }}">მასალის მოშორება</label>
         </div>
       </fieldset>
     {% endfor %}
   </div>
 
-    <p class="material-section__help">A candidate remains a suggestion until this Product bundle saves successfully. No aliases are learned automatically.</p>
+    <p class="material-section__help">შეთავაზება მხოლოდ შეთავაზებად რჩება, სანამ პროდუქტი წარმატებით არ შეინახება. ალიასები ავტომატურად არ იმახსოვრება.</p>
   </div>
 </details>

@@ -36,6 +36,54 @@
   const currentResults = () =>
     document.getElementById("product-workspace-results");
 
+  const syncFieldErrors = (root = document) => {
+    let generatedErrorId = 0;
+    for (const container of root.querySelectorAll(".form-field")) {
+      const field = container.querySelector("input, select, textarea");
+      const error = container.querySelector(".field-error, .form-errors");
+      if (!field || !error) {
+        continue;
+      }
+      if (!error.id) {
+        generatedErrorId += 1;
+        error.id = `${field.id || "field"}-error-${generatedErrorId}`;
+      }
+      error.setAttribute("role", "alert");
+      field.setAttribute("aria-invalid", "true");
+      field.setAttribute("aria-errormessage", error.id);
+      const describedBy = new Set(
+        (field.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean),
+      );
+      describedBy.add(error.id);
+      field.setAttribute("aria-describedby", [...describedBy].join(" "));
+    }
+  };
+
+  const productFormControl = (event) => {
+    const element = event.detail?.elt;
+    return element?.closest?.(".product-form") ? element : null;
+  };
+
+  const setProductFormBusy = (control, isBusy) => {
+    control?.closest?.(".product-form")?.setAttribute("aria-busy", String(isBusy));
+  };
+
+  const hideProductFormTransportRecovery = () => {
+    const recovery = document.getElementById("product-form-transport-error");
+    if (recovery) {
+      recovery.hidden = true;
+    }
+  };
+
+  const showProductFormTransportRecovery = (control) => {
+    setProductFormBusy(control, false);
+    const recovery = document.getElementById("product-form-transport-error");
+    if (recovery) {
+      recovery.hidden = false;
+      recovery.focus();
+    }
+  };
+
   const syncWorkspaceFormAccessibility = () => {
     for (const { fieldId, helpTextId, errorId } of workspaceFormFields) {
       const field = document.getElementById(fieldId);
@@ -168,11 +216,23 @@
     const replyControl = readyReplyControl(event);
     if (replyControl) {
       hideReadyReplyTransportRecovery(replyControl);
+      return;
+    }
+
+    const formControl = productFormControl(event);
+    if (formControl) {
+      hideProductFormTransportRecovery();
+      setProductFormBusy(formControl, true);
     }
   });
 
   document.body.addEventListener("htmx:afterSwap", (event) => {
     const target = event.detail?.target;
+    syncFieldErrors(target || document);
+    const formControl = productFormControl(event);
+    if (formControl) {
+      setProductFormBusy(formControl, false);
+    }
     if (target?.matches?.("[data-ready-reply-slot]")) {
       const trigger = document.getElementById(
         target.dataset.readyReplyTriggerId,
@@ -211,6 +271,10 @@
     if (replyControl && event.detail?.successful === false) {
       showReadyReplyTransportRecovery(replyControl);
     }
+    const formControl = productFormControl(event);
+    if (formControl && event.detail?.successful === false) {
+      showProductFormTransportRecovery(formControl);
+    }
   });
 
   for (const eventName of ["htmx:sendError", "htmx:timeout", "htmx:swapError"]) {
@@ -221,6 +285,10 @@
       const replyControl = readyReplyControl(event);
       if (replyControl) {
         showReadyReplyTransportRecovery(replyControl);
+      }
+      const formControl = productFormControl(event);
+      if (formControl) {
+        showProductFormTransportRecovery(formControl);
       }
     });
   }
@@ -251,11 +319,11 @@
       }
       await navigator.clipboard.writeText(copyText.value);
       status.setAttribute("role", "status");
-      status.textContent = "Reply copied.";
+      status.textContent = "პასუხი დაკოპირებულია.";
       status.hidden = false;
     } catch (_error) {
       status.setAttribute("role", "alert");
-      status.textContent = "Copy failed. Select the buyer-facing text and copy it manually.";
+      status.textContent = "დაკოპირება ვერ მოხერხდა. მონიშნეთ ტექსტი და ხელით დააკოპირეთ.";
       status.hidden = false;
       copyText.focus();
       copyText.select();
@@ -276,4 +344,5 @@
   });
 
   syncWorkspaceFormAccessibility();
+  syncFieldErrors();
 })();

@@ -359,7 +359,7 @@ class ProductArchiveRestoreWorkspaceTests(ArchiveRestoreFixtureMixin, TestCase):
         self.assertNotContains(default_response, self.product.name)
         self.assertContains(
             default_response,
-            "No Products are in daily work. Archived Products remain preserved.",
+            "ყოველდღიურ სამუშაოში პროდუქტები არ არის. დაარქივებული პროდუქტები შენახულია.",
         )
         self.assertContains(
             default_response,
@@ -370,9 +370,9 @@ class ProductArchiveRestoreWorkspaceTests(ArchiveRestoreFixtureMixin, TestCase):
             list(archived_response.context["products"]),
             [self.product],
         )
-        self.assertContains(archived_response, "Lifecycle — Archived")
-        self.assertContains(archived_response, "Archived Product")
-        self.assertContains(archived_response, ">Restore to Draft</button>")
+        self.assertContains(archived_response, "სტატუსი — დაარქივებული")
+        self.assertContains(archived_response, "დაარქივებული პროდუქტი")
+        self.assertContains(archived_response, ">მონახაზად აღდგენა</button>")
         self.assertContains(
             archived_response,
             f'action="{self.restore_url}"',
@@ -401,10 +401,13 @@ class ProductArchiveRestoreWorkspaceTests(ArchiveRestoreFixtureMixin, TestCase):
         response = self.client.get(self.list_url)
         content = response.content.decode()
 
-        self.assertContains(response, "<summary>Archive product</summary>")
-        self.assertContains(response, ">Confirm archive</button>")
+        self.assertContains(response, "<summary>პროდუქტის დაარქივება</summary>")
+        self.assertContains(response, ">დაარქივების დადასტურება</button>")
         self.assertContains(response, f'action="{self.archive_url}"', count=1)
-        self.assertLess(content.index(">+1</button>"), content.index("Archive product"))
+        self.assertLess(
+            content.index(">+1</button>"),
+            content.index("პროდუქტის დაარქივება"),
+        )
 
 
 class ProductArchiveRestoreIsolationTests(ArchiveRestoreFixtureMixin, TestCase):

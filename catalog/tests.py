@@ -1688,7 +1688,7 @@ class ProductMaterialFactFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
         self.assertIn(
-            "Material fact must belong to the active Business.",
+            "მასალის მონაცემი აქტიურ ბიზნესს უნდა ეკუთვნოდეს.",
             form.non_field_errors(),
         )
 
@@ -1772,7 +1772,7 @@ class MaterialCandidateTransferTests(TestCase):
     def test_transfer_rejects_tampered_canonical_meaning(self):
         with self.assertRaisesMessage(
             ValidationError,
-            "That candidate is no longer available.",
+            "ეს შეთავაზება აღარ არის ხელმისაწვდომი.",
         ):
             transfer_material_candidate(
                 data=self.transfer_data(),
@@ -1783,7 +1783,7 @@ class MaterialCandidateTransferTests(TestCase):
     def test_transfer_rejects_missing_material_management_state(self):
         with self.assertRaisesMessage(
             ValidationError,
-            "Material form state is invalid.",
+            "მასალის ფორმის მდგომარეობა არასწორია.",
         ):
             transfer_material_candidate(
                 data={"description": "Cotton"},
@@ -2804,7 +2804,7 @@ class ProductFormTests(TestCase):
             ],
         )
         self.assertTrue(form.fields["description"].widget.attrs["autofocus"])
-        self.assertEqual(form.fields["price"].label, "Price (GEL)")
+        self.assertEqual(form.fields["price"].label, "ფასი (GEL)")
 
     def test_form_price_label_uses_the_active_business_currency(self):
         self.other_business.default_currency = "USD"
@@ -2814,7 +2814,7 @@ class ProductFormTests(TestCase):
 
         form = ProductForm(business=self.other_business)
 
-        self.assertEqual(form.fields["price"].label, "Price (USD)")
+        self.assertEqual(form.fields["price"].label, "ფასი (USD)")
 
     def test_form_normalizes_blank_price_and_accepts_positive_price(self):
         blank_form = ProductForm(
@@ -3032,7 +3032,7 @@ class ProductChoiceFormTests(TestCase):
             ["size", "color", "quantity", "is_active"],
         )
         self.assertFalse(form.fields["quantity"].disabled)
-        self.assertEqual(form.fields["quantity"].label, "Starting stock")
+        self.assertEqual(form.fields["quantity"].label, "საწყისი მარაგი")
         self.assertEqual(form.fields["quantity"].widget.attrs["min"], "0")
         self.assertEqual(form.fields["quantity"].widget.attrs["step"], "1")
 
@@ -3081,7 +3081,7 @@ class ProductChoiceFormTests(TestCase):
         )
 
         self.assertTrue(form.fields["quantity"].disabled)
-        self.assertEqual(form.fields["quantity"].label, "Current stock")
+        self.assertEqual(form.fields["quantity"].label, "მიმდინარე მარაგი")
         self.assertTrue(form.is_valid())
         self.assertEqual(form.save(commit=False).quantity, 4)
 
@@ -3183,7 +3183,7 @@ class ProductChoiceFormSetTests(TestCase):
 
         self.assertFalse(formset.is_valid())
         self.assertIn(
-            "An active product requires at least one active choice.",
+            "აქტიურ პროდუქტს მინიმუმ ერთი აქტიური არჩევანი სჭირდება.",
             formset.non_form_errors(),
         )
 
@@ -3267,11 +3267,11 @@ class ProductChoiceFormSetTests(TestCase):
 
         self.assertFalse(formset.is_valid())
         self.assertIn(
-            "Saved choices cannot be removed. Deactivate the choice instead.",
+            "შენახული არჩევანი ვერ წაიშლება. მის ნაცვლად გააუქმეთ არჩევანი.",
             formset.forms[0].errors["DELETE"],
         )
         self.assertIn(
-            "An active product requires at least one active choice.",
+            "აქტიურ პროდუქტს მინიმუმ ერთი აქტიური არჩევანი სჭირდება.",
             formset.non_form_errors(),
         )
 
@@ -3303,7 +3303,7 @@ class ProductChoiceFormSetTests(TestCase):
 
         self.assertFalse(formset.is_valid())
         self.assertIn(
-            "Saved choices cannot be removed. Deactivate the choice instead.",
+            "შენახული არჩევანი ვერ წაიშლება. მის ნაცვლად გააუქმეთ არჩევანი.",
             formset.forms[0].errors["DELETE"],
         )
 
@@ -4120,7 +4120,7 @@ class ProductBundleTests(TestCase):
 
         self.assertFalse(bundle.is_valid())
         self.assertIn(
-            "Saved choices cannot be removed. Deactivate the choice instead.",
+            "შენახული არჩევანი ვერ წაიშლება. მის ნაცვლად გააუქმეთ არჩევანი.",
             bundle.choice_formset.forms[0].errors["DELETE"],
         )
         with self.assertRaisesMessage(
@@ -4194,13 +4194,13 @@ class ProductListViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/product_list.html")
-        self.assertContains(response, "Products")
+        self.assertContains(response, "პროდუქტები")
         self.assertContains(response, owned_product.name)
         self.assertContains(response, owned_product.description)
-        self.assertContains(response, "Active")
-        self.assertContains(response, "Add product")
-        self.assertContains(response, "Manage product vocabulary")
-        self.assertContains(response, "Edit")
+        self.assertContains(response, "აქტიური")
+        self.assertContains(response, "პროდუქტის დამატება")
+        self.assertContains(response, "პროდუქტის სიტყვარის მართვა")
+        self.assertContains(response, "რედაქტირება")
         self.assertContains(response, 'aria-current="page"')
         self.assertNotContains(response, "Red dress")
         self.assertEqual(list(response.context["products"]), [owned_product])
@@ -4222,7 +4222,7 @@ class ProductListViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No business workspace yet.")
+        self.assertContains(response, "ბიზნესის სივრცე ჯერ არ არის.")
         self.assertNotContains(response, "Other product")
         self.assertFalse(
             Business.objects.filter(owner=seller_without_business).exists()
@@ -4234,7 +4234,7 @@ class ProductListViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No products yet.")
+        self.assertContains(response, "პროდუქტები ჯერ არ არის.")
 
     def test_product_list_refuses_multiple_businesses_without_switcher(self):
         second_business = Business.objects.create(
@@ -4258,7 +4258,7 @@ class ProductListViewTests(TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertContains(
             response,
-            "Multiple business workspaces need an approved switcher",
+            "პროდუქტების სანახავად უნდა არჩეული იყოს ერთი ბიზნესის სივრცე",
             status_code=409,
         )
         self.assertNotContains(response, "First business product", status_code=409)
@@ -4348,14 +4348,14 @@ class ChoiceVocabularyViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/choice_vocabulary.html")
-        self.assertContains(response, "Product vocabulary")
-        self.assertContains(response, "Product types")
-        self.assertContains(response, "Tags")
+        self.assertContains(response, "პროდუქტის სიტყვარი")
+        self.assertContains(response, "პროდუქტის ტიპები")
+        self.assertContains(response, "ჭდეები")
         self.assertContains(response, "M-ზომა")
         self.assertContains(response, "Black")
         self.assertContains(response, "Shirt")
         self.assertContains(response, "Party")
-        self.assertContains(response, "Inactive")
+        self.assertContains(response, "არააქტიური")
         self.assertNotContains(response, "PRIVATE-OTHER-SIZE")
         self.assertNotContains(response, "PRIVATE-OTHER-ALIAS")
         self.assertNotContains(response, "PRIVATE-OTHER-TYPE")
@@ -4639,7 +4639,7 @@ class ChoiceVocabularyViewTests(TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertContains(
             response,
-            "No business workspace yet.",
+            "ბიზნესის სივრცე ჯერ არ არის.",
             status_code=409,
         )
         self.assertFalse(BusinessColor.objects.filter(name="შავი").exists())
@@ -4662,7 +4662,7 @@ class ChoiceVocabularyViewTests(TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertContains(
             response,
-            "Multiple business workspaces need an approved switcher",
+            "სიტყვარის შესაცვლელად უნდა არჩეული იყოს ერთი ბიზნესის სივრცე",
             status_code=409,
         )
 
@@ -4851,34 +4851,34 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/product_form.html")
-        self.assertContains(response, "Add product")
+        self.assertContains(response, "პროდუქტის დამატება")
         self.assertNotContains(response, 'name="name"')
         self.assertContains(response, 'name="description"')
         self.assertContains(response, 'autofocus')
-        self.assertContains(response, "Start here")
-        self.assertContains(response, "Describe the Product")
+        self.assertContains(response, "დაიწყეთ აქ")
+        self.assertContains(response, "აღწერეთ პროდუქტი")
         self.assertContains(response, 'class="assistant-section')
         self.assertContains(response, 'name="price"')
         self.assertContains(response, 'min="0.01"')
         self.assertContains(response, 'step="0.01"')
         self.assertContains(response, 'name="product_type"')
         self.assertIn("tags", response.context["form"].fields)
-        self.assertContains(response, "Confirm type and tags")
-        self.assertContains(response, "Confirm materials")
+        self.assertContains(response, "ტიპისა და ჭდეების დადასტურება")
+        self.assertContains(response, "მასალების დადასტურება")
         self.assertContains(response, 'name="materials-TOTAL_FORMS"')
         self.assertContains(response, 'name="materials-0-canonical_material"')
         self.assertContains(response, 'name="materials-0-percentage"')
         self.assertContains(response, 'name="materials-0-original_text"')
         self.assertContains(response, 'name="materials-0-source"')
-        self.assertContains(response, "Recognition candidates remain suggestions")
+        self.assertContains(response, "ამოცნობილი ვარიანტები შეთავაზებად რჩება")
         self.assertContains(response, 'id="id_tags-label"')
         self.assertContains(
             response,
             'role="group" aria-labelledby="id_tags-label"',
         )
         self.assertContains(response, 'name="lifecycle"')
-        self.assertContains(response, "Sizes, colors, and stock")
-        self.assertContains(response, "Add another choice")
+        self.assertContains(response, "ზომები, ფერები და მარაგი")
+        self.assertContains(response, "კიდევ ერთი არჩევანის დამატება")
         self.assertContains(response, 'name="choices-TOTAL_FORMS"')
         self.assertContains(response, 'name="choices-0-size"')
         self.assertContains(response, 'name="choices-0-color"')
@@ -4888,21 +4888,24 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, '<input type="text" name="choices-0-color"')
         self.assertContains(response, 'name="choices-0-quantity"')
         self.assertContains(response, 'name="choices-0-quantity" value="0"')
-        self.assertContains(response, "Starting stock")
+        self.assertContains(response, "საწყისი მარაგი")
         self.assertContains(response, 'min="0"')
         self.assertContains(response, 'step="1"')
         self.assertNotContains(response, 'min="0" disabled')
-        self.assertContains(response, "Set stock for this new choice now")
-        self.assertContains(response, "Discard new choice")
+        self.assertContains(response, "ახალი არჩევანის მარაგი ახლავე მიუთითეთ")
+        self.assertContains(response, "ახალი არჩევანის მოშორება")
         self.assertContains(response, 'name="choices-0-is_active"')
         self.assertContains(response, 'hx-post="."')
         self.assertContains(response, 'hx-trigger="input changed delay:600ms"')
         self.assertContains(response, 'hx-target="#recognition-preview-region"')
         self.assertContains(response, 'hx-include="closest form"')
-        self.assertContains(response, "Known candidates appear automatically")
+        self.assertContains(
+            response,
+            "აღწერის შეცვლისას ცნობილი შეთავაზებები ავტომატურად გამოჩნდება",
+        )
         self.assertContains(response, "django_htmx/htmx-2.min.js")
         self.assertNotContains(response, "Preview recognition")
-        self.assertContains(response, "Create product")
+        self.assertContains(response, "პროდუქტის შექმნა")
         self.assertNotContains(response, 'name="business"')
         self.assertNotContains(response, 'name="materials-0-business"')
         self.assertNotContains(response, 'name="materials-0-product"')
@@ -5099,7 +5102,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
             response.context["form"]["tags"].value(),
             [str(tag.pk)],
         )
-        self.assertContains(response, "Recognized candidates")
+        self.assertContains(response, "ამოცნობილი შეთავაზებები")
         self.assertFalse(Product.objects.exists())
         self.assertFalse(ProductTag.objects.exists())
 
@@ -5127,7 +5130,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
             list(size.aliases.values_list("alias", flat=True)),
             ["S size", "S-ზომა"],
         )
-        self.assertEqual(response.context["vocabulary_feedback"], 'Size "S" saved.')
+        self.assertEqual(response.context["vocabulary_feedback"], "ზომა „S“ შენახულია.")
         self.assertTrue(response.context["choice_section_open"])
         self.assertContains(response, ">S</option>")
         self.assertContains(response, f'value="{self.size.pk}" selected')
@@ -5158,7 +5161,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertContains(response, "Unsaved description")
         self.assertEqual(
             response.context["vocabulary_feedback"],
-            'Color "Black" saved.',
+            "ფერი „Black“ შენახულია.",
         )
         self.assertEqual(Product.objects.count(), 0)
 
@@ -5209,17 +5212,17 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/_recognition_preview.html")
         self.assertNotContains(response, "<form")
-        self.assertContains(response, "Recognized candidates")
-        self.assertContains(response, "Product type")
+        self.assertContains(response, "ამოცნობილი შეთავაზებები")
+        self.assertContains(response, "პროდუქტის ტიპი")
         self.assertContains(response, "Trousers")
-        self.assertContains(response, "Observed: “pants”")
-        self.assertContains(response, "Tag")
-        self.assertContains(response, "Material")
-        self.assertContains(response, "Choice size")
-        self.assertContains(response, "Choice color")
-        self.assertContains(response, "Needs confirmation", count=5)
-        self.assertContains(response, "Use in choices", count=2)
-        self.assertContains(response, "Review as material", count=1)
+        self.assertContains(response, "აღწერაში ნაპოვნია: „pants“")
+        self.assertContains(response, "ჭდე")
+        self.assertContains(response, "მასალა")
+        self.assertContains(response, "არჩევანის ზომა")
+        self.assertContains(response, "არჩევანის ფერი")
+        self.assertContains(response, "საჭიროა დადასტურება", count=5)
+        self.assertContains(response, "არჩევანში გამოყენება", count=2)
+        self.assertContains(response, "მასალად გადახედვა", count=1)
         self.assertContains(
             response,
             'value="transfer_material_candidate:2:material:14:20:Cotton"',
@@ -5284,7 +5287,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         )
         self.assertEqual(
             response.context["material_transfer_feedback"],
-            'Material "Cotton" added to Material 1. Review the fact before saving.',
+            "მასალა „Cotton“ დაემატა მასალის რიგს 1. შენახვამდე გადაამოწმეთ მონაცემი.",
         )
         self.assertEqual(Product.objects.filter(name="Unsaved material product").count(), 0)
         self.assertEqual(ProductMaterialFact.objects.count(), fact_count)
@@ -5303,7 +5306,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/_material_section.html")
-        self.assertContains(response, "That candidate is no longer available")
+        self.assertContains(response, "ეს შეთავაზება აღარ არის ხელმისაწვდომი")
         self.assertEqual(Product.objects.count(), 1)
 
     def test_product_create_invalid_material_preserves_input_without_writes(self):
@@ -5357,7 +5360,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(transferred_form["quantity"].value(), "7")
         self.assertEqual(
             response.context["choice_transfer_feedback"],
-            'Size "M" added to Choice 1. Review the row before saving.',
+            "ზომა „M“ დაემატა არჩევანს 1. შენახვამდე გადაამოწმეთ რიგი.",
         )
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
@@ -5446,7 +5449,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(transferred_form["color"].value(), str(self.color.pk))
         self.assertEqual(
             color_response.context["choice_transfer_feedback"],
-            'Color "Black" added to Choice 1. Review the row before saving.',
+            "ფერი „Black“ დაემატა არჩევანს 1. შენახვამდე გადაამოწმეთ რიგი.",
         )
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
@@ -5472,8 +5475,8 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(formset.total_form_count(), 1)
         self.assertEqual(formset.forms[0]["size"].value(), str(self.size.pk))
         self.assertEqual(formset.forms[0]["quantity"].value(), "5")
-        self.assertContains(response, 'Size &quot;M&quot; is already in Choice 1.')
-        self.assertContains(response, "Use Add another choice")
+        self.assertContains(response, "ზომა „M“ უკვე არის არჩევანში 1.")
+        self.assertContains(response, "კიდევ ერთი არჩევანის დამატება")
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
 
@@ -5498,7 +5501,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(formset.forms[0]["size"].value(), str(self.size.pk))
         self.assertEqual(formset.forms[0]["quantity"].value(), "5")
         self.assertEqual(formset.forms[1]["size"].value(), "")
-        self.assertContains(add_response, "Another empty choice is ready.")
+        self.assertContains(add_response, "კიდევ ერთი ცარიელი არჩევანი მზადაა.")
         self.assertEqual(Product.objects.count(), 0)
 
         save_data = formset.data.copy()
@@ -5540,7 +5543,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         self.assertContains(
             response,
-            "Only Size and Color candidates can become choices.",
+            "არჩევანში მხოლოდ ზომისა და ფერის შეთავაზებების გამოყენება შეიძლება.",
         )
         self.assertEqual(Product.objects.count(), 0)
         self.assertEqual(ProductChoice.objects.count(), 0)
@@ -5562,7 +5565,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
 
-        self.assertContains(response, "That candidate is no longer available.")
+        self.assertContains(response, "ეს შეთავაზება აღარ არის ხელმისაწვდომი.")
         transferred_form = response.context["choice_formset"].forms[0]
         self.assertEqual(transferred_form["size"].value(), "")
         self.assertEqual(Product.objects.count(), 0)
@@ -5587,7 +5590,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
 
-        self.assertContains(response, "That candidate is no longer available.")
+        self.assertContains(response, "ეს შეთავაზება აღარ არის ხელმისაწვდომი.")
         transferred_form = response.context["choice_formset"].forms[0]
         self.assertEqual(transferred_form["size"].value(), "")
         self.assertEqual(transferred_form["color"].value(), str(self.color.pk))
@@ -5618,7 +5621,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         response = self.client.post(self.url, data, HTTP_HX_REQUEST="true")
 
-        self.assertContains(response, "That candidate is no longer available.")
+        self.assertContains(response, "ეს შეთავაზება აღარ არის ხელმისაწვდომი.")
         transferred_form = response.context["choice_formset"].forms[0]
         self.assertEqual(transferred_form["size"].value(), "")
         self.assertEqual(Product.objects.count(), 0)
@@ -5646,7 +5649,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, "This field is required.")
         self.assertNotContains(
             response,
-            "An active product requires at least one active choice.",
+            "აქტიურ პროდუქტს მინიმუმ ერთი აქტიური არჩევანი სჭირდება.",
         )
         self.assertEqual(Product.objects.count(), 1)
 
@@ -5666,7 +5669,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "greater than or equal to 0.01")
-        self.assertContains(response, "Recognized candidates")
+        self.assertContains(response, "ამოცნობილი შეთავაზებები")
         self.assertContains(response, "Trousers")
         self.assertContains(response, "Classic")
         self.assertTrue(response.context["show_form_errors"])
@@ -5698,7 +5701,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/_recognition_preview.html")
-        self.assertContains(response, "No known candidates found for this Business.")
+        self.assertContains(response, "ამ ბიზნესისთვის ცნობილი შეთავაზება ვერ მოიძებნა.")
         self.assertEqual(response.context["recognition_preview"].candidates, ())
 
     def test_product_create_without_business_shows_workspace_state(self):
@@ -5711,7 +5714,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No business workspace yet.")
+        self.assertContains(response, "ბიზნესის სივრცე ჯერ არ არის.")
         self.assertNotContains(response, 'name="name"')
 
     def test_product_create_post_without_business_does_not_create_product(self):
@@ -5733,7 +5736,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertContains(
             response,
-            "No business workspace yet.",
+            "ბიზნესის სივრცე ჯერ არ არის.",
             status_code=409,
         )
         self.assertEqual(Product.objects.count(), 0)
@@ -5747,7 +5750,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertContains(
             response,
-            "Multiple business workspaces need an approved switcher",
+            "პროდუქტის შესაცვლელად უნდა არჩეული იყოს ერთი ბიზნესის სივრცე",
             status_code=409,
         )
         self.assertNotContains(response, 'name="name"', status_code=409)
@@ -5920,7 +5923,7 @@ class ProductCreateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            "An active product requires at least one active choice.",
+            "აქტიურ პროდუქტს მინიმუმ ერთი აქტიური არჩევანი სჭირდება.",
         )
         self.assertContains(response, "Classic black trousers.")
         self.assertEqual(Product.objects.count(), 0)
@@ -6311,7 +6314,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/product_form.html")
-        self.assertContains(response, "Edit Black trousers")
+        self.assertContains(response, "Black trousers — რედაქტირება")
         self.assertNotContains(response, 'name="name"')
         self.assertContains(response, "Classic black trousers.")
         self.assertEqual(
@@ -6331,7 +6334,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertNotContains(response, "PRIVATE-OTHER-MATERIAL")
         self.assertContains(response, ">Black</option>")
         self.assertNotContains(response, "Private red")
-        self.assertContains(response, "Save changes")
+        self.assertContains(response, "ცვლილებების შენახვა")
         self.assertNotContains(response, 'name="business"')
 
     def test_product_edit_renders_separate_controls_for_owned_saved_choice(self):
@@ -6384,8 +6387,8 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         )
         self.assertContains(response, f'id="choice-stock-loading-{choice.pk}"')
         self.assertContains(response, "formnovalidate", count=2)
-        self.assertContains(response, "Decrease stock for M / Black")
-        self.assertContains(response, "Increase stock for M / Black")
+        self.assertContains(response, "მარაგის შემცირება: M / Black")
+        self.assertContains(response, "მარაგის გაზრდა: M / Black")
         self.assertNotContains(
             response,
             f"choice-stock-controls-{other_choice.pk}",
@@ -6565,8 +6568,8 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Recognized candidates")
-        self.assertContains(response, "Needs confirmation", count=5)
+        self.assertContains(response, "ამოცნობილი შეთავაზებები")
+        self.assertContains(response, "საჭიროა დადასტურება", count=5)
         self.assertEqual(
             len(response.context["recognition_preview"].candidates),
             5,
@@ -6598,7 +6601,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         )
         self.assertEqual(
             response.context["vocabulary_feedback"],
-            'Color "Blue" saved.',
+            "ფერი „Blue“ შენახულია.",
         )
         self.assertEqual(
             response.context["choice_formset"].forms[0]["quantity"].value(),
@@ -6635,7 +6638,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "catalog/_recognition_preview.html")
-        self.assertContains(response, "Recognized candidates")
+        self.assertContains(response, "ამოცნობილი შეთავაზებები")
         self.assertNotContains(response, "<form")
         self.assertEqual(
             response.context["choice_formset"].forms[0]["quantity"].value(),
@@ -6795,7 +6798,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            "An active product requires at least one active choice.",
+            "აქტიურ პროდუქტს მინიმუმ ერთი აქტიური არჩევანი სჭირდება.",
         )
         self.product.refresh_from_db()
         self.assertEqual(self.product.name, "Black trousers")
@@ -6827,7 +6830,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(
             response,
-            "Saved choices cannot be removed. Deactivate the choice instead.",
+            "შენახული არჩევანი ვერ წაიშლება. მის ნაცვლად გააუქმეთ არჩევანი.",
         )
         self.assertTrue(ProductChoice.objects.filter(pk=choice.pk).exists())
 
@@ -6940,7 +6943,7 @@ class ProductUpdateViewTests(ProductBundleViewTestMixin, TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertContains(
             response,
-            "Multiple business workspaces need an approved switcher",
+            "პროდუქტის შესაცვლელად უნდა არჩეული იყოს ერთი ბიზნესის სივრცე",
             status_code=409,
         )
         self.assertNotContains(response, "Black trousers", status_code=409)

@@ -41,23 +41,28 @@ PRODUCT_DESCRIPTION_EXCERPT_LENGTH = 160
 PRODUCT_WORKSPACE_PAGE_SIZE = 12
 
 BUYER_QUESTION_LABELS = {
-    BuyerQuestion.PRICE: "Price",
-    BuyerQuestion.AVAILABILITY_STOCK: "Stock",
-    BuyerQuestion.SIZE_COLOR: "Size and color",
-    BuyerQuestion.PRODUCT_TYPE: "Product type",
-    BuyerQuestion.MATERIAL: "Material",
+    BuyerQuestion.PRICE: "ფასი",
+    BuyerQuestion.AVAILABILITY_STOCK: "მარაგი",
+    BuyerQuestion.SIZE_COLOR: "ზომა და ფერი",
+    BuyerQuestion.PRODUCT_TYPE: "პროდუქტის ტიპი",
+    BuyerQuestion.MATERIAL: "მასალა",
 }
 READINESS_CORRECTIONS = {
-    CoverageCorrectionTarget.PRICE: ("Add price", "#id_price"),
-    CoverageCorrectionTarget.CHOICES: ("Add active choice", "#choice-section"),
+    CoverageCorrectionTarget.PRICE: ("ფასის დამატება", "#id_price"),
+    CoverageCorrectionTarget.CHOICES: ("აქტიური არჩევანის დამატება", "#choice-section"),
     CoverageCorrectionTarget.CLASSIFICATION: (
-        "Confirm product type",
+        "პროდუქტის ტიპის დადასტურება",
         "#classification-section",
     ),
     CoverageCorrectionTarget.MATERIALS: (
-        "Confirm material",
+        "მასალის დადასტურება",
         "#material-section",
     ),
+}
+LIFECYCLE_LABELS = {
+    Product.Lifecycle.DRAFT: "მონახაზი",
+    Product.Lifecycle.ACTIVE: "აქტიური",
+    Product.Lifecycle.ARCHIVED: "დაარქივებული",
 }
 
 
@@ -640,13 +645,13 @@ def _build_product_card(
     )
 
     if product.lifecycle != Product.Lifecycle.ACTIVE:
-        availability_label = "Not sellable"
+        availability_label = "ამჟამად არ იყიდება"
         availability_state = "not-sellable"
     elif is_available:
-        availability_label = "Available"
+        availability_label = "მარაგშია"
         availability_state = "available"
     else:
-        availability_label = "Sold out"
+        availability_label = "ამოიწურა"
         availability_state = "sold-out"
 
     coverage = evaluate_buyer_question_coverage(
@@ -688,7 +693,7 @@ def _build_product_card(
         price=product.price,
         currency=business.default_currency,
         product_type_name=product.workspace_product_type_name,
-        lifecycle_label=product.get_lifecycle_display(),
+        lifecycle_label=LIFECYCLE_LABELS[product.lifecycle],
         is_archived=product.lifecycle == Product.Lifecycle.ARCHIVED,
         availability_label=availability_label,
         availability_state=availability_state,

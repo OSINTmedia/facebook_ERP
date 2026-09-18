@@ -136,13 +136,25 @@ class DashboardViewTests(TestCase):
         self.assertContains(response, signals["low_stock"][0].name)
         self.assertNotContains(response, "Private low stock")
 
+    def test_dashboard_uses_georgian_action_language_and_non_color_counts(self):
+        self.build_signal_catalog()
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, '<html lang="ka">')
+        self.assertContains(response, "რას სჭირდება ყურადღება?")
+        self.assertContains(response, "აკლია ინფორმაცია")
+        self.assertContains(response, "მცირე მარაგი")
+        self.assertContains(response, 'aria-label="1 არჩევანი"')
+
     def test_empty_catalog_quick_add_uses_exact_dashboard_return(self):
         self.client.force_login(self.owner)
 
         response = self.client.get(self.url)
 
         self.assertTrue(response.context["attention"].empty_catalog)
-        self.assertContains(response, "Start with one Product")
+        self.assertContains(response, "დაიწყეთ ერთი პროდუქტით")
         self.assertContains(
             response,
             f'href="{reverse("catalog:product_create")}?next=/"',
@@ -152,7 +164,7 @@ class DashboardViewTests(TestCase):
             {"next": self.url},
         )
         self.assertEqual(create_response.context["return_url"], self.url)
-        self.assertContains(create_response, "Back to Dashboard")
+        self.assertContains(create_response, "მიმოხილვაზე დაბრუნება")
 
     def test_dashboard_hides_zero_count_cards_behind_one_clear_state(self):
         product = self.create_product(name="Complete stocked product")
@@ -162,7 +174,7 @@ class DashboardViewTests(TestCase):
 
         response = self.client.get(self.url)
 
-        self.assertContains(response, "Nothing needs attention right now")
+        self.assertContains(response, "ამჟამად ყურადღება არაფერს სჭირდება")
         self.assertNotContains(response, 'class="attention-card')
 
     def test_each_dashboard_signal_drills_into_exact_workspace_membership(self):
@@ -188,7 +200,7 @@ class DashboardViewTests(TestCase):
                     response.context["workspace_back_to_dashboard_url"],
                     self.url,
                 )
-                self.assertContains(response, "Back to Dashboard")
+                self.assertContains(response, "მიმოხილვაზე დაბრუნება")
 
     def test_correction_and_stock_paths_preserve_explicit_dashboard_origin(self):
         signals = self.build_signal_catalog()
@@ -279,5 +291,9 @@ class DashboardViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 409)
-        self.assertContains(response, "approved switcher", status_code=409)
+        self.assertContains(
+            response,
+            "არჩეული იყოს ერთი ბიზნესის სივრცე",
+            status_code=409,
+        )
         self.assertNotContains(response, product.name, status_code=409)
