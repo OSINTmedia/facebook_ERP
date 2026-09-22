@@ -766,3 +766,15 @@ Audit stabilization restored deterministic currency, hardened media-cleanup fail
 Release: READY.
 
 Next on Git PASS: P12.2 Repository, Security, Setup, Asset, and Production-Readiness Hardening.
+
+### 2026-09-22 - P12.2 Repository, Security, Setup, Asset, and Production-Readiness Hardening
+
+Code status: PASS.
+
+Production configuration now rejects unsafe secrets, hosts, HTTPS origins, and media/static overlap; enables HTTPS cookie/redirect safeguards; and collects fingerprinted local assets. Audit repair also excludes source static directories from private media storage. README setup wording records verified production requirements and private media/static serving responsibilities without claiming deployment. HSTS subdomain inclusion and preload remain deliberate hosting-domain decisions.
+
+Verification: 570 PostgreSQL tests passed, including production configuration/security and asset-collection coverage; system and migration consistency/applied-migration checks passed. Clean isolated dependency installation/startup, package consistency, and bounded repository/secret-pattern and diff checks passed. Production deploy checks reported only expected security.W005/W021 warnings. The OS-upgrade collation blocker was repaired separately; project row counts/content were preserved. Owner test: ADVISORY; no required owner gate.
+
+Release: READY.
+
+Next on Git PASS: P12.3 Local Portfolio Release Rehearsal.

@@ -167,7 +167,13 @@ python manage.py test config
 python manage.py runserver 127.0.0.1:8000
 ```
 
-Create a local `.env` from `.env.example` before running Django locally. Local and test settings require a PostgreSQL `DATABASE_URL`; test settings use `TEST_DATABASE_NAME` to keep the test database separate from the development database. Production settings require explicit `DJANGO_SECRET_KEY`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL` values. Do not commit real secrets.
+Create a local `.env` from `.env.example` before running Django locally. Local and test settings require a PostgreSQL `DATABASE_URL`; test settings use `TEST_DATABASE_NAME` to keep the test database separate from the development database. Do not commit real secrets.
+
+Production settings (`config.settings.production`) require a strong `DJANGO_SECRET_KEY` of at least 50 characters, explicit `DJANGO_ALLOWED_HOSTS` without wildcards or ports, and a PostgreSQL `DATABASE_URL`. `DJANGO_DEBUG` must be false. HTTPS redirects and secure session/CSRF cookies are enabled. `DJANGO_CSRF_TRUSTED_ORIGINS` may be empty for same-origin requests; any configured exceptions must be explicit HTTPS origins. Forwarded headers are not trusted automatically; TLS/proxy integration must be configured and verified for the eventual host. HSTS subdomain inclusion and preload remain deferred until that domain is known.
+
+Assets use repository CSS/JavaScript and packaged HTMX, with no frontend build step. With valid production environment values, run `python manage.py collectstatic --noinput --settings=config.settings.production` to produce fingerprinted assets in ignored `staticfiles/`; the host must serve that directory at `/static/`. Product images remain private behind the authenticated, Business-scoped media route. Mount persistent storage at `DJANGO_MEDIA_ROOT` (an absolute path, defaulting to the project's `media/` directory), separate from both source and collected static directories. Do not expose it through a public media alias. Existing upload validation permits decoded JPEG/PNG/WebP images up to 5 MiB.
+
+Production configuration and asset collection are locally verified; hosted serving is not yet verified. `python manage.py check --deploy --settings=config.settings.production` currently reports the intentional HSTS subdomain/preload warnings (`security.W005`, `security.W021`).
 
 The verified local database is project-specific PostgreSQL and is configured only through ignored local environment values. Default Django migrations are applied locally.
 
