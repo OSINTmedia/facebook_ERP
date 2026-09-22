@@ -754,3 +754,15 @@ Verification: 555 PostgreSQL tests passed; Django system and migration consisten
 Release: READY.
 
 Next on Git PASS: Phase 12.
+
+### 2026-09-22 - P12.1 Synthetic Demo Seed and Reset/Reseed
+
+Code status: PASS.
+
+An explicit confirmed management command now seeds, resets, and reseeds a deterministic synthetic demo baseline while dry-run remains non-mutating. It preserves the configured demo User and sole Business, refuses ambiguous multi-Business ownership, scopes catalog and media cleanup to that Business, records initial positive stock through the inventory ledger, and restores representative Product, readiness, Ready Reply, lifecycle, and duplicate-choice states.
+
+Audit stabilization restored deterministic currency, hardened media-cleanup failure reporting, and corrected the fixed-name assumption so an existing sole demo Business is reused without renaming or reassignment. Verification: 565 PostgreSQL tests passed; Django system and migration consistency checks, JavaScript syntax, exact dry-run/confirmation smoke checks, and diff/private-data checks passed. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: P12.2 Repository, Security, Setup, Asset, and Production-Readiness Hardening.
