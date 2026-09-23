@@ -778,3 +778,15 @@ Verification: 570 PostgreSQL tests passed, including production configuration/se
 Release: READY.
 
 Next on Git PASS: P12.3 Local Portfolio Release Rehearsal.
+
+### 2026-09-23 - P12.3 Local Portfolio Release Rehearsal
+
+Code status: PASS.
+
+The local portfolio rehearsal confirmed the protected synthetic demo reset/reseed lifecycle, representative catalog baseline, protected login, non-demo data isolation, production configuration, repository hygiene, and the absence of deferred-scope or material documentation drift. No application repair was required.
+
+Verification: 570 PostgreSQL tests passed; package, Django system, migration consistency/applied-migration, JavaScript syntax, diff, tracked-artifact, and secret-pattern checks passed. Production deploy checks reported only the expected domain-dependent `security.W005` and `security.W021` warnings. The live demo rehearsal restored 8 Products and 9 choices while preserving protected login and non-demo rows. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: Phase 13.
