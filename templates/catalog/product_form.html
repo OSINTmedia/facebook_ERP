@@ -10,9 +10,9 @@
       <h1 id="product-form-title">{{ page_title }}</h1>
     </div>
 
-    <div>
-      <a class="return-link" href="{{ return_url }}">{{ return_label }}</a>
-    </div>
+    <nav class="contextual-return" aria-label="უკან დაბრუნება">
+      <a class="return-link" href="{{ return_url }}"><span aria-hidden="true">&larr;</span> {{ return_label }}</a>
+    </nav>
 
     {% if business_policy_blocked %}
       <div class="empty-state empty-state--warning" role="alert">

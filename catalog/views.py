@@ -428,7 +428,7 @@ class ChoiceVocabularyView(LoginRequiredMixin, View):
     def get_context(self, request, **context):
         context.setdefault("active_business", self.active_business)
         context.setdefault("business_policy_blocked", self.business_policy_blocked)
-        context.setdefault("current_nav", "products")
+        context.setdefault("current_nav", "vocabulary")
         context.setdefault("return_url", get_safe_product_return_url(request))
         context.setdefault(
             "size_add_form",
@@ -616,7 +616,7 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
     def base_context(self, request, **context):
         context.setdefault("active_business", self.active_business)
         context.setdefault("business_policy_blocked", self.business_policy_blocked)
-        context.setdefault("current_nav", "products")
+        context.setdefault("current_nav", "product_edit")
         context.setdefault("page_title", "პროდუქტი")
         return_url = get_canonical_product_workspace_return_url(request)
         context.setdefault("return_url", return_url)
@@ -934,6 +934,10 @@ class ProductMutationBusinessMixin(LoginRequiredMixin):
         )
 
 class ProductCreateView(ProductMutationBusinessMixin, View):
+    def base_context(self, request, **context):
+        context.setdefault("current_nav", "product_create")
+        return super().base_context(request, **context)
+
     def get(self, request, *args, **kwargs):
         self.resolve_business(request)
         if self.business_policy_blocked:

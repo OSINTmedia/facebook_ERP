@@ -1,3 +1,4 @@
+from catalog.models import Product
 """Authenticated action-first seller Dashboard."""
 
 from urllib.parse import urlencode
@@ -28,13 +29,19 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         attention = None
+        total_products_count = 0
         if self.active_business is not None:
             attention = build_seller_attention(business=self.active_business)
+            total_products_count = Product.objects.filter(
+                business=self.active_business,
+                lifecycle=Product.Lifecycle.ACTIVE,
+            ).count()
 
         context.update(
             {
                 "active_business": self.active_business,
                 "attention": attention,
+                "total_products_count": total_products_count,
                 "business_policy_blocked": self.business_policy_blocked,
                 "current_nav": "dashboard",
                 "dashboard_return_url": reverse("shell_home"),

@@ -10,9 +10,9 @@
       <p>მოამზადეთ პროდუქტის ტიპების, ჭდეების, ზომებისა და ფერების მთავარი მნიშვნელობები და თითოეულ მათგანთან დააჯგუფეთ დამტკიცებული ალტერნატიული სიტყვები.</p>
     </div>
 
-    <div>
-      <a class="return-link" href="{{ return_url }}">პროდუქტებზე დაბრუნება</a>
-    </div>
+    <nav class="contextual-return" aria-label="უკან დაბრუნება">
+      <a class="return-link" href="{{ return_url }}"><span aria-hidden="true">&larr;</span> პროდუქტებზე დაბრუნება</a>
+    </nav>
 
     {% if vocabulary_error %}
       <div class="form-errors" role="alert"><p>{{ vocabulary_error }}</p></div>

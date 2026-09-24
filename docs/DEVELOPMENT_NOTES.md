@@ -790,3 +790,15 @@ Verification: 570 PostgreSQL tests passed; package, Django system, migration con
 Release: READY.
 
 Next on Git PASS: Phase 13.
+
+### 2026-09-24 - UX-A Dashboard Triage, Products Workspace & Navigation Architecture
+
+Code status: PASS.
+
+Following an owner product decision recovering from a rejected unified single-canvas approach, Dashboard (`/`) and Products Workspace (`/products/`) remain dedicated complementary surfaces. Dashboard serves as the business overview and triage surface with an active catalog count and actionable, visually distinct attention metric cards drilling into filtered Products. Products remains the operational workspace prioritizing search, active filter state, stock mutations, and Ready Reply without metric card bloat. Global navigation accurately reflects the active surface across Dashboard, Products, Vocabulary, and Product Add (`aria-current="page"`), while task surfaces provide thumb-friendly contextual return links (`← მიმოხილვაზე დაბრუნება` / `← პროდუქტებზე დაბრუნება`) to eliminate reliance on browser Back.
+
+Verification: 571 PostgreSQL tests passed, including navigation active-state isolation; Django system and migration consistency checks, and diff checks passed. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: UX-B Product Card Architecture & Stock Ergonomics.

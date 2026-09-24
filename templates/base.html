@@ -31,7 +31,20 @@
           >
             პროდუქტები
           </a>
-          <a class="nav-link" href="{% url 'catalog:product_create' %}">პროდუქტის დამატება</a>
+          <a
+            class="nav-link{% if current_nav == 'vocabulary' %} nav-link--active{% endif %}"
+            href="{% url 'catalog:choice_vocabulary' %}"
+            {% if current_nav == 'vocabulary' %}aria-current="page"{% endif %}
+          >
+            სიტყვარი
+          </a>
+          <a
+            class="nav-link{% if current_nav == 'product_create' %} nav-link--active{% endif %}"
+            href="{% url 'catalog:product_create' %}"
+            {% if current_nav == 'product_create' %}aria-current="page"{% endif %}
+          >
+            პროდუქტის დამატება
+          </a>
           <form class="nav-form" method="post" action="{% url 'accounts:logout' %}">
             {% csrf_token %}
             <button class="nav-link nav-link--button" type="submit">გასვლა</button>

@@ -29,6 +29,17 @@
         <a class="button button--primary" href="{% url 'catalog:product_create' %}?next={{ dashboard_return_url|urlencode }}">პროდუქტის დამატება</a>
       </div>
     {% else %}
+      <div class="seller-dashboard__overview">
+        <article class="dashboard-stat-card" aria-labelledby="total-products-stat">
+          <header class="dashboard-stat-card__heading">
+            <h2 id="total-products-stat" class="dashboard-stat-card__title">სულ პროდუქტები</h2>
+            <strong class="dashboard-stat-card__count" aria-label="{{ total_products_count }} პროდუქტი">{{ total_products_count }}</strong>
+          </header>
+          <p>აქტიური პროდუქტების საერთო რაოდენობა კატალოგში.</p>
+          <a class="button button--secondary" href="{% url 'catalog:product_list' %}">პროდუქტების სამუშაო სივრცე</a>
+        </article>
+      </div>
+
       <p class="seller-dashboard__intro">გახსენით საყურადღებო ელემენტი და განაგრძეთ მუშაობა პროდუქტებში.</p>
       {% if not attention.missing_information_products.count and not attention.low_stock_choices.count and not attention.sold_out_products.count and not attention.partially_sold_out_choices.count %}
         <div class="empty-state" role="status">
@@ -38,7 +49,7 @@
       {% else %}
         <div class="seller-dashboard__grid">
         {% if attention.missing_information_products.count %}
-          <article class="attention-card attention-card--priority" aria-labelledby="missing-information-title">
+          <article class="attention-card attention-card--priority attention-card--missing" aria-labelledby="missing-information-title">
           <header class="attention-card__heading">
             <h2 id="missing-information-title">აკლია ინფორმაცია</h2>
             <strong class="attention-card__count" aria-label="{{ attention.missing_information_products.count }} პროდუქტი">{{ attention.missing_information_products.count }}</strong>
@@ -56,7 +67,7 @@
         {% endif %}
 
         {% if attention.low_stock_choices.count %}
-        <article class="attention-card" aria-labelledby="low-stock-title">
+        <article class="attention-card attention-card--warning attention-card--low-stock" aria-labelledby="low-stock-title">
           <header class="attention-card__heading">
             <h2 id="low-stock-title">მცირე მარაგი</h2>
             <strong class="attention-card__count" aria-label="{{ attention.low_stock_choices.count }} არჩევანი">{{ attention.low_stock_choices.count }}</strong>
@@ -74,7 +85,7 @@
         {% endif %}
 
         {% if attention.sold_out_products.count %}
-        <article class="attention-card" aria-labelledby="sold-out-title">
+        <article class="attention-card attention-card--danger attention-card--sold-out" aria-labelledby="sold-out-title">
           <header class="attention-card__heading">
             <h2 id="sold-out-title">ამოიწურა / მარაგის შევსება</h2>
             <strong class="attention-card__count" aria-label="{{ attention.sold_out_products.count }} პროდუქტი">{{ attention.sold_out_products.count }}</strong>
@@ -92,7 +103,7 @@
         {% endif %}
 
         {% if attention.partially_sold_out_choices.count %}
-        <article class="attention-card" aria-labelledby="partial-stock-title">
+        <article class="attention-card attention-card--partial-stock" aria-labelledby="partial-stock-title">
           <header class="attention-card__heading">
             <h2 id="partial-stock-title">ზოგი არჩევანი ამოიწურა</h2>
             <strong class="attention-card__count" aria-label="{{ attention.partially_sold_out_choices.count }} არჩევანი">{{ attention.partially_sold_out_choices.count }}</strong>

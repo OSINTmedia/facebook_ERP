@@ -61,7 +61,7 @@ At any moment, the interface must make immediately obvious:
 ## 4. UX & Product Principles
 
 1. **Seller Task > Database Structure:** Organize around high-frequency seller jobs (*Triage*, *Search & Sell*, *Capture*), not relational database tables.
-2. **One Primary Operating Cockpit:** Triage and daily operations live together on the home canvas (`/`); routine selling requires zero route hops.
+2. **Clear Complementary Surfaces:** High-level triage and business overview live on the Dashboard (`/`); daily catalog operations live in the dedicated Products Workspace (`/products/`); clear navigation and contextual return links keep routine selling fast and predictable.
 3. **Scan First, Operate on Demand:** Default state emphasizes instant recognition; operational controls (steppers, readiness breakdowns) expand contextually.
 4. **Preserve Seller Context Always:** Filtering, stock mutations, and overlay dismissals must never reset active search queries or scroll positions.
 5. **Truth Remains Server-Owned:** HTMX is transport only. Database state and server calculations are the sole authority for stock, availability, and readiness.
@@ -77,7 +77,7 @@ At any moment, the interface must make immediately obvious:
 ## 5. Pre-Deployment Scope Boundary
 
 ### What WILL Be Improved:
-- **Cockpit Unification:** Merging attention triage directly into the workspace header (`/`) with live interactive chips.
+- **Dashboard Triage & Navigation Architecture:** Dedicated overview on `/` with actionable attention metric cards linking to the operational workspace, combined with clear current-location navigation and contextual return links.
 - **Card Compression & Ergonomics:** Compressing default mobile card height (design target: $<300\text{px}$ vs current $\sim 900\text{px}$) with on-demand choice deck expansion.
 - **Enlarged Touch Steppers:** Expanding `+1` / `-1` buttons to standard minimum $\ge 44\times 44\text{px}$ hit targets with instant feedback.
 - **Overlay Ready Reply:** Transitioning from in-card expansion to a mobile Bottom Sheet / desktop Slide-Over drawer with sticky "Copy & Close" and honest failure recovery.
@@ -100,7 +100,7 @@ At any moment, the interface must make immediately obvious:
 
 ```mermaid
 graph TD
-    Baseline[Current Stable Baseline] --> UXA[UX-A: Cockpit Unification & Navigation Architecture]
+    Baseline[Current Stable Baseline] --> UXA[UX-A: Dashboard Triage, Products Workspace & Navigation Architecture]
     UXA --> UXB[UX-B: Product Card Architecture & Stock Ergonomics]
     UXB --> UXC[UX-C: Ready Reply Overlay & Copy Experience]
     UXA --> UXD[UX-D: Product Intake Polish & Local Form Styling]
@@ -113,57 +113,76 @@ graph TD
 
 ## 7. Detailed Pre-Deployment UX Slices
 
-### UX-A: Seller Cockpit / Navigation / Attention / Search & Filter Architecture
+### UX-A: Dashboard Triage, Products Workspace & Navigation Architecture
 
-- **ID / Title:** `UX-A: Unified Seller Cockpit & Navigation Architecture`
-- **Objective:** Unify the Dashboard attention triage and Product Workspace into a single operating home canvas (`/`).
-- **Seller Outcome:** The seller opens the app and immediately sees their operational cockpit: interactive attention badge chips above a sticky search bar and persistent filter chips. Clicking an attention badge filters the list in place without a page reload.
-- **Problem Being Solved:** The current application forces sellers to bounce between an empty dashboard (`/`) and a separate product list (`/products/`), fragmenting triage from daily sales operations.
+- **ID / Title:** `UX-A: Dashboard Triage, Products Workspace & Navigation Architecture`
+- **Objective:** Establish clear surface separation between the high-level business overview/triage Dashboard (`/`) and the operational Products Workspace (`/products/`), with accurate global navigation and contextual return navigation.
+- **Seller Outcome:**
+  - On `/` (Dashboard): The seller sees a dedicated business overview answering *"What is happening in my business right now?"* via clear, scannable metric cards (*Total Products*, *Missing Information*, *Low Stock*, *Partially Sold Out*, *Sold Out*). Tapping any attention card drills down into the Products Workspace with that specific filter active.
+  - On `/products/` (Products Workspace): The seller operates their catalog answering *"What do I need to work on right now?"* prioritizing search, active filter state, product cards, stock mutations, and Ready Reply, without vertical metric bloat.
+  - Across all pages: The seller immediately knows where they are (Dashboard, Products, Vocabulary, Add Product) with accurate active states, and can navigate back via clear contextual return links (e.g. `← პროდუქტებზე დაბრუნება` / `← მიმოხილვაზე დაბრუნება`) without relying on browser Back.
+- **Problem Being Solved:** Ambiguity between business triage and operational catalog execution, unclear global navigation active states, reliance on browser Back for task returns, and visual flattening of operational urgency signals.
 - **Scope:**
-  - Route `/` canonically to the Unified Seller Cockpit (`catalog/views.py:ProductListView`).
-  - Redirect `/products/` to `/` with an HTTP 302 redirect.
-  - Render an interactive Attention Bar at the top of the cockpit exposing existing attention groups:
-    - *ყურადღება* (`missing_information_products`: missing price or material facts)
-    - *მარაგი ეწურება* (`low_stock_choices`: choices with $\le 2$ items remaining)
-    - *ნაწილობრივ ამოიწურა* (`partially_sold_out_choices`: products with mixed availability)
-    - *ამოიწურა* (`sold_out_products`: fully sold-out products)
-    - *ყველა* (Total active catalog count)
-  - Expose persistent horizontal catalog filter chips (All, Available, Sold Out, Draft, Archived) below search.
-  - Streamline global navigation in `templates/base.html` (Cockpit `/`, New Product `/products/new/`, Vocabulary `/products/vocabulary/`, Logout).
-  - Update `LOGIN_REDIRECT_URL = "/"` and safe return path validators.
-- **Explicit Exclusions:** No alterations to underlying query logic in `dashboard/attention.py`; no changes to card internals (owned by UX-B).
-- **Protected Invariants:** Business tenant isolation; URL-backed search and filter parameters; centralized availability and partial-sold-out states; HTMX busy states and transport error recovery.
+  - Route `/` remains the dedicated overview/triage surface (`dashboard/views.py:DashboardView`, `templates/shell/home.html`).
+  - Route `/products/` remains the dedicated operational workspace (`catalog/views.py:ProductListView`, `templates/catalog/product_list.html`).
+  - Dashboard surfaces distinct, scannable metric cards:
+    - *Total Products* (`total_products_count`: total active catalog count linking to `/products/`)
+    - *Missing Information* (`missing_information_products`: missing price or material facts, linking to `/products/?attention=missing_information&origin=dashboard`)
+    - *Low Stock* (`low_stock_choices`: choices with $\le 2$ items remaining, linking to `/products/?attention=low_stock&origin=dashboard`)
+    - *Partially Sold Out* (`partially_sold_out_choices`: products with mixed availability, linking to `/products/?attention=partial_stock&origin=dashboard`)
+    - *Sold Out* (`sold_out_products`: fully sold-out products, linking to `/products/?attention=sold_out&origin=dashboard`)
+  - Global navigation in `templates/base.html` accurately distinguishes active surface:
+    - Dashboard (`/`, `current_nav == dashboard`)
+    - Products (`/products/`, `current_nav == products`)
+    - Vocabulary (`/products/vocabulary/`, `current_nav == vocabulary`)
+    - Add Product (`/products/add/`, `current_nav == product_create`)
+    - Logout (`accounts:logout`)
+    - Product Edit sets `current_nav = "product_edit"` to prevent false active highlights.
+  - Contextual return navigation on task surfaces (`templates/catalog/product_form.html`, `templates/catalog/choice_vocabulary.html`, and filtered `templates/catalog/product_list.html`) provides accessible, thumb-friendly return links (`← პროდუქტებზე დაბრუნება` / `← მიმოხილვაზე დაბრუნება`).
+  - Maintain `LOGIN_REDIRECT_URL = "/"` and safe return path validators (`get_safe_product_return_url`, `get_canonical_product_workspace_return_url`).
+- **Explicit Exclusions:**
+  - No alterations to underlying query logic in `dashboard/attention.py`.
+  - No changes to card internals or stepper layout (strictly owned by UX-B).
+  - No changes to Ready Reply panel overlay or copy generator (strictly owned by UX-C).
+  - No changes to product intake / edit form field composition (strictly owned by UX-D).
+  - No new product features (related products, garment measurements, multi-image gallery).
+- **Protected Invariants:** Business tenant isolation; URL-backed search and filter parameters; centralized availability and partial-sold-out states; HTMX transport error recovery; inventory ledger truth.
 - **Primary Surfaces:**
-  - `catalog/views.py` (`ProductListView`)
-  - `templates/catalog/product_list.html`
+  - `dashboard/views.py` (`DashboardView`)
+  - `templates/shell/home.html`
+  - `catalog/views.py` (`ProductListView`, `ProductCreateView`, `ChoiceVocabularyView`, `ProductMutationBusinessMixin`)
   - `templates/base.html`
-  - `config/urls.py` & `config/settings.py`
+  - `templates/catalog/product_list.html`
+  - `templates/catalog/product_form.html`
+  - `templates/catalog/choice_vocabulary.html`
   - `static/css/app.css`
-- **Backend Impact:** `LOW`. Recomposes existing `dashboard.attention.get_dashboard_attention_groups` into `ProductListView` context.
+- **Backend Impact:** `LOW`. Preserves existing `dashboard.attention` queries and `ProductListView` workspace filters; surfaces total active product count on Dashboard.
 - **Key Interaction Behavior:**
-  - Clicking an Attention Badge toggles `?attention=<group>` via HTMX, replacing `#product-workspace-results` and updating browser history.
-  - Active attention badge is highlighted with deep teal styling; clicking an active badge clears the filter.
-  - Search input retains typed value; clearing filters resets cleanly.
-- **Desktop Expectations:** Attention badges sit in a clean horizontal strip above the search row. Filter chips sit inline with pagination summaries.
-- **~390px Mobile Expectations:** Attention bar renders as a compact 2x2 grid or horizontal scrollable strip. Navigation header is compact with touch-friendly links.
-- **Accessibility Expectations:** Attention badges use `role="radio"` or `role="button"` with `aria-pressed="true/false"`. Focus rings remain visible on tab.
-- **Failure / Recovery Expectations:** Transport errors trigger `#product-workspace-transport-error` alert with manual reload button; URL fallback ensures full-page reload works seamlessly.
+  - Dashboard metric cards provide 1-click drilldowns into the Products Workspace with `?attention=<filter>&origin=dashboard`.
+  - Filtered Products Workspace clearly displays active filter state and provides a return link (`← მიმოხილვაზე დაბრუნება`) to Dashboard.
+  - Top navigation links highlight only the current active surface.
+  - Task surfaces provide prominent contextual return actions.
+- **Desktop Expectations:** Clear, high-contrast Dashboard metric cards with distinct status accents. Clean horizontal top navigation with single active indicator.
+- **~390px Mobile Expectations:** Thumb-friendly touch targets ($\ge 44\text{px}$) for cards, nav items, and return links. Mobile-first vertical hierarchy protecting Products workspace from unnecessary dashboard bloat.
+- **Accessibility Expectations:** Accurate `aria-current="page"` on active navigation items. High-contrast status badges. Clear semantic headings and region landmarks.
+- **Failure / Recovery Expectations:** URL query parameters drive filtering state, preserving full-page reload and bookmarking fidelity. HTMX errors retain retry/recovery options.
 - **Acceptance Criteria:**
-  1. Visiting `/` renders the unified Cockpit with attention counts and product results.
-  2. Visiting `/products/` redirects cleanly to `/`.
-  3. Clicking attention badges filters products properly via HTMX and updates the active badge state.
-  4. Partial-sold-out products and low-stock choices are correctly surfaced in triage.
-  5. Global header contains clean links to Cockpit and New Product.
-  6. Multi-business users still receive HTTP 409; unauthenticated users redirect to login.
+  1. Visiting `/` renders the dedicated Dashboard with Total Products and attention metric cards.
+  2. Visiting `/products/` renders the operational Products Workspace with search, filters, and product cards without duplicating dashboard metrics.
+  3. Clicking any attention card on Dashboard navigates to `/products/?attention=<filter>&origin=dashboard` and displays the contextual return link.
+  4. Global navigation marks only the current surface as active (`aria-current="page"`).
+  5. Task surfaces (Add, Edit, Vocabulary) provide clear contextual return links without relying on browser Back.
+  6. Business isolation and unauthenticated redirects remain enforced.
 - **Suggested Stage 3 Focused Verification:**
-  - Test `/` view status code, context variables (`attention_groups`), and active business scoping.
-  - Test redirect from `/products/` to `/`.
-  - Test attention filter query parameter parsing and HTMX partial response.
+  - Test `/` view status code, context variables (`total_products_count`, `attention`), and active business scoping.
+  - Test `/products/` view status code, search parameters, and workspace return context.
+  - Test drilldown from dashboard attention URLs into filtered workspace results.
+  - Test top navigation active state isolation across Dashboard, Products, Vocabulary, and Product Add.
 - **Neighboring Regression Boundary:** Verify that search query parameter (`q`) and pagination (`page`) still work when attention filters are active.
 - **Stage 4 Audit Focus:** Confirm no cross-business leakage in attention counts or filtered product IDs.
 - **Stage 5 Final Verification:** Full regression suite passes on PostgreSQL.
-- **Owner Test Scenario:** Log in. Confirm landing on `/`. Click "მარაგი ეწურება" badge; verify list filters to low stock. Click "ყველა" to clear. Verify search works.
-- **Commit Intent:** `feat(cockpit): unify attention triage into product workspace`
+- **Owner Test Scenario:** Log in. Confirm landing on `/` (Dashboard). Verify Total Products and attention cards are displayed. Click an attention card; verify navigation to `/products/?attention=...` with active filter and return link. Verify top navigation reflects current location accurately.
+- **Commit Intent:** `feat(dashboard,catalog): align dashboard triage and products workspace architecture`
 - **Dependency / Next Slice:** None; prerequisite for UX-B and UX-D.
 
 ---
@@ -322,10 +341,10 @@ graph TD
   - Test `ProductCreateView` and `ProductUpdateView` submission with valid and invalid payloads.
   - Test candidate token transfer into formsets.
   - Verify error summary rendering for missing choices on Active products.
-- **Neighboring Regression Boundary:** Verify that canceling returns safely to Cockpit (`/`) without losing workspace filter context.
+- **Neighboring Regression Boundary:** Verify that canceling returns safely to the parent Products workspace (`/products/`) without losing workspace filter context.
 - **Stage 4 Audit Focus:** Confirm that atomic transaction rollback works properly if media or choices fail validation.
 - **Stage 5 Final Verification:** Full regression suite passes on PostgreSQL.
-- **Owner Test Scenario:** Navigate to `/products/new/`. Select a photo; confirm instant preview. Paste description "შავი სელის კაბა, 100% სელი, S და M, 85 ლარი". Confirm recognition chips. Transfer choices. On mobile viewport, confirm sticky save bar is visible; tap "შენახვა". Confirm product appears in Cockpit.
+- **Owner Test Scenario:** Navigate to `/products/add/`. Select a photo; confirm instant preview. Paste description "შავი სელის კაბა, 100% სელი, S და M, 85 ლარი". Confirm recognition chips. Transfer choices. On mobile viewport, confirm sticky save bar is visible; tap "შენახვა". Confirm product appears in Products workspace.
 - **Commit Intent:** `feat(forms): modernize product intake, instant photo preview, and sticky actions`
 - **Dependency / Next Slice:** Depends on UX-A; can run in parallel with or following UX-B/UX-C. Completes pre-deployment UX scope.
 
@@ -351,7 +370,7 @@ Upon completion and verification of slices UX-A through UX-D, deployment proceed
 
 ### P13.3 Demo Seed, Hosted Smoke Test, and Owner Acceptance
 - **Objective:** Prove the hosted authenticated synthetic demo operates flawlessly for an external portfolio reviewer.
-- **Scope:** Seed synthetic demo catalog; verify login, Cockpit triage, compact cards, stock steppers, Ready Reply bottom sheet, product capture, and demo reset; add verified demo URL to documentation.
+- **Scope:** Seed synthetic demo catalog; verify login, Dashboard triage, Products workspace, compact cards, stock steppers, Ready Reply bottom sheet, product capture, and demo reset; add verified demo URL to documentation.
 - **Exclusions:** Real customer data; public storefront claims.
 - **Acceptance:** Live demo accessible; PostgreSQL mutations persist; reset command restores baseline; mobile smoke test passes.
 - **Owner Test:** **REQUIRED** — Owner executes full demo walkthrough on phone (~390px) and desktop; replies `TEST PASS`.
@@ -411,7 +430,7 @@ To prevent context exhaustion and token waste in future agent sessions, all subs
 
 Portfolio V1 is **COMPLETE** when:
 1. Slices UX-A, UX-B, UX-C, and UX-D are fully implemented, verified, and merged.
-2. The Seller Cockpit functions as a unified, fast, mobile-friendly operating assistant.
+2. The Dashboard and Products Workspace function as fast, complementary, mobile-friendly operating surfaces.
 3. All core domain invariants (tenant isolation, stock row locking, immutable ledgering, partial-sold-out integrity, deterministic readiness, and safe reply generation) remain 100% intact.
 4. The application is deployed live to backend-capable hosting with PostgreSQL and HTTPS.
 5. The synthetic demo is seeded, tested, and verified on desktop and mobile viewports.

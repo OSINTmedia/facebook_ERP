@@ -35,6 +35,7 @@ class ShellHomeTests(TestCase):
         for label in (
             "მიმოხილვა",
             "პროდუქტები",
+            "სიტყვარი",
             "პროდუქტის დამატება",
             "გასვლა",
         ):
@@ -42,3 +43,58 @@ class ShellHomeTests(TestCase):
 
         for excluded in ("ERP", "Orders", "Payments", "Public catalog"):
             self.assertNotContains(response, excluded)
+
+    def test_navigation_active_states_isolate_surfaces_correctly(self):
+        self.client.force_login(self.user)
+
+        # 1. Dashboard (/)
+        dashboard_res = self.client.get(reverse("shell_home"))
+        self.assertContains(
+            dashboard_res,
+            '<a class="nav-link nav-link--active" href="/" aria-current="page">მიმოხილვა</a>',
+            html=True,
+        )
+        self.assertNotContains(
+            dashboard_res,
+            '<a class="nav-link nav-link--active" href="/products/" aria-current="page">პროდუქტები</a>',
+            html=True,
+        )
+
+        # 2. Products (/products/)
+        products_res = self.client.get(reverse("catalog:product_list"))
+        self.assertContains(
+            products_res,
+            '<a class="nav-link nav-link--active" href="/products/" aria-current="page">პროდუქტები</a>',
+            html=True,
+        )
+        self.assertNotContains(
+            products_res,
+            '<a class="nav-link nav-link--active" href="/" aria-current="page">მიმოხილვა</a>',
+            html=True,
+        )
+
+        # 3. Vocabulary (/products/vocabulary/)
+        vocab_res = self.client.get(reverse("catalog:choice_vocabulary"))
+        self.assertContains(
+            vocab_res,
+            '<a class="nav-link nav-link--active" href="/products/vocabulary/" aria-current="page">სიტყვარი</a>',
+            html=True,
+        )
+        self.assertNotContains(
+            vocab_res,
+            '<a class="nav-link nav-link--active" href="/" aria-current="page">მიმოხილვა</a>',
+            html=True,
+        )
+
+        # 4. Product Add (/products/add/)
+        create_res = self.client.get(reverse("catalog:product_create"))
+        self.assertContains(
+            create_res,
+            '<a class="nav-link nav-link--active" href="/products/add/" aria-current="page">პროდუქტის დამატება</a>',
+            html=True,
+        )
+        self.assertNotContains(
+            create_res,
+            '<a class="nav-link nav-link--active" href="/" aria-current="page">მიმოხილვა</a>',
+            html=True,
+        )

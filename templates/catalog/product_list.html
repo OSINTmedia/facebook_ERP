@@ -114,7 +114,9 @@
       </form>
 
       {% if workspace_back_to_dashboard_url %}
-        <a class="return-link" href="{{ workspace_back_to_dashboard_url }}">მიმოხილვაზე დაბრუნება</a>
+        <nav class="contextual-return" aria-label="უკან დაბრუნება">
+          <a class="return-link" href="{{ workspace_back_to_dashboard_url }}"><span aria-hidden="true">&larr;</span> მიმოხილვაზე დაბრუნება</a>
+        </nav>
       {% endif %}
 
       {% include "catalog/_product_results.html" %}
