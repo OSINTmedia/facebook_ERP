@@ -5,9 +5,14 @@
 
 {% block content %}
   <section class="shell-page" aria-labelledby="product-form-title">
-    <div class="shell-heading">
-      <p class="eyebrow">გამყიდველის სივრცე</p>
-      <h1 id="product-form-title">{{ page_title }}</h1>
+    <div class="shell-heading shell-heading--with-actions">
+      <div>
+        <p class="eyebrow">გამყიდველის სივრცე</p>
+        <h1 id="product-form-title">{{ page_title }}</h1>
+      </div>
+      <div class="shell-heading__actions desktop-only">
+        <button class="button button--primary button--compact" type="submit" form="product-main-form">{{ submit_label }}</button>
+      </div>
     </div>
 
     <nav class="contextual-return" aria-label="უკან დაბრუნება">
@@ -23,7 +28,7 @@
         <p>ბიზნესის სივრცე ჯერ არ არის.</p>
       </div>
     {% else %}
-      <form class="product-form" method="post" enctype="multipart/form-data" novalidate>
+      <form class="product-form" id="product-main-form" method="post" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
         <input type="hidden" name="next" value="{{ return_url }}">
 
@@ -49,7 +54,7 @@
           {% endif %}
         {% endif %}
 
-        <section class="assistant-primary-step" aria-labelledby="description-step-title">
+        <section class="assistant-primary-step assistant-section" aria-labelledby="description-step-title">
           <div class="assistant-primary-step__heading">
             <p class="assistant-step-number">დაიწყეთ აქ</p>
             <h2 id="description-step-title">აღწერეთ პროდუქტი</h2>
@@ -69,22 +74,83 @@
 
           {% include "catalog/_recognition_preview.html" %}
 
-          <div class="form-field form-field--price">
-            <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
-            {{ form.price }}
-            <small>თუ ფასი ჯერ არ იცით, ველი ცარიელი დატოვეთ.</small>
-            {% if show_form_errors %}
-              {% for error in form.price.errors %}
-                <p class="field-error">{{ error }}</p>
-              {% endfor %}
-            {% endif %}
+          <div class="product-commercial-bar">
+            <div class="form-field form-field--price">
+              <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+              {{ form.price }}
+              <small>თუ ფასი ჯერ არ იცით, ველი ცარიელი დატოვეთ.</small>
+              {% if show_form_errors %}
+                {% for error in form.price.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+
+            <div class="form-field form-field--lifecycle">
+              <label for="{{ form.lifecycle.id_for_label }}">{{ form.lifecycle.label }}</label>
+              {{ form.lifecycle }}
+              {% if show_form_errors %}
+                {% for error in form.lifecycle.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+
+            <div class="product-media-tile">
+              <div class="product-media-tile__preview">
+                {% if current_media %}
+                  <img
+                    id="product-media-preview-img"
+                    class="product-media-tile__img"
+                    src="{% url 'catalog:product_media' current_media.pk %}"
+                    data-default-src="{% url 'catalog:product_media' current_media.pk %}"
+                    alt="{{ product.name|default:'პროდუქტი' }} — მიმდინარე სურათი"
+                  >
+                {% else %}
+                  <img
+                    id="product-media-preview-img"
+                    class="product-media-tile__img"
+                    src=""
+                    alt="არჩეული სურათის წინასწარი ნახვა"
+                    hidden
+                  >
+                  <div id="product-media-preview-placeholder" class="product-media-tile__placeholder" role="img" aria-label="პროდუქტის სურათი არ არის არჩეული">
+                    <span class="product-media-tile__placeholder-icon" aria-hidden="true">📷</span>
+                    <span class="product-media-tile__placeholder-text">სურათი არ არის</span>
+                  </div>
+                {% endif %}
+              </div>
+              <div class="product-media-tile__content">
+                <label class="product-media-tile__label" for="{{ media_form.image.id_for_label }}">{{ media_form.image.label }}</label>
+                <div class="product-media-tile__input-wrap">
+                  {{ media_form.image }}
+                </div>
+                <small id="{{ media_form.image.id_for_label }}_helptext" class="product-media-tile__help">{{ media_form.image.help_text }}</small>
+                {% if show_form_errors and media_form.image.errors %}
+                  <div id="{{ media_form.image.id_for_label }}_error" class="field-error" role="alert">
+                  {% for error in media_form.image.errors %}
+                    <p>{{ error }}</p>
+                  {% endfor %}
+                  </div>
+                {% endif %}
+                {% if media_reselection_required %}
+                  <p class="field-error" role="alert">პროდუქტი არ შეინახა და არჩეული ფაილი ამ პასუხში ვერ შეინახება. შენახვამდე სურათი თავიდან აირჩიეთ.</p>
+                {% endif %}
+              </div>
+            </div>
           </div>
         </section>
 
+        {% include "catalog/_choice_section.html" %}
+
         {% include "catalog/_material_section.html" %}
 
-        <details id="classification-section" class="assistant-section classification-section" {% if correction_target == "classification" or show_form_errors and form.product_type.errors or show_form_errors and form.tags.errors %}open{% endif %}>
-          <summary class="assistant-section__summary">
+        <details
+          id="classification-section"
+          class="assistant-section classification-section"
+          {% if correction_target == "classification" or show_form_errors and form.product_type.errors or show_form_errors and form.tags.errors %}open{% endif %}
+        >
+          <summary class="assistant-section__summary" id="classification-section-title">
             <span>ტიპისა და ჭდეების დადასტურება</span>
             <small>არასავალდებულო სტრუქტურირება</small>
           </summary>
@@ -116,57 +182,7 @@
           </div>
         </details>
 
-        {% include "catalog/_choice_section.html" %}
-
-        <details class="assistant-section product-settings" {% if media_reselection_required or show_form_errors and media_form.image.errors or show_form_errors and form.lifecycle.errors %}open{% endif %}>
-          <summary class="assistant-section__summary">
-            <span>სურათი და პროდუქტის სტატუსი</span>
-            <small>არასავალდებულო სურათი და სტატუსი</small>
-          </summary>
-          <div class="assistant-section__body">
-            <fieldset class="product-media-field">
-              <legend>პროდუქტის სურათი</legend>
-              {% if current_media %}
-                <img
-                  class="product-media-field__preview"
-                  src="{% url 'catalog:product_media' current_media.pk %}"
-                  alt="{{ product.name|default:'პროდუქტი' }} — მიმდინარე სურათი"
-                >
-              {% else %}
-                <div class="product-media-placeholder product-media-placeholder--form" role="img" aria-label="პროდუქტის სურათი არ არის არჩეული">
-                  <span aria-hidden="true">სურათი არ არის</span>
-                </div>
-              {% endif %}
-              <div class="form-field">
-                <label for="{{ media_form.image.id_for_label }}">{{ media_form.image.label }}</label>
-                {{ media_form.image }}
-                <small id="{{ media_form.image.id_for_label }}_helptext">{{ media_form.image.help_text }}</small>
-                {% if show_form_errors and media_form.image.errors %}
-                  <div id="{{ media_form.image.id_for_label }}_error" class="field-error" role="alert">
-                  {% for error in media_form.image.errors %}
-                    <p>{{ error }}</p>
-                  {% endfor %}
-                  </div>
-                {% endif %}
-              </div>
-              {% if media_reselection_required %}
-                <p class="field-error" role="alert">პროდუქტი არ შეინახა და არჩეული ფაილი ამ პასუხში ვერ შეინახება. შენახვამდე სურათი თავიდან აირჩიეთ.</p>
-              {% endif %}
-            </fieldset>
-
-            <div class="form-field">
-              <label for="{{ form.lifecycle.id_for_label }}">{{ form.lifecycle.label }}</label>
-              {{ form.lifecycle }}
-              {% if show_form_errors %}
-                {% for error in form.lifecycle.errors %}
-                  <p class="field-error">{{ error }}</p>
-                {% endfor %}
-              {% endif %}
-            </div>
-          </div>
-        </details>
-
-        <div class="form-actions">
+        <div class="form-actions form-actions--sticky" id="product-form-actions">
           <button class="button button--primary" type="submit">{{ submit_label }}</button>
           <a class="button button--secondary" href="{{ return_url }}">გაუქმება</a>
         </div>

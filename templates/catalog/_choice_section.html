@@ -1,16 +1,15 @@
-<details
+<section
   id="choice-section"
   class="assistant-section choice-section"
-  {% if choice_section_open %}open{% endif %}
+  aria-labelledby="choice-section-title"
 >
-  <summary class="assistant-section__summary" id="choice-section-title">
+  <div class="assistant-section__summary" id="choice-section-title">
     <span>ზომები, ფერები და მარაგი</span>
     <small>საჭიროებისამებრ დაამატეთ გასაყიდი არჩევანი</small>
-  </summary>
+  </div>
   <div class="assistant-section__body">
     <div class="choice-section__heading">
       <p>თითოეული გასაყიდი არჩევანისთვის აირჩიეთ დამტკიცებული ზომა და ფერი.</p>
-      <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">სრული სიტყვარის ნახვა და მართვა</a>
     </div>
 
   {% if vocabulary_feedback %}
@@ -33,86 +32,6 @@
     <p class="choice-transfer-error" role="alert">{{ choice_row_error }}</p>
   {% endif %}
 
-  <div class="choice-vocabulary" aria-label="დამტკიცებული არჩევანის სიტყვარი">
-    <details class="vocabulary-editor" {% if size_vocabulary_form.errors %}open{% endif %}>
-      <summary>დამტკიცებული ზომის დამატება</summary>
-      <div class="vocabulary-editor__body">
-        <p class="vocabulary-editor__help">მიუთითეთ ერთი მთავარი სახელი და მხოლოდ ცნობილი ალტერნატიული ფორმები.</p>
-
-        {% if size_vocabulary_form.non_field_errors %}
-          <div class="form-errors" role="alert">
-            {% for error in size_vocabulary_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-          </div>
-        {% endif %}
-
-        <div class="form-field">
-          <label for="{{ size_vocabulary_form.name.id_for_label }}">{{ size_vocabulary_form.name.label }}</label>
-          {{ size_vocabulary_form.name }}
-          {% for error in size_vocabulary_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-        </div>
-        <div class="form-field">
-          <label for="{{ size_vocabulary_form.aliases.id_for_label }}">{{ size_vocabulary_form.aliases.label }}</label>
-          {{ size_vocabulary_form.aliases }}
-          {% for error in size_vocabulary_form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-        </div>
-        <div class="vocabulary-editor__action">
-          <button
-            class="button button--secondary button--compact"
-            type="submit"
-            name="intent"
-            value="add_size_vocabulary"
-            hx-post="."
-            hx-target="#choice-section"
-            hx-swap="outerHTML"
-            hx-include="closest form"
-            hx-indicator="#size-vocabulary-loading"
-            hx-disabled-elt="this"
-          >ზომის დამატება</button>
-          <span id="size-vocabulary-loading" class="htmx-indicator vocabulary-loading" role="status">ემატება…</span>
-        </div>
-      </div>
-    </details>
-
-    <details class="vocabulary-editor" {% if color_vocabulary_form.errors %}open{% endif %}>
-      <summary>დამტკიცებული ფერის დამატება</summary>
-      <div class="vocabulary-editor__body">
-        <p class="vocabulary-editor__help">მთავარ სახელად ქართული ფორმა აირჩიეთ; ინგლისური ან სხვა ვარიანტი ალიასად დაამატეთ.</p>
-
-        {% if color_vocabulary_form.non_field_errors %}
-          <div class="form-errors" role="alert">
-            {% for error in color_vocabulary_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
-          </div>
-        {% endif %}
-
-        <div class="form-field">
-          <label for="{{ color_vocabulary_form.name.id_for_label }}">{{ color_vocabulary_form.name.label }}</label>
-          {{ color_vocabulary_form.name }}
-          {% for error in color_vocabulary_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-        </div>
-        <div class="form-field">
-          <label for="{{ color_vocabulary_form.aliases.id_for_label }}">{{ color_vocabulary_form.aliases.label }}</label>
-          {{ color_vocabulary_form.aliases }}
-          {% for error in color_vocabulary_form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
-        </div>
-        <div class="vocabulary-editor__action">
-          <button
-            class="button button--secondary button--compact"
-            type="submit"
-            name="intent"
-            value="add_color_vocabulary"
-            hx-post="."
-            hx-target="#choice-section"
-            hx-swap="outerHTML"
-            hx-include="closest form"
-            hx-indicator="#color-vocabulary-loading"
-            hx-disabled-elt="this"
-          >ფერის დამატება</button>
-          <span id="color-vocabulary-loading" class="htmx-indicator vocabulary-loading" role="status">ემატება…</span>
-        </div>
-      </div>
-    </details>
-  </div>
-
   {{ choice_formset.management_form }}
 
   {% if show_form_errors %}
@@ -125,109 +44,226 @@
     {% endif %}
   {% endif %}
 
-  <div class="choice-list">
-    {% for choice_form in choice_formset %}
-      <fieldset class="choice-row">
-        <legend>არჩევანი {{ forloop.counter }}</legend>
-
-        {% for hidden_field in choice_form.hidden_fields %}
-          {{ hidden_field }}
-          {% if show_form_errors %}
-            {% for error in hidden_field.errors %}
-              <p class="field-error" role="alert">{{ error }}</p>
-            {% endfor %}
-          {% endif %}
-        {% endfor %}
-
-        {% if show_form_errors %}
-          {% if choice_form.non_field_errors %}
-            <div class="form-errors" role="alert">
-              {% for error in choice_form.non_field_errors %}
-                <p>{{ error }}</p>
-              {% endfor %}
-            </div>
-          {% endif %}
-        {% endif %}
-
-        <div class="choice-row__grid">
-          <div class="form-field">
-            <label for="{{ choice_form.size.id_for_label }}">ზომა</label>
-            {{ choice_form.size }}
-            {% if show_form_errors %}
-              {% for error in choice_form.size.errors %}
-                <p class="field-error">{{ error }}</p>
-              {% endfor %}
-            {% endif %}
-          </div>
-
-          <div class="form-field">
-            <label for="{{ choice_form.color.id_for_label }}">ფერი</label>
-            {{ choice_form.color }}
-            {% if show_form_errors %}
-              {% for error in choice_form.color.errors %}
-                <p class="field-error">{{ error }}</p>
-              {% endfor %}
-            {% endif %}
-          </div>
-
-          <div class="form-field">
-            <label for="{{ choice_form.quantity.id_for_label }}">{{ choice_form.quantity.label }}</label>
-            {{ choice_form.quantity }}
-            <p class="field-help">{{ choice_form.quantity.help_text }}</p>
-            {% if choice_form.instance.pk %}
-              {% include "inventory/_choice_stock_controls.html" with choice=choice_form.instance return_url=return_url only %}
-            {% endif %}
-            {% if show_form_errors %}
-              {% for error in choice_form.quantity.errors %}
-                <p class="field-error">{{ error }}</p>
-              {% endfor %}
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="choice-row__controls">
-          <div class="choice-option">
-            {{ choice_form.is_active }}
-            <label for="{{ choice_form.is_active.id_for_label }}">აქტიური არჩევანი</label>
-          </div>
-          {% if show_form_errors %}
-            {% for error in choice_form.is_active.errors %}
-              <p class="field-error">{{ error }}</p>
-            {% endfor %}
-          {% endif %}
-
-          {% if not choice_form.instance.pk %}
-            <div class="choice-option choice-option--remove">
-              {{ choice_form.DELETE }}
-              <label for="{{ choice_form.DELETE.id_for_label }}">ახალი არჩევანის მოშორება</label>
-            </div>
-          {% endif %}
-          {% if show_form_errors %}
-            {% for error in choice_form.DELETE.errors %}
-              <p class="field-error" role="alert">{{ error }}</p>
-            {% endfor %}
-          {% endif %}
-        </div>
-      </fieldset>
-    {% endfor %}
-  </div>
-
-    <div class="choice-section__actions">
-      <button
-        id="add-choice-row-button"
-        class="button button--secondary button--compact"
-        type="submit"
-        name="intent"
-        value="add_choice_row"
-        hx-post="."
-        hx-target="#choice-section"
-        hx-swap="outerHTML"
-        hx-include="closest form"
-        hx-indicator="#choice-row-loading"
-        hx-disabled-elt="this"
-      >კიდევ ერთი არჩევანის დამატება</button>
-      <span id="choice-row-loading" class="htmx-indicator vocabulary-loading" role="status">ემატება…</span>
+  <div class="choice-matrix">
+    <div class="choice-matrix__header desktop-only" aria-hidden="true">
+      <span class="choice-matrix__th">ზომა</span>
+      <span class="choice-matrix__th">ფერი</span>
+      <span class="choice-matrix__th">მარაგი</span>
+      <span class="choice-matrix__th">სტატუსი / მოქმედება</span>
     </div>
-    <p class="choice-help">დაამატეთ ცალკე რიგი, როცა ორ გასაყიდ არჩევანს განზრახ ერთნაირი ზომა ან ფერი აქვს.</p>
+
+    <div class="choice-list">
+      {% for choice_form in choice_formset %}
+        <fieldset class="choice-row" id="choice-row-{{ forloop.counter0 }}">
+          <legend class="choice-row__legend">არჩევანი {{ forloop.counter }}</legend>
+
+          {% for hidden_field in choice_form.hidden_fields %}
+            {{ hidden_field }}
+            {% if show_form_errors %}
+              {% for error in hidden_field.errors %}
+                <p class="field-error" role="alert">{{ error }}</p>
+              {% endfor %}
+            {% endif %}
+          {% endfor %}
+
+          {% if show_form_errors %}
+            {% if choice_form.non_field_errors %}
+              <div class="form-errors" role="alert">
+                {% for error in choice_form.non_field_errors %}
+                  <p>{{ error }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endif %}
+
+          <div class="choice-row__content">
+            <div class="choice-cell choice-cell--size">
+              <label class="choice-cell__label mobile-only" for="{{ choice_form.size.id_for_label }}">ზომა</label>
+              {{ choice_form.size }}
+              {% if show_form_errors %}
+                {% for error in choice_form.size.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+
+            <div class="choice-cell choice-cell--color">
+              <label class="choice-cell__label mobile-only" for="{{ choice_form.color.id_for_label }}">ფერი</label>
+              {{ choice_form.color }}
+              {% if show_form_errors %}
+                {% for error in choice_form.color.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+
+            <div class="choice-cell choice-cell--stock">
+              {% if choice_form.instance.pk %}
+                <div class="choice-stock-widget">
+                  {% include "inventory/_choice_stock_controls.html" with choice=choice_form.instance return_url=return_url only %}
+                </div>
+                <div class="choice-quantity-hidden" aria-hidden="true" style="display:none;">
+                  {{ choice_form.quantity }}
+                </div>
+              {% else %}
+                <div class="choice-quantity-entry">
+                  <label class="choice-cell__label mobile-only" for="{{ choice_form.quantity.id_for_label }}">{{ choice_form.quantity.label }}</label>
+                  <div class="choice-quantity-input-wrap">
+                    <span class="choice-quantity-prefix desktop-only" aria-hidden="true">მარაგი:</span>
+                    {{ choice_form.quantity }}
+                  </div>
+                  <small class="field-help choice-quantity-help">{{ choice_form.quantity.help_text }}</small>
+                </div>
+              {% endif %}
+              {% if show_form_errors %}
+                {% for error in choice_form.quantity.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+
+            <div class="choice-cell choice-cell--actions">
+              <div class="choice-option choice-option--active">
+                {{ choice_form.is_active }}
+                <label for="{{ choice_form.is_active.id_for_label }}">აქტიური</label>
+              </div>
+              {% if show_form_errors %}
+                {% for error in choice_form.is_active.errors %}
+                  <p class="field-error">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+
+              {% if not choice_form.instance.pk %}
+                <div class="choice-option choice-option--remove">
+                  {{ choice_form.DELETE }}
+                  <label for="{{ choice_form.DELETE.id_for_label }}">ახალი არჩევანის მოშორება</label>
+                </div>
+              {% endif %}
+              {% if show_form_errors %}
+                {% for error in choice_form.DELETE.errors %}
+                  <p class="field-error" role="alert">{{ error }}</p>
+                {% endfor %}
+              {% endif %}
+            </div>
+          </div>
+        </fieldset>
+      {% endfor %}
+    </div>
   </div>
-</details>
+
+  <div class="choice-section__actions">
+    <button
+      id="add-choice-row-button"
+      class="button button--secondary button--compact"
+      type="submit"
+      name="intent"
+      value="add_choice_row"
+      hx-post="."
+      hx-target="#choice-section"
+      hx-swap="outerHTML"
+      hx-include="closest form"
+      hx-indicator="#choice-row-loading"
+      hx-disabled-elt="this"
+    >კიდევ ერთი არჩევანის დამატება</button>
+    <span id="choice-row-loading" class="htmx-indicator vocabulary-loading" role="status">ემატება…</span>
+  </div>
+  <p class="choice-help">დაამატეთ ცალკე რიგი, როცა ორ გასაყიდ არჩევანს განზრახ ერთნაირი ზომა ან ფერი აქვს.</p>
+
+  <details
+    class="vocabulary-card"
+    id="choice-vocabulary-card"
+    {% if size_vocabulary_form.errors or color_vocabulary_form.errors %}open{% endif %}
+  >
+    <summary
+      class="vocabulary-card__header"
+      id="vocabulary-card-summary"
+      aria-expanded="{% if size_vocabulary_form.errors or color_vocabulary_form.errors %}true{% else %}false{% endif %}"
+    >
+      <span class="vocabulary-card__title">ახალი ზომის ან ფერის დამატება ლექსიკონში</span>
+      <span class="vocabulary-card__indicator" aria-hidden="true">▾</span>
+    </summary>
+    <div class="vocabulary-card__body">
+      <p class="vocabulary-card__help">თუ სასურველი ზომა ან ფერი ჩამონათვალში არ არის, შეგიძლიათ პირდაპირ აქ დაამატოთ დამტკიცებულ სიტყვარში.</p>
+      <div class="choice-vocabulary vocabulary-card__grid" aria-label="დამტკიცებული არჩევანის სიტყვარი">
+        <div class="vocabulary-editor">
+          <h3 class="vocabulary-editor__title">დამტკიცებული ზომის დამატება</h3>
+          <p class="vocabulary-editor__help">მიუთითეთ ერთი მთავარი სახელი და მხოლოდ ცნობილი ალტერნატიული ფორმები.</p>
+
+          {% if size_vocabulary_form.non_field_errors %}
+            <div class="form-errors" role="alert">
+              {% for error in size_vocabulary_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="form-field">
+            <label for="{{ size_vocabulary_form.name.id_for_label }}">{{ size_vocabulary_form.name.label }}</label>
+            {{ size_vocabulary_form.name }}
+            {% for error in size_vocabulary_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          </div>
+          <div class="form-field">
+            <label for="{{ size_vocabulary_form.aliases.id_for_label }}">{{ size_vocabulary_form.aliases.label }}</label>
+            {{ size_vocabulary_form.aliases }}
+            {% for error in size_vocabulary_form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          </div>
+          <div class="vocabulary-editor__action">
+            <button
+              class="button button--secondary button--compact"
+              type="submit"
+              name="intent"
+              value="add_size_vocabulary"
+              hx-post="."
+              hx-target="#choice-section"
+              hx-swap="outerHTML"
+              hx-include="closest form"
+              hx-indicator="#size-vocabulary-loading"
+              hx-disabled-elt="this"
+            >ზომის დამატება</button>
+            <span id="size-vocabulary-loading" class="htmx-indicator vocabulary-loading" role="status">ემატება…</span>
+          </div>
+        </div>
+
+        <div class="vocabulary-editor">
+          <h3 class="vocabulary-editor__title">დამტკიცებული ფერის დამატება</h3>
+          <p class="vocabulary-editor__help">მთავარ სახელად ქართული ფორმა აირჩიეთ; ინგლისური ან სხვა ვარიანტი ალიასად დაამატეთ.</p>
+
+          {% if color_vocabulary_form.non_field_errors %}
+            <div class="form-errors" role="alert">
+              {% for error in color_vocabulary_form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="form-field">
+            <label for="{{ color_vocabulary_form.name.id_for_label }}">{{ color_vocabulary_form.name.label }}</label>
+            {{ color_vocabulary_form.name }}
+            {% for error in color_vocabulary_form.name.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          </div>
+          <div class="form-field">
+            <label for="{{ color_vocabulary_form.aliases.id_for_label }}">{{ color_vocabulary_form.aliases.label }}</label>
+            {{ color_vocabulary_form.aliases }}
+            {% for error in color_vocabulary_form.aliases.errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+          </div>
+          <div class="vocabulary-editor__action">
+            <button
+              class="button button--secondary button--compact"
+              type="submit"
+              name="intent"
+              value="add_color_vocabulary"
+              hx-post="."
+              hx-target="#choice-section"
+              hx-swap="outerHTML"
+              hx-include="closest form"
+              hx-indicator="#color-vocabulary-loading"
+              hx-disabled-elt="this"
+            >ფერის დამატება</button>
+            <span id="color-vocabulary-loading" class="htmx-indicator vocabulary-loading" role="status">ემატება…</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="vocabulary-card__manage-link">
+        <a class="return-link" href="{% url 'catalog:choice_vocabulary' %}?next={{ request.get_full_path|urlencode }}">სრული სიტყვარის ნახვა და მართვა</a>
+      </div>
+    </div>
+  </details>
+  </div>
+</section>

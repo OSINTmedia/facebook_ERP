@@ -263,6 +263,99 @@
     }
   };
 
+  const setupInstantMediaPreview = (root = document) => {
+    const fileInput = root.querySelector?.('input[type="file"][name="image"]');
+    if (!fileInput || fileInput.dataset.previewAttached) {
+      return;
+    }
+    fileInput.dataset.previewAttached = "true";
+
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files?.[0];
+      const previewImg = document.getElementById("product-media-preview-img");
+      const placeholder = document.getElementById("product-media-preview-placeholder");
+
+      if (file && file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (previewImg) {
+            previewImg.src = e.target?.result;
+            previewImg.hidden = false;
+          }
+          if (placeholder) {
+            placeholder.hidden = true;
+          }
+        };
+        reader.readAsDataURL(file);
+      } else if (!file) {
+        if (previewImg?.dataset.defaultSrc) {
+          previewImg.src = previewImg.dataset.defaultSrc;
+          previewImg.hidden = false;
+          if (placeholder) placeholder.hidden = true;
+        } else {
+          if (previewImg) previewImg.hidden = true;
+          if (placeholder) placeholder.hidden = false;
+        }
+      }
+    });
+  };
+
+  const syncVocabularyCardAccessibility = (root = document) => {
+    const card = root.querySelector?.("#choice-vocabulary-card");
+    if (!card) return;
+    const summary = card.querySelector("#vocabulary-card-summary");
+    if (!summary) return;
+
+    const updateAria = () => {
+      summary.setAttribute("aria-expanded", card.open ? "true" : "false");
+    };
+
+    updateAria();
+    if (!card.dataset.ariaAttached) {
+      card.dataset.ariaAttached = "true";
+      card.addEventListener("toggle", updateAria);
+    }
+  };
+
+  const setupCorrectionAnchorScroll = () => {
+    const hash = window.location.hash;
+    const urlParams = new URLSearchParams(window.location.search);
+    const focusTarget = urlParams.get("focus");
+
+    let targetElement = null;
+    if (hash) {
+      try {
+        targetElement = document.querySelector(hash);
+      } catch (_e) {
+        targetElement = null;
+      }
+    }
+    if (!targetElement && focusTarget) {
+      if (focusTarget === "materials") {
+        targetElement = document.getElementById("material-section");
+      } else if (focusTarget === "choices") {
+        targetElement = document.getElementById("choice-section");
+      } else if (focusTarget === "classification") {
+        targetElement = document.getElementById("classification-section");
+      }
+    }
+
+    if (targetElement) {
+      if (targetElement.tagName === "DETAILS" && !targetElement.open) {
+        targetElement.open = true;
+      }
+      setTimeout(() => {
+        targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+        targetElement.classList.add("assistant-section--highlighted");
+        const firstInput = targetElement.querySelector("input:not([type=hidden]), select, textarea, button");
+        firstInput?.focus();
+        setTimeout(() => {
+          targetElement.classList.remove("assistant-section--highlighted");
+        }, 2000);
+      }, 100);
+    }
+  };
+
   document.body.addEventListener("htmx:beforeRequest", (event) => {
     const control = workspaceControl(event);
     if (control) {
@@ -289,6 +382,9 @@
   document.body.addEventListener("htmx:afterSwap", (event) => {
     const target = event.detail?.target;
     syncFieldErrors(target || document);
+    setupInstantMediaPreview(target || document);
+    syncVocabularyCardAccessibility(target || document);
+
     const formControl = productFormControl(event);
     if (formControl) {
       setProductFormBusy(formControl, false);
@@ -439,4 +535,7 @@
   syncWorkspaceFormAccessibility();
   syncFieldErrors();
   syncDeckState();
+  setupInstantMediaPreview();
+  syncVocabularyCardAccessibility();
+  setupCorrectionAnchorScroll();
 })();

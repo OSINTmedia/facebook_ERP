@@ -842,3 +842,23 @@ Verification: 11 isolated ready reply tests, 88 workspace integration tests, and
 Release: READY.
 
 Next on Git PASS: UX-D Contextual Empty States & Clear Search Action.
+
+### 2026-09-24 - UX-D Streamlined Product Intake, Media Preview & Form Polish
+
+Code status: PASS.
+
+Product creation and editing workflows have been streamlined into a compact, assistant-oriented experience with significantly reduced scroll fatigue and cognitive load:
+- Primary description entry and recognition preview remain top-of-funnel, followed by a cohesive commercial row pairing Price, Lifecycle, and a compact media tile.
+- Instant client-side media preview updates immediately upon file selection (with accessible fallback to existing image or empty state) while preserving server-side validation and re-selection safeguards.
+- Choice management transformed into a high-density 4-column matrix on desktop and a compact 2-row pairing on mobile, eliminating repetitive ERP fieldsets while preserving live inline stock adjustments (-1 / +1), instant feedback, and accessible Georgian status messages.
+- Approved Size and Color vocabulary additions are housed in an accessible, collapsible helper card with full row click/tap targeting and state synchronization.
+- Mobile (<720px) features a persistent sticky action bar with safe area padding, while desktop maintains contextual top and bottom actions.
+- Full keyboard navigation, error linking (`aria-errormessage`, `aria-describedby`), and correction target anchor scrolling preserved.
+
+Audit repairs resolved initial visual fragmentation by introducing a compact 58px media tile and converting repetitive choice fieldsets into a space-efficient matrix.
+
+Verification: 69 product create/update tests, 41 media tests, 88 workspace integration tests, 55 inventory tests, and the full 572-test PostgreSQL suite passed. Django system and migration consistency checks passed. Owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: Phase 13 Production Deployment & Hosted Demo.
