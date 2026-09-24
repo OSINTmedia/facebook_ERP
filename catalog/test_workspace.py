@@ -1333,6 +1333,25 @@ class ProductCardReadModelTests(TestCase):
         self.assertEqual(len(many_product_queries), len(one_product_queries))
 
 
+    def test_card_builds_compact_choice_preview(self):
+        product = self.create_product()
+        size_s = BusinessSize.objects.create(business=self.business, name="S")
+        size_l = BusinessSize.objects.create(business=self.business, name="L")
+        color_white = BusinessColor.objects.create(business=self.business, name="White")
+
+        # Single color uniform choices -> size: qty
+        ProductChoice.objects.create(business=self.business, product=product, size=size_s, color=self.color, quantity=1)
+        ProductChoice.objects.create(business=self.business, product=product, size=size_l, color=self.color, quantity=4)
+
+        card = self.cards()[0]
+        self.assertEqual(card.choice_preview, "S: 1 · L: 4")
+
+        # Multi-color choices -> size/color: qty
+        ProductChoice.objects.create(business=self.business, product=product, size=size_s, color=color_white, quantity=2)
+        card_multi = self.cards()[0]
+        self.assertEqual(card_multi.choice_preview, "S/Black: 1 · S/White: 2 · L/Black: 4")
+
+
 class _ProductWorkspacePaginationFixture:
     def setUp(self):
         user_model = get_user_model()
@@ -2241,6 +2260,11 @@ class ProductWorkspaceViewTests(TestCase):
         self.assertContains(response, "მზა პასუხი")
         self.assertContains(response, "data-ready-reply-trigger")
         self.assertNotContains(response, "data-ready-reply-panel")
+        self.assertContains(response, "data-deck-toggle")
+        self.assertContains(response, "data-deck")
+        self.assertContains(response, "data-overflow-menu")
+        self.assertContains(response, "მარაგშია: 3 ცალი")
+        self.assertContains(response, "M: 3")
         rendered = response.content.decode()
         card_markup = rendered[rendered.index('<article class="product-card"') :]
         self.assertLess(

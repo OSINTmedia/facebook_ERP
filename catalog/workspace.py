@@ -305,6 +305,7 @@ class ProductCard:
     readiness_correction_label: str | None
     readiness_correction_target: str | None
     readiness_correction_fragment: str | None
+    choice_preview: str = ""
 
 
 def build_product_workspace_context(
@@ -713,6 +714,22 @@ def _build_product_card(
             next_correction.correction_target if next_correction else None
         ),
         readiness_correction_fragment=correction_fragment,
+        choice_preview=_format_choice_preview(active_choices),
+    )
+
+
+def _format_choice_preview(active_choices: tuple[ProductChoiceCard, ...]) -> str:
+    if not active_choices:
+        return ""
+    distinct_colors = {choice.color_name for choice in active_choices}
+    if len(distinct_colors) <= 1:
+        return " · ".join(
+            f"{choice.size_name}: {choice.quantity}"
+            for choice in active_choices
+        )
+    return " · ".join(
+        f"{choice.size_name}/{choice.color_name}: {choice.quantity}"
+        for choice in active_choices
     )
 
 

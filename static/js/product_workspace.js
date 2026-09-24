@@ -193,6 +193,58 @@
     }
   };
 
+  const openDecks = new Set();
+
+  const toggleDeck = (toggleBtn) => {
+    const deckId = toggleBtn.getAttribute("aria-controls");
+    const deck = document.getElementById(deckId);
+    if (!deck) {
+      return;
+    }
+    const isExpanded = toggleBtn.getAttribute("aria-expanded") === "true";
+    const nextState = !isExpanded;
+    toggleBtn.setAttribute("aria-expanded", String(nextState));
+    deck.hidden = !nextState;
+    if (nextState) {
+      openDecks.add(deckId);
+    } else {
+      openDecks.delete(deckId);
+    }
+    const icon = toggleBtn.querySelector(".product-card__deck-toggle-icon");
+    if (icon) {
+      icon.textContent = nextState ? "▲" : "▼";
+    }
+  };
+
+  const syncDeckState = (root = document) => {
+    const results = currentResults();
+    const focusChoiceId = results?.dataset.workspaceFocusChoiceId;
+
+    for (const toggleBtn of root.querySelectorAll("[data-deck-toggle]")) {
+      const deckId = toggleBtn.getAttribute("aria-controls");
+      const deck = document.getElementById(deckId);
+      if (!deck) {
+        continue;
+      }
+
+      let shouldBeOpen = openDecks.has(deckId);
+      if (
+        focusChoiceId &&
+        deck.querySelector(`#workspace-stock-decrease-${focusChoiceId}`)
+      ) {
+        shouldBeOpen = true;
+        openDecks.add(deckId);
+      }
+
+      toggleBtn.setAttribute("aria-expanded", String(shouldBeOpen));
+      deck.hidden = !shouldBeOpen;
+      const icon = toggleBtn.querySelector(".product-card__deck-toggle-icon");
+      if (icon) {
+        icon.textContent = shouldBeOpen ? "▲" : "▼";
+      }
+    }
+  };
+
   const closeReadyReply = (panel) => {
     const slot = panel?.closest("[data-ready-reply-slot]");
     const trigger = slot
@@ -251,6 +303,8 @@
       return;
     }
 
+    syncDeckState(target);
+
     const results = currentResults();
     results?.setAttribute("aria-busy", "false");
     const restoredControl = pendingControl();
@@ -294,6 +348,20 @@
   }
 
   document.body.addEventListener("click", async (event) => {
+    const deckToggle = event.target.closest?.("[data-deck-toggle]");
+    if (deckToggle) {
+      toggleDeck(deckToggle);
+      return;
+    }
+
+    if (!event.target.closest("[data-overflow-menu]")) {
+      for (const openOverflow of document.querySelectorAll(
+        "[data-overflow-menu][open]",
+      )) {
+        openOverflow.removeAttribute("open");
+      }
+    }
+
     const closeButton = event.target.closest?.("[data-ready-reply-close]");
     if (closeButton) {
       closeReadyReply(closeButton.closest("[data-ready-reply-panel]"));
@@ -334,6 +402,15 @@
     if (event.key !== "Escape") {
       return;
     }
+    const openOverflow = document.activeElement?.closest?.(
+      "[data-overflow-menu][open]",
+    );
+    if (openOverflow) {
+      event.preventDefault();
+      openOverflow.removeAttribute("open");
+      openOverflow.querySelector("summary")?.focus();
+      return;
+    }
     const panel = document.activeElement?.closest?.(
       "[data-ready-reply-panel]",
     );
@@ -345,4 +422,5 @@
 
   syncWorkspaceFormAccessibility();
   syncFieldErrors();
+  syncDeckState();
 })();

@@ -2088,7 +2088,10 @@ class InventoryDirectSetRouteTests(TestCase):
             f'data-workspace-focus-choice-id="{self.choice.pk}"',
         )
         self.assertContains(response, 'class="product-card__stock-set"')
-        self.assertContains(response, "open")
+        self.assertContains(
+            response,
+            f'id="workspace-stock-set-input-{self.choice.pk}"',
+        )
         self.choice.refresh_from_db()
         self.assertEqual(self.choice.quantity, 0)
         self.assertEqual(InventoryAdjustment.objects.count(), 1)

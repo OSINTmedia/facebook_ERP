@@ -802,3 +802,23 @@ Verification: 571 PostgreSQL tests passed, including navigation active-state iso
 Release: READY.
 
 Next on Git PASS: UX-B Product Card Architecture & Stock Ergonomics.
+
+### 2026-09-24 - UX-B Compact Scan-First Product Cards & Stock Stepper Ergonomics
+
+Code status: PASS.
+
+The Product Workspace card architecture now follows a "Scan First, Operate on Demand" layout:
+- Unexpanded cards are compact (<280px on ~390px mobile) with non-stretched 90x90 thumbnails, price, lifecycle, availability state, total stock badge, and a choice stock preview string.
+- Tapping "მარაგის შეცვლა" discloses the choice deck in-place without page reload or scroll dislocation, and preserves expansion state across HTMX swaps.
+- Choice rows render as dense horizontal strips with prominent variant tags (size/color), enlarged >=44x44px touch stepper buttons (- / +1), live count output, and an immediately visible inline direct-set input with submit button, eliminating nested <details> accordion friction.
+- Desktop and tablet screens (>=768px) leverage available width via a responsive multi-column choice grid.
+- Secondary actions (edit, add similar, archive) are organized in an anchored overflow popover with click-outside and Escape dismissals.
+- Readiness is streamlined into a compact single-line alert banner.
+
+Audit repairs updated the deck toggle operational copy to "მარაგის შეცვლა" and aligned the direct-set test contract with the non-nested disclosure design.
+
+Verification: 52 focused workspace and read model tests, 50 bounded regression tests, and the full 572-test PostgreSQL suite passed. Django system and migration consistency checks passed. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: UX-C Ready Reply Overlay & Copy Experience.
