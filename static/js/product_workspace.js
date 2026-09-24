@@ -245,14 +245,22 @@
     }
   };
 
-  const closeReadyReply = (panel) => {
-    const slot = panel?.closest("[data-ready-reply-slot]");
-    const trigger = slot
-      ? document.getElementById(slot.dataset.readyReplyTriggerId)
-      : null;
-    slot?.replaceChildren();
-    trigger?.setAttribute("aria-expanded", "false");
-    trigger?.focus();
+  const closeReadyReply = (element) => {
+    const root = element?.closest("[data-ready-reply-root]") || document.getElementById("product-ready-reply-root");
+    const triggerId = root?.dataset.readyReplyTriggerId;
+    const trigger = triggerId ? document.getElementById(triggerId) : null;
+    if (root) {
+      const mount = root.closest("[data-ready-reply-mount]") || root.parentElement;
+      if (mount && mount.id === "ready-reply-root") {
+        mount.replaceChildren();
+      } else {
+        root.remove();
+      }
+    }
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.focus();
+    }
   };
 
   document.body.addEventListener("htmx:beforeRequest", (event) => {
@@ -285,10 +293,10 @@
     if (formControl) {
       setProductFormBusy(formControl, false);
     }
-    if (target?.matches?.("[data-ready-reply-slot]")) {
-      const trigger = document.getElementById(
-        target.dataset.readyReplyTriggerId,
-      );
+    if (target?.matches?.("[data-ready-reply-slot]") || target?.id === "ready-reply-root") {
+      const root = target.querySelector("[data-ready-reply-root]") || (target.matches("[data-ready-reply-root]") ? target : null);
+      const triggerId = root?.dataset.readyReplyTriggerId || target.dataset.readyReplyTriggerId;
+      const trigger = triggerId ? document.getElementById(triggerId) : null;
       const panel = target.querySelector("[data-ready-reply-panel]");
       if (!panel) {
         showReadyReplyTransportRecovery(trigger);
@@ -362,9 +370,15 @@
       }
     }
 
+    const backdrop = event.target.closest?.("[data-ready-reply-backdrop]");
+    if (backdrop) {
+      closeReadyReply(backdrop);
+      return;
+    }
+
     const closeButton = event.target.closest?.("[data-ready-reply-close]");
     if (closeButton) {
-      closeReadyReply(closeButton.closest("[data-ready-reply-panel]"));
+      closeReadyReply(closeButton);
       return;
     }
 
@@ -389,6 +403,9 @@
       status.setAttribute("role", "status");
       status.textContent = "პასუხი დაკოპირებულია.";
       status.hidden = false;
+      setTimeout(() => {
+        closeReadyReply(panel);
+      }, 250);
     } catch (_error) {
       status.setAttribute("role", "alert");
       status.textContent = "დაკოპირება ვერ მოხერხდა. მონიშნეთ ტექსტი და ხელით დააკოპირეთ.";
@@ -411,12 +428,11 @@
       openOverflow.querySelector("summary")?.focus();
       return;
     }
-    const panel = document.activeElement?.closest?.(
-      "[data-ready-reply-panel]",
-    );
-    if (panel) {
+    const openReadyReply = document.querySelector("[data-ready-reply-root]");
+    if (openReadyReply) {
       event.preventDefault();
-      closeReadyReply(panel);
+      closeReadyReply(openReadyReply);
+      return;
     }
   });
 

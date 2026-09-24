@@ -822,3 +822,23 @@ Verification: 52 focused workspace and read model tests, 50 bounded regression t
 Release: READY.
 
 Next on Git PASS: UX-C Ready Reply Overlay & Copy Experience.
+
+### 2026-09-24 - UX-C Ready Reply Overlay & Copy Experience
+
+Code status: PASS.
+
+The Ready Reply panel now operates as a non-disruptive dialog overlay rather than causing card layout shifts:
+- Mounted at page-level `#ready-reply-root` with an accessible modal dialog (`role="dialog"`, `aria-modal="true"`, `aria-labelledby`).
+- Mobile (<720px) presents a responsive bottom sheet with slide-up animation and rounded top corners; desktop (≥720px) presents a right-anchored 440px slide-over drawer with slide-left animation.
+- Includes sticky footer with primary "დაკოპირება და დახურვა" (Copy & Close) action and secondary "დახურვა" button.
+- Dismissible via backdrop tap, header close button, or Escape key, properly restoring focus to the originating card trigger.
+- Copy behavior guarantees honest status: on successful clipboard copy, announces polite success and automatically closes the overlay; on clipboard failure or permission denial, leaves dialog open, presents Georgian error instructions, selects text, and shifts focus for manual copy.
+- Seller warnings remain isolated in distinct warning boxes and never pollute customer-facing text.
+
+Audit repairs ensured the subtitle copy does not leak seller caution phrasing into full-truth replies and aligned HTMX targets and template mounts.
+
+Verification: 11 isolated ready reply tests, 88 workspace integration tests, and the full 572-test PostgreSQL suite passed. Django system, migration consistency, and diff checks passed. Owner test: NOT_REQUIRED.
+
+Release: READY.
+
+Next on Git PASS: UX-D Contextual Empty States & Clear Search Action.

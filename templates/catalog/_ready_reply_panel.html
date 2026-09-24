@@ -1,61 +1,85 @@
-<section
-  id="product-ready-reply-panel-{{ product.pk }}"
-  class="product-card__readiness"
-  aria-labelledby="product-ready-reply-title-{{ product.pk }}"
-  data-ready-reply-panel
-  tabindex="-1"
+<div
+  id="product-ready-reply-root"
+  class="ready-reply-overlay"
+  data-ready-reply-root
+  data-ready-reply-trigger-id="product-ready-reply-trigger-{{ product.pk }}"
 >
-  <div class="product-card__readiness-heading">
-    <div>
-      <h3 id="product-ready-reply-title-{{ product.pk }}">მზა პასუხი</h3>
-      <p>დაკოპირებამდე გადაამოწმეთ მომხმარებლისთვის მომზადებული ტექსტი.</p>
+  <div class="ready-reply-overlay__backdrop" data-ready-reply-backdrop></div>
+  <section
+    id="product-ready-reply-panel-{{ product.pk }}"
+    class="ready-reply-overlay__drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="product-ready-reply-title-{{ product.pk }}"
+    data-ready-reply-panel
+    tabindex="-1"
+  >
+    <div class="ready-reply-overlay__header">
+      <div class="ready-reply-overlay__title-wrap">
+        <h3 id="product-ready-reply-title-{{ product.pk }}" class="ready-reply-overlay__title">მზა პასუხი</h3>
+        <p class="ready-reply-overlay__subtitle">{{ product.name }} — გადაამოწმეთ გამზადებული ტექსტი.</p>
+      </div>
+      <button
+        class="button button--secondary button--compact ready-reply-overlay__close"
+        type="button"
+        aria-label="მზა პასუხის დახურვა"
+        data-ready-reply-close
+      >✕</button>
     </div>
-    <button
-      class="button button--secondary button--compact"
-      type="button"
-      data-ready-reply-close
-    >დახურვა</button>
-  </div>
 
-  <div class="form-field">
-    <label for="product-ready-reply-text-{{ product.pk }}">ტექსტი მომხმარებლისთვის</label>
-    <textarea
-      id="product-ready-reply-text-{{ product.pk }}"
-      rows="7"
-      readonly
-      data-ready-reply-text
-    >{{ ready_reply.buyer_text }}</textarea>
-  </div>
-  <button
-    class="button button--primary button--compact"
-    type="button"
-    data-ready-reply-copy
-    data-ready-reply-copy-target="product-ready-reply-text-{{ product.pk }}"
-  >პასუხის დაკოპირება</button>
-  <p
-    role="status"
-    aria-live="polite"
-    aria-atomic="true"
-    data-ready-reply-copy-status
-    hidden
-  ></p>
+    <div class="ready-reply-overlay__body">
+      <div class="form-field ready-reply-overlay__field">
+        <label for="product-ready-reply-text-{{ product.pk }}">ტექსტი მომხმარებლისთვის</label>
+        <textarea
+          id="product-ready-reply-text-{{ product.pk }}"
+          class="ready-reply-overlay__textarea"
+          rows="8"
+          readonly
+          data-ready-reply-text
+        >{{ ready_reply.buyer_text }}</textarea>
+      </div>
 
-  {% if ready_reply_seller_notes %}
-    <section aria-labelledby="product-ready-reply-notes-{{ product.pk }}">
-      <h4 id="product-ready-reply-notes-{{ product.pk }}">გაგზავნამდე</h4>
-      <ul>
-        {% for note in ready_reply_seller_notes %}
-          <li>
-            <span>{{ note.text }}</span>
-            {% if note.correction_url %}
-              <a
-                class="button button--secondary button--compact"
-                href="{{ note.correction_url }}"
-              >პროდუქტის შესწორება</a>
-            {% endif %}
-          </li>
-        {% endfor %}
-      </ul>
-    </section>
-  {% endif %}
-</section>
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        data-ready-reply-copy-status
+        class="ready-reply-overlay__status"
+        hidden
+      ></div>
+
+      {% if ready_reply_seller_notes %}
+        <section class="ready-reply-overlay__notes" aria-labelledby="product-ready-reply-notes-{{ product.pk }}">
+          <h4 id="product-ready-reply-notes-{{ product.pk }}">გაგზავნამდე</h4>
+          <ul class="ready-reply-overlay__notes-list">
+            {% for note in ready_reply_seller_notes %}
+              <li class="ready-reply-overlay__note-item">
+                <span class="ready-reply-overlay__note-text">{{ note.text }}</span>
+                {% if note.correction_url %}
+                  <a
+                    class="button button--secondary button--compact ready-reply-overlay__note-action"
+                    href="{{ note.correction_url }}"
+                  >პროდუქტის შესწორება</a>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+    </div>
+
+    <div class="ready-reply-overlay__footer">
+      <button
+        class="button button--primary ready-reply-overlay__copy-btn"
+        type="button"
+        data-ready-reply-copy
+        data-ready-reply-copy-target="product-ready-reply-text-{{ product.pk }}"
+      >დაკოპირება და დახურვა</button>
+      <button
+        class="button button--secondary ready-reply-overlay__cancel-btn"
+        type="button"
+        data-ready-reply-close
+      >დახურვა</button>
+    </div>
+  </section>
+</div>

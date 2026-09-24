@@ -254,7 +254,7 @@
         class="button button--secondary button--compact product-card__reply-btn"
         type="button"
         hx-get="{% url 'catalog:product_ready_reply' card.product_id %}?next={{ workspace_return_url|urlencode }}"
-        hx-target="#product-ready-reply-slot-{{ card.product_id }}"
+        hx-target="#ready-reply-root"
         hx-swap="innerHTML"
         hx-indicator="#product-ready-reply-loading-{{ card.product_id }}"
         hx-disabled-elt="this"
