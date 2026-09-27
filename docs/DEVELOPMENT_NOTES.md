@@ -862,3 +862,20 @@ Verification: 69 product create/update tests, 41 media tests, 88 workspace integ
 Release: READY.
 
 Next on Git PASS: Phase 13 Production Deployment & Hosted Demo.
+
+### 2026-09-27 - P13.1 Deployment Target and Production Configuration
+
+Code status: PASS.
+
+Production runtime configuration and deployment boundaries are verified and aligned with Portfolio V1 architecture:
+- Modular production configuration (`config.settings.production`) strictly fails closed on missing environment variables (`DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, `DJANGO_ALLOWED_HOSTS`, `DATABASE_URL`, `DJANGO_CSRF_TRUSTED_ORIGINS`).
+- PostgreSQL remains the mandated database engine; SQLite fallback is rejected at configuration import.
+- Secure HTTPS redirects, session/CSRF secure cookies, and separation of private media from fingerprinted public static assets are enforced.
+- Django production check (`manage.py check --deploy`) passes cleanly under production environment settings without insecure fallbacks.
+- Architecture remains provider-agnostic, ready for backend-capable Django/PostgreSQL hosting provisioning in P13.2.
+
+Verification: `config.test_production` unit tests passed (5/5); full PostgreSQL suite passed (572/572); Django system checks and migration consistency checks passed; production deployment check passed with 0 errors and expected domain-stage HSTS warnings. Owner test: ADVISORY.
+
+Release: READY.
+
+Next on Git PASS: P13.2 Hosted Application and PostgreSQL Provisioning.
