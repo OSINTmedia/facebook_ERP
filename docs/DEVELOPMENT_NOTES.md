@@ -961,3 +961,24 @@ Verification: Stage 3 Wave 1 focused invariant tests passed (23/23 in 21.0s); St
 Release: READY.
 
 Next on Git PASS: P14.2 Public README and Portfolio Presentation.
+
+### 2026-09-27 - P14.2 Public README and Portfolio Presentation
+
+Documentation status: PASS.
+
+Public README completely rewritten according to the Owner Narrative Brief, PROJECT_BIBLE.md, and verified repository reality:
+- Strategic product thesis: frames the system as a seller-first operational truth layer and operations cockpit designed for Instagram/Facebook DM sellers, solving the "Excel effect" and operational cognitive overload before higher-level commerce or AI layers are introduced.
+- Dependency chain: captures Seller Comfort -> Consistent Adoption -> Structured Operational Truth -> Reliable Operations -> Future Automation with a clean Mermaid diagram.
+- What exists today: details implemented V1 capabilities across Intake & Operational Truth (Description-first intake, 3-tier truth pipeline, business vocabulary & aliases, native search suggestions), Cockpit Operations (Product Workspace, exact ProductChoice identity, row-locked inventory mutation boundary, immutable InventoryAdjustment ledger, controlled Add Similar draft creation, reversible lifecycle), and Assistant & Triage (buyer-question coverage readiness, deterministic Ready Reply, and Dashboard triage).
+- Technical architecture: documents Django modular monolith architecture, strict tenant scoping, concurrency safety with select_for_update(), duplicate-visible choice identity, centralized computed availability, and fail-closed production runtime.
+- Scope framing: explicitly articulates the deliberate ~2-month Portfolio V1 engineering boundary protecting technical depth and domain integrity over shallow feature sprawl; includes a clear 3-tier matrix of BUILT NOW, DELIBERATELY DEFERRED, and ENABLED BY THE FOUNDATION.
+- Future extension map: articulates downstream potential (Buyer-Facing Personal Catalog, Grounded Buyer Q&A Assistant with explicit AI truth boundary, Structured Order Intake, and Tailor/Garment Specifications) without speculative delivery claims.
+- Truthful demo status: documents synthetic demo credentials (demo@github.ge / osint123), the synthetic 50-product catalog (D001-D050), and demo_lifecycle management commands while truthfully stating hosted demo is not published yet.
+- Stack hygiene: lists only verified technologies (Python 3.13+, Django 5.2, PostgreSQL/psycopg 3, Django Templates, HTMX v2, bespoke semantic CSS, vanilla JS, ManifestStaticFilesStorage, 581 tests); 100% cleansed of Alpine.js, Tailwind, Bootstrap, and Node tooling.
+- Verified test suite: records exact current passing test count (581 tests).
+
+Verification: factuality check, link review, demo command syntax verification, and clean git diff --check passed. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: P14.3 Owner Public Release Closure.
