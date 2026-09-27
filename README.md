@@ -135,8 +135,14 @@ Stock adjustments cannot occur through arbitrary form saves. All stock mutations
 In social apparel sales, two items may share visible attributes (e.g., two entries for *"Black / M"* representing distinct fabric weights or supplier batches). The system assigns stable primary key identities to each `ProductChoice` rather than enforcing synthetic unique constraints, preventing the database from making false business assumptions.
 
 #### 5. Centralized Computed Availability
+
 Availability is decoupled from product lifecycle:
-$$\text{Lifecycle (\texttt{draft}, \texttt{active}, \texttt{archived})} \neq \text{Availability (\texttt{available}, \texttt{partially\_sold\_out}, \texttt{sold\_out})}$$
+
+**Lifecycle ≠ Availability**
+
+- Lifecycle: `draft`, `active`, `archived`
+- Availability: `available`, `partially_sold_out`, `sold_out`
+
 Availability is computed dynamically across active choice quantities, ensuring consistent reporting across Workspace cards, Dashboard triage, and Ready Replies.
 
 #### 6. Fail-Closed Production Runtime
