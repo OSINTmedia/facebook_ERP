@@ -10,6 +10,17 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import transaction
 from PIL import Image
 
+from accounts.demo_catalog_data import (
+    BLUEPRINT_PRODUCTS,
+    CANONICAL_COLORS,
+    CANONICAL_PRODUCT_TYPES,
+    CANONICAL_SIZES,
+    CANONICAL_TAGS,
+    COLOR_ALIASES,
+    PRODUCT_TYPE_ALIASES,
+    SIZE_ALIASES,
+    TAG_ALIASES,
+)
 from businesses.models import Business
 from catalog.lifecycle import archive_product
 from catalog.media_mutations import attach_or_replace_product_media
@@ -267,134 +278,88 @@ def _delete_stored_media(stored_media):
 
 
 def _create_demo_baseline(*, business, actor, new_media_writes):
-    dress = BusinessProductType.objects.create(business=business, name="კაბა")
-    jacket = BusinessProductType.objects.create(business=business, name="ჟაკეტი")
-    BusinessProductTypeAlias.objects.create(
-        business=business,
-        product_type=dress,
-        alias="dress",
-    )
-    party = BusinessTag.objects.create(business=business, name="სადღესასწაულო")
-    casual = BusinessTag.objects.create(business=business, name="ყოველდღიური")
-    BusinessTagAlias.objects.create(
-        business=business,
-        tag=casual,
-        alias="casual",
-    )
+    # 1. Canonical Vocabularies
+    product_types = {
+        name: BusinessProductType.objects.create(business=business, name=name)
+        for name in CANONICAL_PRODUCT_TYPES
+    }
+    tags = {
+        name: BusinessTag.objects.create(business=business, name=name)
+        for name in CANONICAL_TAGS
+    }
     sizes = {
         name: BusinessSize.objects.create(business=business, name=name)
-        for name in ("S", "M", "L", "Free size")
+        for name in CANONICAL_SIZES
     }
     colors = {
         name: BusinessColor.objects.create(business=business, name=name)
-        for name in ("შავი", "წითელი", "ლურჯი")
+        for name in CANONICAL_COLORS
     }
-    BusinessSizeAlias.objects.create(
-        business=business,
-        size=sizes["Free size"],
-        alias="უნივერსალური",
-    )
-    BusinessColorAlias.objects.create(
-        business=business,
-        color=colors["შავი"],
-        alias="black",
-    )
 
-    strong = _create_product(
-        business=business,
-        actor=actor,
-        name="შავი ბამბის კაბა",
-        description="შავი ბამბის კაბა საღამოსთვის",
-        price="129.00",
-        lifecycle=Product.Lifecycle.ACTIVE,
-        product_type=dress,
-        tags=(party,),
-        material=("ბამბა", 100, "100% ბამბა"),
-        choices=((sizes["S"], colors["შავი"], 5),),
-    )
-    new_media_writes.append(
-        attach_or_replace_product_media(
+    # 2. Approved Aliases
+    for alias, canonical in PRODUCT_TYPE_ALIASES:
+        BusinessProductTypeAlias.objects.create(
             business=business,
-            product=strong,
-            image=_synthetic_image(),
+            product_type=product_types[canonical],
+            alias=alias,
         )
-    )
-    _create_product(
-        business=business,
-        actor=actor,
-        name="წითელი ჟაკეტი",
-        description="წითელი ყოველდღიური ჟაკეტი",
-        price="159.00",
-        lifecycle=Product.Lifecycle.ACTIVE,
-        product_type=jacket,
-        tags=(casual,),
-        choices=((sizes["M"], colors["წითელი"], 1),),
-    )
-    _create_product(
-        business=business,
-        actor=actor,
-        name="ლურჯი კაბა",
-        description="ლურჯი კაბა ორი ზომით",
-        price="119.00",
-        lifecycle=Product.Lifecycle.ACTIVE,
-        product_type=dress,
-        choices=(
-            (sizes["S"], colors["ლურჯი"], 0),
-            (sizes["M"], colors["ლურჯი"], 4),
-        ),
-    )
-    _create_product(
-        business=business,
-        actor=actor,
-        name="გაყიდული კაბა",
-        description="შავი კაბა, მარაგი ამოიწურა",
-        price="99.00",
-        lifecycle=Product.Lifecycle.ACTIVE,
-        product_type=dress,
-        choices=((sizes["L"], colors["შავი"], 0),),
-    )
-    _create_product(
-        business=business,
-        actor=actor,
-        name="შესავსები მონახაზი",
-        description="კაბა",
-        price=None,
-        lifecycle=Product.Lifecycle.DRAFT,
-    )
-    _create_product(
-        business=business,
-        actor=actor,
-        name="ფასის გარეშე ჟაკეტი",
-        description="ლურჯი ჟაკეტი, ფასი დასაზუსტებელია",
-        price=None,
-        lifecycle=Product.Lifecycle.ACTIVE,
-        product_type=jacket,
-        choices=((sizes["M"], colors["ლურჯი"], 2),),
-    )
-    _create_product(
-        business=business,
-        actor=actor,
-        name="განმეორებადი არჩევანის კაბა",
-        description="ორი ცალკე ერთნაირი არჩევანის კაბა",
-        price="139.00",
-        lifecycle=Product.Lifecycle.ACTIVE,
-        product_type=dress,
-        choices=(
-            (sizes["M"], colors["შავი"], 2),
-            (sizes["M"], colors["შავი"], 1),
-        ),
-    )
-    archived = _create_product(
-        business=business,
-        actor=actor,
-        name="არქივირებული ჟაკეტი",
-        description="ძველი ლურჯი ჟაკეტი",
-        price="89.00",
-        lifecycle=Product.Lifecycle.ACTIVE,
-        product_type=jacket,
-        choices=((sizes["S"], colors["ლურჯი"], 3),),
-    )
-    archive_product(business=business, product_id=archived.pk)
+    for alias, canonical in TAG_ALIASES:
+        BusinessTagAlias.objects.create(
+            business=business,
+            tag=tags[canonical],
+            alias=alias,
+        )
+    for alias, canonical in SIZE_ALIASES:
+        BusinessSizeAlias.objects.create(
+            business=business,
+            size=sizes[canonical],
+            alias=alias,
+        )
+    for alias, canonical in COLOR_ALIASES:
+        BusinessColorAlias.objects.create(
+            business=business,
+            color=colors[canonical],
+            alias=alias,
+        )
+
+    # 3. 50 Canonical Products (D001-D050)
+    for spec in BLUEPRINT_PRODUCTS:
+        product_type = product_types[spec["type"]] if spec["type"] else None
+        product_tags = tuple(tags[t] for t in spec["tags"])
+        product_choices = tuple(
+            (sizes[s], colors[c], q) for s, c, q in spec["choices"]
+        )
+
+        lifecycle = (
+            Product.Lifecycle.ACTIVE
+            if spec["lifecycle"] == "archived"
+            else spec["lifecycle"]
+        )
+
+        product = _create_product(
+            business=business,
+            actor=actor,
+            name=spec["title"],
+            description=spec["description"],
+            price=spec["price"],
+            lifecycle=lifecycle,
+            product_type=product_type,
+            tags=product_tags,
+            materials=spec["materials"],
+            choices=product_choices,
+        )
+
+        if spec["has_image"]:
+            new_media_writes.append(
+                attach_or_replace_product_media(
+                    business=business,
+                    product=product,
+                    image=_synthetic_image(),
+                )
+            )
+
+        if spec["lifecycle"] == "archived":
+            archive_product(business=business, product_id=product.pk)
 
 
 def _create_product(
@@ -407,7 +372,7 @@ def _create_product(
     lifecycle,
     product_type=None,
     tags=(),
-    material=None,
+    materials=(),
     choices=(),
 ):
     product = Product.objects.create(
@@ -424,15 +389,15 @@ def _create_product(
             product=product,
             tag=tag,
         )
-    if material:
-        canonical_material, percentage, original_text = material
+    for mat in materials:
+        canonical_material, percentage, original_text, source = mat
         ProductMaterialFact.objects.create(
             business=business,
             product=product,
             canonical_material=canonical_material,
             percentage=percentage,
             original_text=original_text,
-            source=ProductMaterialFact.Source.DESCRIPTION,
+            source=source,
             confirmation_state=ProductMaterialFact.ConfirmationState.CONFIRMED,
         )
     for size, color, quantity in choices:

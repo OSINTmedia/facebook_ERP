@@ -896,3 +896,20 @@ Verification: `config.test_production` unit tests passed (5/5); production setti
 Release: READY.
 
 Next on Git PASS: P13.3 Demo Seed, Hosted Smoke Test, and Owner Acceptance.
+
+### 2026-09-27 - P13.3 Demo Seed, Hosted Smoke Test, and Owner Acceptance
+
+Code status: PASS.
+
+Synthetic portfolio demo baseline, lifecycle automation, and catalog data consistency completed and verified:
+- Implemented deterministic synthetic demo dataset of exactly 50 Products (`D001`–`D050`) across 86 choices and 36 media items matching `docs/DEMO_CATALOG_BLUEPRINT.md`.
+- Enforced Georgian-first presentation language across titles, descriptions, and canonical vocabularies (14 Types, 10 Tags, 12 Colors) while preserving realistic bilingual English/transliteration seller shorthand and search aliases.
+- Verified deterministic demo lifecycle management (`demo_lifecycle` seed/reset/reseed) with transaction safety, idempotent re-run capability, and strict foreign business isolation.
+- Hardened Products Workspace card layout CSS grid and identity column to eliminate product card media/title overlap across varying aspect ratios and title lengths.
+- Successfully verified full test suite, automated demo lifecycle command, workspace card views, and clean Django deployment/migration state.
+
+Verification: `accounts.test_demo_lifecycle` (10/10), `catalog.test_workspace` (88/88), full 572-test PostgreSQL suite (572/572 passed in 383s); Django system check and migration consistency check passed with 0 errors. Required owner test: PASS.
+
+Release: READY.
+
+Next on Git PASS: Phase 14 Public Portfolio Release.

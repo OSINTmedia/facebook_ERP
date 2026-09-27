@@ -11,11 +11,16 @@ from django.test import TestCase, override_settings
 from accounts.demo_lifecycle import DEMO_BUSINESS_NAME
 from businesses.models import Business
 from catalog.models import (
+    BusinessColor,
+    BusinessProductType,
     BusinessProductTypeAlias,
+    BusinessSize,
+    BusinessTag,
     Product,
     ProductChoice,
     ProductMaterialFact,
     ProductMedia,
+    ProductTag,
 )
 from catalog.readiness import build_product_buyer_question_coverage
 from catalog.ready_reply import build_product_ready_reply
@@ -100,51 +105,58 @@ class DemoLifecycleCommandTests(TestCase):
 
         business = self.demo_business()
         user = get_user_model().objects.get(email=DEMO_EMAIL)
-        self.assertEqual(Product.objects.filter(business=business).count(), 8)
-        self.assertEqual(ProductChoice.objects.filter(business=business).count(), 9)
+        self.assertEqual(Product.objects.filter(business=business).count(), 50)
+        self.assertEqual(ProductChoice.objects.filter(business=business).count(), 86)
         self.assertEqual(
             Product.objects.filter(
                 business=business,
                 lifecycle=Product.Lifecycle.ACTIVE,
             ).count(),
-            6,
+            41,
         )
         self.assertEqual(
             Product.objects.filter(
                 business=business,
                 lifecycle=Product.Lifecycle.DRAFT,
             ).count(),
-            1,
+            6,
         )
         self.assertEqual(
             Product.objects.filter(
                 business=business,
                 lifecycle=Product.Lifecycle.ARCHIVED,
             ).count(),
-            1,
+            3,
         )
         self.assertTrue(user.check_password(DEMO_PASSWORD))
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
         self.assertEqual(business.default_currency, "GEL")
-        self.assertEqual(ProductMedia.objects.filter(business=business).count(), 1)
-        self.assertEqual(len(self.stored_files()), 1)
+        self.assertEqual(ProductMedia.objects.filter(business=business).count(), 36)
+        self.assertEqual(len(self.stored_files()), 36)
         self.assertEqual(
             InventoryAdjustment.objects.filter(business=business).count(),
-            7,
+            70,
         )
-        self.assertEqual(
-            BusinessProductTypeAlias.objects.get(business=business).alias,
-            "dress",
+        self.assertEqual(BusinessProductType.objects.filter(business=business).count(), 14)
+        self.assertEqual(BusinessTag.objects.filter(business=business).count(), 10)
+        self.assertEqual(BusinessSize.objects.filter(business=business).count(), 8)
+        self.assertEqual(BusinessColor.objects.filter(business=business).count(), 12)
+        self.assertTrue(
+            BusinessProductTypeAlias.objects.filter(
+                business=business,
+                alias="dress",
+                product_type__name="კაბა",
+            ).exists()
         )
 
-        strong = Product.objects.get(business=business, name="შავი ბამბის კაბა")
+        strong = Product.objects.get(business=business, name="ელეგანტური აბრეშუმის შავი კაბა")
         coverage = build_product_buyer_question_coverage(
             business=business,
             product=strong,
         )
         self.assertTrue(all(item.is_answerable for item in coverage.items))
-        self.assertIn("129.00 GEL", build_product_ready_reply(
+        self.assertIn("189.00 GEL", build_product_ready_reply(
             business=business,
             product=strong,
         ).buyer_text)
@@ -152,11 +164,12 @@ class DemoLifecycleCommandTests(TestCase):
             ProductMaterialFact.objects.filter(
                 business=business,
                 product=strong,
+                canonical_material="აბრეშუმი",
                 confirmation_state=ProductMaterialFact.ConfirmationState.CONFIRMED,
             ).exists()
         )
 
-        weak = Product.objects.get(business=business, name="შესავსები მონახაზი")
+        weak = Product.objects.get(business=business, name="საზაფხულო ტოპი")
         weak_coverage = build_product_buyer_question_coverage(
             business=business,
             product=weak,
@@ -165,28 +178,28 @@ class DemoLifecycleCommandTests(TestCase):
         self.assertIsNone(weak.price)
         self.assertFalse(ProductMedia.objects.filter(product=weak).exists())
 
-        partial = Product.objects.get(business=business, name="ლურჯი კაბა")
+        partial = Product.objects.get(business=business, name="მუქი ლურჯი ყოველდღიური კაბა")
         self.assertEqual(
             set(partial.choices.values_list("quantity", flat=True)),
-            {0, 4},
+            {0, 3},
         )
         self.assertTrue(
             compute_product_availability(business=business, product=partial)
         )
-        sold_out = Product.objects.get(business=business, name="გაყიდული კაბა")
+        sold_out = Product.objects.get(business=business, name="წითელი კლასიკური ჟაკეტი")
         self.assertFalse(
             compute_product_availability(business=business, product=sold_out)
         )
         duplicate = Product.objects.get(
             business=business,
-            name="განმეორებადი არჩევანის კაბა",
+            name="ბეჟი ოვერსაიზ სვიტერი",
         )
         duplicate_choices = list(duplicate.choices.order_by("pk"))
         self.assertEqual(len(duplicate_choices), 2)
         self.assertEqual(duplicate_choices[0].size_id, duplicate_choices[1].size_id)
         self.assertEqual(duplicate_choices[0].color_id, duplicate_choices[1].color_id)
         self.assertNotEqual(duplicate_choices[0].pk, duplicate_choices[1].pk)
-        self.assertIn("8 Product(s), 9 choice(s)", output)
+        self.assertIn("50 Product(s), 86 choice(s)", output)
         self.assertNotIn(DEMO_PASSWORD, output)
 
     def test_repeated_seed_replaces_baseline_without_duplicates(self):
@@ -202,7 +215,7 @@ class DemoLifecycleCommandTests(TestCase):
         self.run_action("seed")
 
         business.refresh_from_db()
-        self.assertEqual(Product.objects.filter(business=business).count(), 8)
+        self.assertEqual(Product.objects.filter(business=business).count(), 50)
         self.assertFalse(
             Product.objects.filter(
                 business=business,
@@ -212,11 +225,11 @@ class DemoLifecycleCommandTests(TestCase):
         self.assertEqual(
             Product.objects.filter(
                 business=business,
-                name="შავი ბამბის კაბა",
+                name="ელეგანტური აბრეშუმის შავი კაბა",
             ).count(),
             1,
         )
-        self.assertEqual(len(self.stored_files()), 1)
+        self.assertEqual(len(self.stored_files()), 36)
 
     def test_reset_preserves_demo_identity_login_and_other_business_data(self):
         self.run_action("seed")
@@ -260,32 +273,36 @@ class DemoLifecycleCommandTests(TestCase):
         business.save(update_fields=["default_currency", "updated_at"])
         Product.objects.filter(
             business=business,
-            name="შავი ბამბის კაბა",
+            name="ელეგანტური აბრეშუმის შავი კაბა",
         ).update(description="Changed during review")
+        ProductTag.objects.filter(
+            business=business,
+            product__name="საზაფხულო ტოპი",
+        ).delete()
         Product.objects.filter(
             business=business,
-            name="შესავსები მონახაზი",
+            name="საზაფხულო ტოპი",
         ).delete()
 
         self.run_action("reseed")
 
-        self.assertEqual(Product.objects.filter(business=business).count(), 8)
+        self.assertEqual(Product.objects.filter(business=business).count(), 50)
         business.refresh_from_db()
         self.assertEqual(business.default_currency, "GEL")
         self.assertEqual(
             Product.objects.get(
                 business=business,
-                name="შავი ბამბის კაბა",
+                name="ელეგანტური აბრეშუმის შავი კაბა",
             ).description,
-            "შავი ბამბის კაბა საღამოსთვის",
+            "დახვეწილი საღამოს შავი კაბა (black dress), დამზადებულია 100% ნატურალური აბრეშუმისგან. ზომები Small და M. იდეალურია evening წვეულებისთვის. ფასი 189 ლარი.",
         )
         self.assertTrue(
             Product.objects.filter(
                 business=business,
-                name="შესავსები მონახაზი",
+                name="საზაფხულო ტოპი",
             ).exists()
         )
-        self.assertEqual(len(self.stored_files()), 1)
+        self.assertEqual(len(self.stored_files()), 36)
 
     def test_ambiguous_demo_business_identity_is_refused_without_mutation(self):
         user = get_user_model().objects.create_user(
@@ -330,7 +347,7 @@ class DemoLifecycleCommandTests(TestCase):
         self.assertEqual(existing.pk, existing_id)
         self.assertEqual(existing.owner_id, user.pk)
         self.assertEqual(existing.name, "Existing Business")
-        self.assertEqual(Product.objects.filter(business=existing).count(), 8)
+        self.assertEqual(Product.objects.filter(business=existing).count(), 50)
 
     def test_media_cleanup_failure_is_reported_after_scoped_database_reset(self):
         self.run_action("seed")
@@ -342,7 +359,7 @@ class DemoLifecycleCommandTests(TestCase):
         ):
             with self.assertRaisesMessage(
                 CommandError,
-                "scoped media cleanup failed for 1 file(s)",
+                "scoped media cleanup failed for 36 file(s)",
             ):
                 call_command("demo_lifecycle", "reset", confirm=True)
 

@@ -502,7 +502,7 @@ Items with unique patterns, such as the two-piece linen set (`D023`), evening se
 ---
 
 ### D012 — შავი წვეულების კაბა
-- **Seller description:** `evening party dress black!! ar aris tetri! zoma small da medium. 100% poliesteri. fasi 130 lari.`
+- **Seller description:** `შავი საღამოს წვეულების კაბა (evening party dress black). ზომა Small და Medium. 100% პოლიესტერი. ფასი 130 ლარი.`
 - **Seller style:** CHAOTIC
 - **Lifecycle:** `active`
 - **Price:** `130.00`
@@ -956,7 +956,7 @@ Items with unique patterns, such as the two-piece linen set (`D023`), evening se
 ---
 
 ### D031 — თეთრი პრინტიანი მაისური
-- **Seller description:** `white t-shirt printit! casual basic style. zoma S da M. 100% bamba. 40 lari.`
+- **Seller description:** `თეთრი მაისური პრინტით (white t-shirt). ყოველდღიური საბაზისო სტილი (casual basic). ზომები S და M. 100% ბამბა. ფასი 40 ლარი.`
 - **Seller style:** CHAOTIC
 - **Lifecycle:** `active`
 - **Price:** `40.00`
@@ -1145,7 +1145,7 @@ Items with unique patterns, such as the two-piece linen set (`D023`), evening se
 ---
 
 ### D039 — ბეჟი ნაქსოვი კარდიგანი (Draft Work-in-Progress)
-- **Seller description:** `beige sweater cardigan! tbili zamtris. zomebi S da M. 100% matyli. fasi gasarkvevia.`
+- **Seller description:** `თბილი ზამთრის ბეჟი კარდიგანი (beige sweater cardigan). ზომები S და M. 100% მატყლი. ფასი გასარკვევია.`
 - **Seller style:** CHAOTIC
 - **Lifecycle:** `draft`
 - **Price:** None
@@ -1169,7 +1169,7 @@ Items with unique patterns, such as the two-piece linen set (`D023`), evening se
 ---
 
 ### D040 — ოვერსაიზ კოტონის პერანგი (Draft Work-in-Progress)
-- **Seller description:** `oversized rubashka tetri feris. zoma medium. 100% bamba.`
+- **Seller description:** `თეთრი ოვერსაიზ პერანგი (oversized rubashka). ზომა Medium. 100% ბამბა.`
 - **Seller style:** CHAOTIC
 - **Lifecycle:** `draft`
 - **Price:** None
@@ -1192,7 +1192,7 @@ Items with unique patterns, such as the two-piece linen set (`D023`), evening se
 ---
 
 ### D041 — ვარდისფერი ატლასის ქვედაბოლო (Draft Work-in-Progress)
-- **Seller description:** `pink iubka zoma large 80ლ`
+- **Seller description:** `ვარდისფერი ქვედაბოლო (pink iubka), ზომა Large, 80ლ`
 - **Seller style:** LAZY
 - **Lifecycle:** `draft`
 - **Price:** `80.00`
@@ -1215,7 +1215,7 @@ Items with unique patterns, such as the two-piece linen set (`D023`), evening se
 ---
 
 ### D042 — საზაფხულო ტოპი (Draft Zero-Choice)
-- **Seller description:** `top zafxuli one size`
+- **Seller description:** `საზაფხულო ტოპი (summer top), ზომა one size`
 - **Seller style:** LAZY
 - **Lifecycle:** `draft`
 - **Price:** None
@@ -1237,7 +1237,7 @@ Items with unique patterns, such as the two-piece linen set (`D023`), evening se
 ---
 
 ### D043 — შავი საღამოს კაბა (Duplicate Choice Active)
-- **Seller description:** `evening black dress small da medium. 100% poliesteri. 120 lari.`
+- **Seller description:** `შავი საღამოს კაბა (evening black dress). ზომები Small და Medium. 100% პოლიესტერი. ფასი 120 ლარი.`
 - **Seller style:** CHAOTIC
 - **Lifecycle:** `active`
 - **Price:** `120.00`
@@ -1262,7 +1262,7 @@ Items with unique patterns, such as the two-piece linen set (`D023`), evening se
 ---
 
 ### D044 — ნაცრისფერი სპორტული ჰუდი
-- **Seller description:** `gray oversized hoodie sportuli! 100% bamba ar aris sinteitka! zoma oversize 95 lari.`
+- **Seller description:** `ნაცრისფერი სპორტული ჰუდი (gray oversized hoodie). 100% ბამბა (არ არის სინთეტიკა). ზომა oversize. ფასი 95 ლარი.`
 - **Seller style:** CHAOTIC
 - **Lifecycle:** `active`
 - **Price:** `95.00`
@@ -1378,7 +1378,7 @@ Items with unique patterns, such as the two-piece linen set (`D023`), evening se
 ---
 
 ### D049 — ზეთისხილისფერი ზაფხულის ორეული (Archived Inventory)
-- **Seller description:** `gasuli sezonis olive set. 100% tetreuli/seli. fasi 150 lari. zoma M.`
+- **Seller description:** `გასული სეზონის ზეთისხილისფერი ორეული (olive set). 100% თეთრეული/სელი. ზომა M. ფასი 150 ლარი.`
 - **Seller style:** CHAOTIC
 - **Lifecycle:** `archived`
 - **Price:** `150.00`
@@ -1401,7 +1401,7 @@ Items with unique patterns, such as the two-piece linen set (`D023`), evening se
 ---
 
 ### D050 — შავი სპორტული ჰუდი (Archived Inventory)
-- **Seller description:** `dzveli modeli black hoodie. zoma L. 100% bamba. 80 lari.`
+- **Seller description:** `ძველი მოდელის შავი ჰუდი (black hoodie). 100% ბამბა. ზომა L. ფასი 80 ლარი.`
 - **Seller style:** CHAOTIC
 - **Lifecycle:** `archived`
 - **Price:** `80.00`

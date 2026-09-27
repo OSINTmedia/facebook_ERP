@@ -687,12 +687,15 @@ h1 {
   max-width: 24rem;
 }
 
-.product-card__header,
 .product-card__identity,
 .product-card__choices {
   display: grid;
   min-width: 0;
   gap: 0.75rem;
+}
+
+.product-card__identity {
+  flex: 1 1 0;
 }
 
 .product-card__identity h2,
@@ -2038,10 +2041,6 @@ h1 {
 }
 
 @media (min-width: 721px) {
-  .product-card__header {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
-  }
 
   .product-card__states {
     justify-content: flex-end;
