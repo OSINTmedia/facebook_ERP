@@ -38,6 +38,11 @@
           {{ search_form.q.label_tag }}
           <div class="product-workspace-search__input-row">
             {{ search_form.q }}
+            <datalist id="search-vocabulary-suggestions">
+              {% for suggestion in workspace_search_suggestions %}
+                <option value="{{ suggestion }}"></option>
+              {% endfor %}
+            </datalist>
             <button class="button button--primary" type="submit">ძებნა</button>
           </div>
           <small

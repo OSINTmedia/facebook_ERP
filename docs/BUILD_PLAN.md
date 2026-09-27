@@ -711,8 +711,17 @@ Deploy the real Django/PostgreSQL portfolio application on backend-capable hosti
 - Code status target: PASS for final tracked docs/config change after verified reality.
 - Git status target: PASS for any release containing demo URL/docs/config.
 - Phase 13 closure / Gate 6: Gate 6 passes only after hosted smoke, owner TEST PASS, known deployed revision, and repository truth alignment.
-- Next: Phase 14.
+- Next: P13.3a.
 - Commit intent: `docs: publish verified demo access` only after live proof.
+
+### P13.3a Search Vocabulary Suggestions (Post-P13.3 Refinement)
+
+- Objective: expose seller-maintained Business vocabulary as native search suggestions in Product Workspace to aid memory and discoverability.
+- Scope: browser-native `<datalist id="search-vocabulary-suggestions">` wired to search input `q`; surfaces active canonical terms and aliases from `BusinessProductType`, `BusinessTag`, `BusinessSize`, and `BusinessColor`; case-insensitive deduplication; max 80 distinct terms; active Business-scoped only.
+- Excludes: custom JS autocomplete, HTMX endpoints, search semantic changes, product names/descriptions/materials, ranking/fuzzy search.
+- Acceptance: native `<datalist>` renders active canonical terms and aliases; selection only fills input; search executes normally on submit; foreign Business and inactive vocabulary excluded; Product names/descriptions/materials excluded; focused tests pass; owner visual acceptance.
+- Verification: `catalog.test_workspace` (97/97 tests pass); owner visual test: PASS.
+- Next: Phase 14 Public Portfolio Release.
 
 ---
 

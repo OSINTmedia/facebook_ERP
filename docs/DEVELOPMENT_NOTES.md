@@ -912,4 +912,21 @@ Verification: `accounts.test_demo_lifecycle` (10/10), `catalog.test_workspace` (
 
 Release: READY.
 
+Next on Git PASS: P13.3a Search Vocabulary Suggestions (Canonical + Aliases).
+
+### 2026-09-27 - P13.3a Search Vocabulary Suggestions (Canonical + Aliases)
+
+Code status: PASS.
+
+The Product Workspace search input now provides browser-native `<datalist id="search-vocabulary-suggestions">` suggestions exposing the active Business vocabulary:
+- Eligible terms: active canonical names and aliases across `BusinessProductType`, `BusinessTag`, `BusinessSize`, and `BusinessColor` records.
+- Strict isolation: terms are strictly scoped to the active Business; inactive canonical records and their aliases are excluded; cross-Business leakage is prevented.
+- Exclusions: Product names, descriptions, material facts, candidate/observed terms, and arbitrary strings are strictly excluded.
+- Hygiene and bounds: whitespace trimmed, empty terms omitted, case-insensitive deduplication preserving natural stored representation, deterministic alphabetical sorting, and bounded to at most 80 suggestions (`PRODUCT_WORKSPACE_SEARCH_SUGGESTIONS_MAX_COUNT = 80`).
+- UX interaction: native HTML5 `<input ... list="search-vocabulary-suggestions">` where selection populates the input only without auto-submitting; standard Enter/Search button executes the existing server search; free-text search and canonical filter/pagination state remain completely unchanged without adding JavaScript or new endpoints.
+
+Verification: 9 focused vocabulary suggestion tests and the full 97-test `catalog.test_workspace` suite passed in 63.6s; Django system and migration consistency checks passed with 0 errors. Required owner test: PASS.
+
+Release: READY.
+
 Next on Git PASS: Phase 14 Public Portfolio Release.

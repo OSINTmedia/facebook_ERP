@@ -12,7 +12,14 @@ from django.urls import reverse
 from businesses.models import Business
 from catalog.forms import ProductWorkspaceSearchForm
 from catalog.models import (
+    BusinessColor,
+    BusinessColorAlias,
     BusinessProductType,
+    BusinessProductTypeAlias,
+    BusinessSize,
+    BusinessSizeAlias,
+    BusinessTag,
+    BusinessTagAlias,
     Product,
     ProductChoice,
     ProductMaterialFact,
@@ -39,6 +46,7 @@ PRODUCT_WORKSPACE_AVAILABILITY_VALUES: frozenset[str] = frozenset(
 )
 PRODUCT_DESCRIPTION_EXCERPT_LENGTH = 160
 PRODUCT_WORKSPACE_PAGE_SIZE = 12
+PRODUCT_WORKSPACE_SEARCH_SUGGESTIONS_MAX_COUNT = 80
 
 BUYER_QUESTION_LABELS = {
     BuyerQuestion.PRICE: "ფასი",
@@ -308,6 +316,66 @@ class ProductCard:
     choice_preview: str = ""
 
 
+def build_workspace_search_suggestions(
+    *,
+    business: Business | None,
+) -> tuple[str, ...]:
+    """Return bounded, deduplicated suggestions for active canonical vocabulary and aliases."""
+    if business is None or business.pk is None:
+        return ()
+
+    raw_terms = [
+        *BusinessProductType.objects.filter(
+            business=business,
+            is_active=True,
+        ).values_list("name", flat=True),
+        *BusinessProductTypeAlias.objects.filter(
+            business=business,
+            product_type__business=business,
+            product_type__is_active=True,
+        ).values_list("alias", flat=True),
+        *BusinessTag.objects.filter(
+            business=business,
+            is_active=True,
+        ).values_list("name", flat=True),
+        *BusinessTagAlias.objects.filter(
+            business=business,
+            tag__business=business,
+            tag__is_active=True,
+        ).values_list("alias", flat=True),
+        *BusinessSize.objects.filter(
+            business=business,
+            is_active=True,
+        ).values_list("name", flat=True),
+        *BusinessSizeAlias.objects.filter(
+            business=business,
+            size__business=business,
+            size__is_active=True,
+        ).values_list("alias", flat=True),
+        *BusinessColor.objects.filter(
+            business=business,
+            is_active=True,
+        ).values_list("name", flat=True),
+        *BusinessColorAlias.objects.filter(
+            business=business,
+            color__business=business,
+            color__is_active=True,
+        ).values_list("alias", flat=True),
+    ]
+
+    seen: dict[str, str] = {}
+    for raw_term in raw_terms:
+        cleaned = raw_term.strip()
+        if not cleaned:
+            continue
+        key = cleaned.casefold()
+        if key not in seen:
+            seen[key] = cleaned
+
+    ordered = sorted(seen.values(), key=lambda value: (value.casefold(), value))
+    return tuple(ordered[:PRODUCT_WORKSPACE_SEARCH_SUGGESTIONS_MAX_COUNT])
+
+
 def build_product_workspace_context(
     *,
     state: ProductWorkspaceState,
@@ -315,6 +383,9 @@ def build_product_workspace_context(
 ):
     """Build the complete server-owned context for one Workspace results view."""
 
+    workspace_search_suggestions = build_workspace_search_suggestions(
+        business=business
+    )
     products = Product.objects.none()
     product_cards = ()
     catalog_has_products = False
@@ -386,6 +457,7 @@ def build_product_workspace_context(
     return {
         "product_cards": product_cards,
         "products": products,
+        "workspace_search_suggestions": workspace_search_suggestions,
         "workspace_search_query": state.search_query,
         "workspace_search_requested": state.search_requested,
         "workspace_search_is_valid": state.search_is_valid,

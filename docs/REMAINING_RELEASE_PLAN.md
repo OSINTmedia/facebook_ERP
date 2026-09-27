@@ -376,6 +376,13 @@ Upon completion and verification of slices UX-A through UX-D, deployment proceed
 - **Owner Test:** **REQUIRED** — Owner executes full demo walkthrough on phone (~390px) and desktop; replies `TEST PASS`.
 - **Commit Intent:** `docs: publish verified demo access` (only after live proof).
 
+### P13.3a Search Vocabulary Suggestions (Post-P13.3 Refinement)
+- **Objective:** Expose seller-maintained Business vocabulary as native search suggestions in Product Workspace.
+- **Scope:** Native `<datalist id="search-vocabulary-suggestions">` wired to search input `q`; active canonical terms and aliases from `BusinessProductType`, `BusinessTag`, `BusinessSize`, and `BusinessColor`; case-insensitive deduplication; max 80 distinct terms; active Business-scoped only.
+- **Exclusions:** Custom JS autocomplete, HTMX endpoints, search semantic changes, product names/descriptions/materials.
+- **Acceptance:** Native `<datalist>` renders active canonical terms and aliases; selection fills input only; search executes on submit; tenant isolation; owner visual acceptance.
+- **Owner Test:** **REQUIRED** — Owner visually verifies search suggestion behavior; replies `OWNER TEST PASS`.
+
 ---
 
 ## 9. Public Release Phase (Phase 14 Continuation)

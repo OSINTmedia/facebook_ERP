@@ -34,6 +34,8 @@ from catalog.models import (
 from catalog.workspace import (
     PRODUCT_DESCRIPTION_EXCERPT_LENGTH,
     PRODUCT_WORKSPACE_PAGE_SIZE,
+    PRODUCT_WORKSPACE_SEARCH_SUGGESTIONS_MAX_COUNT,
+    build_workspace_search_suggestions,
     ProductWorkspaceState,
     build_product_workspace_context,
     build_product_workspace_cards,
@@ -2912,3 +2914,337 @@ class ProductWorkspaceDirectSetTests(TestCase):
             response,
             f'id="workspace-stock-set-input-{self.duplicate.pk}"',
         )
+
+
+class ProductWorkspaceSearchVocabularySuggestionsTests(TestCase):
+    def setUp(self):
+        user_model = get_user_model()
+        self.owner = user_model.objects.create_user(
+            email="workspace-suggestions-owner@example.com",
+            password="test-password",
+        )
+        self.other_owner = user_model.objects.create_user(
+            email="workspace-suggestions-other@example.com",
+            password="test-password",
+        )
+        self.business = Business.objects.create(
+            owner=self.owner,
+            name="Suggestions Business",
+        )
+        self.other_business = Business.objects.create(
+            owner=self.other_owner,
+            name="Other Suggestions Business",
+        )
+        self.url = reverse("catalog:product_list")
+
+    def test_suggestions_include_canonical_vocabulary_and_aliases_and_exclude_names_descriptions_materials(self):
+        # 1-8: active canonical + aliases for all 4 families appear
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="CanonicalProductType",
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=product_type,
+            alias="ჰუდი",
+        )
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="CanonicalTag",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=tag,
+            alias="ზამთარი",
+        )
+        size = BusinessSize.objects.create(
+            business=self.business,
+            name="CanonicalSize",
+        )
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=size,
+            alias="დიდი",
+        )
+        color = BusinessColor.objects.create(
+            business=self.business,
+            name="CanonicalColor",
+        )
+        BusinessColorAlias.objects.create(
+            business=self.business,
+            color=color,
+            alias="მუქი ლურჯი",
+        )
+
+        product = Product.objects.create(
+            business=self.business,
+            name="Unsuggested Product Name",
+            description="Unsuggested description text",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        ProductMaterialFact.objects.create(
+            business=self.business,
+            product=product,
+            canonical_material="Unsuggested Material",
+            original_text="cotton",
+            source=ProductMaterialFact.Source.DESCRIPTION,
+        )
+
+        suggestions = build_workspace_search_suggestions(business=self.business)
+
+        # 1. active canonical Product Type appears
+        self.assertIn("CanonicalProductType", suggestions)
+        # 2. Product Type alias appears
+        self.assertIn("ჰუდი", suggestions)
+        # 3. active canonical Tag appears
+        self.assertIn("CanonicalTag", suggestions)
+        # 4. Tag alias appears
+        self.assertIn("ზამთარი", suggestions)
+        # 5. active canonical Size appears
+        self.assertIn("CanonicalSize", suggestions)
+        # 6. Size alias appears
+        self.assertIn("დიდი", suggestions)
+        # 7. active canonical Color appears
+        self.assertIn("CanonicalColor", suggestions)
+        # 8. Color alias appears
+        self.assertIn("მუქი ლურჯი", suggestions)
+
+        # 11-13: Product names, descriptions, materials are excluded
+        self.assertNotIn("Unsuggested Product Name", suggestions)
+        self.assertNotIn("Unsuggested description text", suggestions)
+        self.assertNotIn("Unsuggested Material", suggestions)
+
+    def test_blank_and_whitespace_only_aliases_excluded_and_whitespace_trimmed(self):
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Tag1",
+        )
+        BusinessTagAlias.objects.bulk_create([
+            BusinessTagAlias(business=self.business, tag=tag, alias="  კაპიუშონი  "),
+        ])
+
+        # Without mock: verifies stored leading/trailing whitespace is trimmed
+        suggestions = build_workspace_search_suggestions(business=self.business)
+        self.assertIn("კაპიუშონი", suggestions)
+        self.assertNotIn("  კაპიუშონი  ", suggestions)
+
+        # With mock: verifies empty/whitespace-only strings are excluded
+        from unittest.mock import patch
+        with patch.object(
+            BusinessTagAlias.objects,
+            "filter",
+        ) as mock_filter:
+            mock_filter.return_value.values_list.return_value = [
+                "  კაპიუშონი  ",
+                "   ",
+                "",
+            ]
+            suggestions_with_blanks = build_workspace_search_suggestions(business=self.business)
+
+        self.assertIn("კაპიუშონი", suggestions_with_blanks)
+        self.assertNotIn("  კაპიუშონი  ", suggestions_with_blanks)
+        self.assertNotIn("", suggestions_with_blanks)
+        self.assertNotIn("   ", suggestions_with_blanks)
+
+    def test_deduplication_is_case_insensitive_and_preserves_natural_representation(self):
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="TagForDedup",
+        )
+        size = BusinessSize.objects.create(
+            business=self.business,
+            name="SizeForDedup",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=tag,
+            alias="Oversize",
+        )
+        BusinessSizeAlias.objects.bulk_create([
+            BusinessSizeAlias(business=self.business, size=size, alias="oversize"),
+        ])
+
+        suggestions = build_workspace_search_suggestions(business=self.business)
+        matching = [s for s in suggestions if s.lower() == "oversize"]
+        self.assertEqual(len(matching), 1)
+        self.assertEqual(matching[0], "Oversize")
+
+    def test_inactive_canonical_vocabulary_and_its_aliases_are_excluded(self):
+        # 9 & 10: inactive canonical terms and their aliases excluded
+        inactive_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="InactiveType",
+            is_active=False,
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=inactive_type,
+            alias="არააქტიური_ტიპი_ალიასი",
+        )
+
+        inactive_tag = BusinessTag.objects.create(
+            business=self.business,
+            name="InactiveTag",
+            is_active=False,
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=inactive_tag,
+            alias="არააქტიური_ჭდე_ალიასი",
+        )
+
+        inactive_size = BusinessSize.objects.create(
+            business=self.business,
+            name="InactiveSize",
+            is_active=False,
+        )
+        BusinessSizeAlias.objects.create(
+            business=self.business,
+            size=inactive_size,
+            alias="არააქტიური_ზომა_ალიასი",
+        )
+
+        inactive_color = BusinessColor.objects.create(
+            business=self.business,
+            name="InactiveColor",
+            is_active=False,
+        )
+        BusinessColorAlias.objects.create(
+            business=self.business,
+            color=inactive_color,
+            alias="არააქტიური_ფერი_ალიასი",
+        )
+
+        suggestions = build_workspace_search_suggestions(business=self.business)
+        # 9. Inactive canonicals excluded
+        self.assertNotIn("InactiveType", suggestions)
+        self.assertNotIn("InactiveTag", suggestions)
+        self.assertNotIn("InactiveSize", suggestions)
+        self.assertNotIn("InactiveColor", suggestions)
+
+        # 10. Inactive aliases excluded
+        self.assertNotIn("არააქტიური_ტიპი_ალიასი", suggestions)
+        self.assertNotIn("არააქტიური_ჭდე_ალიასი", suggestions)
+        self.assertNotIn("არააქტიური_ზომა_ალიასი", suggestions)
+        self.assertNotIn("არააქტიური_ფერი_ალიასი", suggestions)
+
+    def test_business_isolation_and_unauthenticated_safety(self):
+        # 14 & 15: foreign Business canonical terms and aliases excluded
+        other_tag = BusinessTag.objects.create(
+            business=self.other_business,
+            name="OtherTag",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.other_business,
+            tag=other_tag,
+            alias="სხვა_ბიზნესის_ალიასი",
+        )
+
+        suggestions_a = build_workspace_search_suggestions(business=self.business)
+        # 14. foreign canonical excluded
+        self.assertNotIn("OtherTag", suggestions_a)
+        # 15. foreign alias excluded
+        self.assertNotIn("სხვა_ბიზნესის_ალიასი", suggestions_a)
+
+        suggestions_b = build_workspace_search_suggestions(business=self.other_business)
+        self.assertIn("OtherTag", suggestions_b)
+        self.assertIn("სხვა_ბიზნესის_ალიასი", suggestions_b)
+
+        suggestions_none = build_workspace_search_suggestions(business=None)
+        self.assertEqual(suggestions_none, ())
+
+    def test_template_renders_datalist_and_input_list_reference(self):
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="Tag1",
+        )
+        BusinessTagAlias.objects.create(
+            business=self.business,
+            tag=tag,
+            alias="ქურთუკი",
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "list=\"search-vocabulary-suggestions\"")
+        self.assertContains(response, "<datalist id=\"search-vocabulary-suggestions\">")
+        self.assertContains(response, "<option value=\"ქურთუკი\"></option>")
+        self.assertNotContains(response, "value=\"ქურთუკი (")
+
+    def test_suggestion_selection_submits_as_normal_search(self):
+        product_type = BusinessProductType.objects.create(
+            business=self.business,
+            name="Hoodie",
+        )
+        BusinessProductTypeAlias.objects.create(
+            business=self.business,
+            product_type=product_type,
+            alias="ჰუდი",
+        )
+        matched_product = Product.objects.create(
+            business=self.business,
+            name="Matched Product",
+            description="Nice warm top",
+            product_type=product_type,
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        unmatched_product = Product.objects.create(
+            business=self.business,
+            name="Other Product",
+            description="Summer shorts",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        self.client.force_login(self.owner)
+
+        response = self.client.get(self.url, {"q": "ჰუდი"})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, matched_product.name)
+        self.assertNotContains(response, unmatched_product.name)
+
+    def test_existing_search_filters_pagination_and_empty_states_preserved(self):
+        self.client.force_login(self.owner)
+
+        response_empty = self.client.get(self.url)
+        self.assertEqual(response_empty.status_code, 200)
+        self.assertContains(response_empty, "პროდუქტები ჯერ არ არის.")
+
+        draft = Product.objects.create(
+            business=self.business,
+            name="Draft Item",
+            lifecycle=Product.Lifecycle.DRAFT,
+        )
+        active = Product.objects.create(
+            business=self.business,
+            name="Active Item",
+            lifecycle=Product.Lifecycle.ACTIVE,
+        )
+        response_draft = self.client.get(self.url, {"lifecycle": Product.Lifecycle.DRAFT})
+        self.assertEqual(response_draft.status_code, 200)
+        self.assertContains(response_draft, draft.name)
+        self.assertNotContains(response_draft, active.name)
+
+    def test_suggestions_strictly_truncated_to_max_bound(self):
+        tag = BusinessTag.objects.create(
+            business=self.business,
+            name="BulkTag",
+        )
+        BusinessTagAlias.objects.bulk_create([
+            BusinessTagAlias(business=self.business, tag=tag, alias=f"ალიასი_{i:03d}")
+            for i in range(100)
+        ])
+
+        suggestions = build_workspace_search_suggestions(business=self.business)
+        self.assertEqual(len(suggestions), PRODUCT_WORKSPACE_SEARCH_SUGGESTIONS_MAX_COUNT)
+        self.assertEqual(len(suggestions), 80)
+
+        self.client.force_login(self.owner)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        datalist_start = content.index("<datalist id=\"search-vocabulary-suggestions\">")
+        datalist_end = content.index("</datalist>", datalist_start)
+        datalist_markup = content[datalist_start:datalist_end]
+        self.assertEqual(datalist_markup.count("<option "), 80)

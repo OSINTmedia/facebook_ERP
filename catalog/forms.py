@@ -59,6 +59,7 @@ class ProductWorkspaceSearchForm(forms.Form):
                 "autocomplete": "off",
                 "maxlength": PRODUCT_WORKSPACE_SEARCH_MAX_LENGTH,
                 "placeholder": "აღწერა, ტიპი, ჭდე, არჩევანი ან მასალა",
+                "list": "search-vocabulary-suggestions",
             }
         ),
     )
