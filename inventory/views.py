@@ -108,6 +108,7 @@ def render_workspace_stock_results(
     context = build_product_workspace_context(
         state=workspace_state,
         business=business,
+        include_search_suggestions=False,
     )
     choice_is_visible = any(
         card_choice.choice_id == choice.pk

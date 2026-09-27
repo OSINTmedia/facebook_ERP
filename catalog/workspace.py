@@ -380,11 +380,14 @@ def build_product_workspace_context(
     *,
     state: ProductWorkspaceState,
     business: Business | None,
+    include_search_suggestions: bool = True,
 ):
     """Build the complete server-owned context for one Workspace results view."""
 
-    workspace_search_suggestions = build_workspace_search_suggestions(
-        business=business
+    workspace_search_suggestions = (
+        build_workspace_search_suggestions(business=business)
+        if include_search_suggestions
+        else ()
     )
     products = Product.objects.none()
     product_cards = ()

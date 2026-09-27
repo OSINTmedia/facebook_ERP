@@ -930,3 +930,17 @@ Verification: 9 focused vocabulary suggestion tests and the full 97-test `catalo
 Release: READY.
 
 Next on Git PASS: Phase 14 Public Portfolio Release.
+
+### 2026-09-27 - P13.3a Search Vocabulary Suggestions CI Recovery
+
+Code status: PASS.
+
+Targeted recovery applied to prevent search-suggestion query overhead during partial stock updates:
+- Initial P13.3a implementation (`a69b955`) surfaced active canonical vocabulary and aliases via a native `<datalist>` without JS, endpoint, schema, or search-semantic changes and received owner acceptance.
+- Prematurely pushed revision failed remote CI run #103 on `inventory.tests.InventoryMutationRouteTests.test_workspace_htmx_response_query_count_is_bounded` (23 queries vs <= 16 bound) because `build_product_workspace_context` eagerly computed datalist suggestions during HTMX stock-result partial rendering.
+- Recovery: added `include_search_suggestions=True` parameter to `build_product_workspace_context` and passed `include_search_suggestions=False` from `inventory.views.render_workspace_stock_results`. Full workspace pages retain vocabulary suggestions while partial HTMX stock swaps skip redundant queries.
+- Verification: query bound test passed (15 queries <= 16), `inventory.tests.InventoryMutationRouteTests` passed (23/23), `catalog.test_workspace` passed (97/97), full PostgreSQL suite passed (581/581 in 391.6s), Django deploy check passed with 0 errors, migration check passed. Required regression owner test: PASS.
+
+Release: READY pending Stage 6 Git/CI.
+
+Next on Git PASS: Phase 14 / P14.1 Final Integrity, Scope, Security, and Drift Audit.
