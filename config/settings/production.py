@@ -65,7 +65,8 @@ for origin in CSRF_TRUSTED_ORIGINS:
         raise ImproperlyConfigured("CSRF trusted origins must be explicit HTTPS origins.")
 
 # Same-origin HTTPS requests need no CSRF trusted-origin exception. Add only
-# deliberate cross-origin exceptions; do not trust forwarded headers by default.
+# deliberate cross-origin exceptions.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_SSL_REDIRECT = True
